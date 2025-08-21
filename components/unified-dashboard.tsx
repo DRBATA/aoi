@@ -66,7 +66,6 @@ export default function UnifiedDashboard() {
   }, [])
   
   const [bookings] = useState<Booking[]>(mockBookings)
-  const [, setGroupCheckout] = useState<Booking[]>([])
   const [selectedGuest, setSelectedGuest] = useState<Booking | null>(null)
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
@@ -95,11 +94,6 @@ export default function UnifiedDashboard() {
     setSelectedGuest(null)
   }
 
-  const startGroupCheckout = () => {
-    const checkedIn = bookings.filter(b => b.status === 'checked-in')
-    setGroupCheckout(checkedIn)
-    setShowGroupCheckout(true)
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-cyan-400 p-6">
