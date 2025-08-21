@@ -140,7 +140,7 @@ export default function UnifiedDashboard() {
           <Button 
             variant="secondary" 
             className="bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 text-white hover:from-purple-600 hover:via-pink-600 hover:to-yellow-500 shadow-lg"
-            onClick={startGroupCheckout}
+            onClick={() => console.log('Group checkout feature coming soon')}
           >
             <ShoppingCart className="w-4 h-4 mr-2" />
             Group Checkout
