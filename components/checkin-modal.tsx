@@ -141,7 +141,7 @@ export default function CheckinModal({ isOpen, onClose, guestData, onComplete }:
                   <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 text-left mb-6">
                     <h3 className="text-xl font-light text-white mb-3">Personalized Wellness Assessment</h3>
                     <p className="text-white/70 mb-6">
-                      Take 60 seconds to create your custom hydration plan based on your unique needs and this week's activities.
+                      Take 60 seconds to create your custom hydration plan based on your unique needs and this week&apos;s activities.
                     </p>
                     
                     <div className="space-y-3">
@@ -425,7 +425,7 @@ export default function CheckinModal({ isOpen, onClose, guestData, onComplete }:
                       <div className="bg-white/5 rounded-xl p-4">
                         <Droplets className="w-5 h-5 text-blue-400 mb-2" />
                         <p className="text-white text-lg font-light">2.8L/day</p>
-                        <p className="text-white/60 text-sm">Let's get you feeling your best</p>
+                        <p className="text-white/60 text-sm">Let&apos;s get you feeling your best</p>
                       </div>
                       <div className="bg-white/5 rounded-xl p-4">
                         <Activity className="w-5 h-5 text-green-400 mb-2" />
