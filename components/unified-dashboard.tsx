@@ -17,10 +17,13 @@ import {
 } from 'lucide-react'
 // import { Room } from 'livekit-client'
 // import useConnectionDetails from '@/hooks/useConnectionDetails'
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import CheckinModal from "./checkin-modal"
+import CheckoutModal from "./checkout-modal"
 // Supabase imports disabled for demo mode
 // import {
 //   supabase, 
@@ -80,12 +83,6 @@ export interface Booking {
 //   last_updated: string
 // }
 
-interface Recommendation {
-  drink: string
-  timing: string
-  reason: string
-  price: number
-}
 
 // Mock booking data with room assignments
 const mockBookings: Booking[] = [
@@ -315,18 +312,6 @@ export default function UnifiedDashboard() {
         drink: "Electrolyte Boost",
         timing: "Now - before starting",
         reason: "Prepares your body for heat exposure",
-        price: 45
-      },
-      {
-        drink: "Adaptogen Mix",
-        timing: "After sauna",
-        reason: "Supports recovery and stress response",
-        price: 55
-      },
-      {
-        drink: "Sparkling Water",
-        timing: "Before leaving",
-        reason: "Final hydration with minerals",
         price: 35
       }
     ]
@@ -453,12 +438,6 @@ export default function UnifiedDashboard() {
     setSelectedGuest(null)
   }
 
-  // Process group checkout
-  const processGroupCheckout = (bookings: Booking[], paymentMethod: unknown) => {
-    console.log('Processing group checkout:', bookings, paymentMethod)
-    setGroupCheckout([])
-    setShowGroupCheckout(false)
-  }
 
   // Add to cart helper
   const handleCheckout = (booking: Booking, recommendations?: unknown[]) => {
@@ -938,6 +917,43 @@ export default function UnifiedDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Checkin Modal */}
+      <CheckinModal
+        isOpen={showCheckinModal}
+        onClose={() => setShowCheckinModal(false)}
+        guestData={selectedGuest ? {
+          id: selectedGuest.id,
+          name: selectedGuest.name,
+          booking: {
+            experience: selectedGuest.experience,
+            time: selectedGuest.time,
+            room: selectedGuest.room
+          }
+        } : undefined}
+        onComplete={handleCheckinComplete}
+      />
+
+      {/* Checkout Modal */}
+      <CheckoutModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        sessionData={selectedGuest ? {
+          experience: selectedGuest.experience,
+          duration: "60 mins",
+          room: selectedGuest.room || "Room 1",
+          time: selectedGuest.time,
+          date: new Date().toLocaleDateString(),
+          price: 150
+        } : undefined}
+        guestData={selectedGuest ? {
+          id: selectedGuest.id,
+          name: selectedGuest.name,
+          email: selectedGuest.email,
+          phone: selectedGuest.phone
+        } : undefined}
+        onComplete={handleCheckoutComplete}
+      />
     </div>
   )
 }
