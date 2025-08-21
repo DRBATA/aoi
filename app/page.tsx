@@ -1,103 +1,161 @@
-import Image from "next/image";
+"use client"
+
+import { motion } from "framer-motion"
+import Link from "next/link"
+import { 
+  Sparkles, Users, Calendar, User, CreditCard,
+  ChevronRight, Globe, Shield, Zap
+} from "lucide-react"
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const portals = [
+    {
+      title: "Guest Experience",
+      description: "Book sessions and explore AOI",
+      href: "/landing",
+      icon: <Sparkles className="w-6 h-6" />,
+      gradient: "from-purple-500 to-pink-500",
+      features: ["Book Sessions", "View Experiences", "Multi-venue"]
+    },
+    {
+      title: "Staff Dashboard",
+      description: "Manage bookings and check-ins",
+      href: "/dashboard",
+      icon: <Users className="w-6 h-6" />,
+      gradient: "from-blue-500 to-cyan-500",
+      features: ["Check-in Guests", "Hydration Plans", "Session Control"]
+    },
+    {
+      title: "Member Portal",
+      description: "Your wellness journey",
+      href: "/portal",
+      icon: <User className="w-6 h-6" />,
+      gradient: "from-green-500 to-emerald-500",
+      features: ["View Plans", "Track Progress", "Achievements"]
+    },
+    {
+      title: "Quick Check-in",
+      description: "Streamlined guest arrival",
+      href: "/checkin",
+      icon: <Calendar className="w-6 h-6" />,
+      gradient: "from-orange-500 to-red-500",
+      features: ["Fast Assessment", "Weekly Plans", "Instant Setup"]
+    },
+    {
+      title: "Checkout & Payment",
+      description: "Complete purchase & send plans",
+      href: "/checkout",
+      icon: <CreditCard className="w-6 h-6" />,
+      gradient: "from-indigo-500 to-purple-500",
+      features: ["Process Payment", "Email Plans", "Receipt Generation"]
+    }
+  ]
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-black via-purple-950/20 to-black">
+      {/* Header */}
+      <header className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-6">
+              <Sparkles className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-5xl font-light text-white mb-4">
+              AOI Wellness Platform
+            </h1>
+            <p className="text-xl text-white/60 max-w-2xl mx-auto">
+              Unified system for wellness experiences, staff operations, and member journeys
+            </p>
+          </motion.div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+      </header>
+
+      {/* Portal Grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {portals.map((portal, index) => (
+            <motion.div
+              key={portal.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Link href={portal.href}>
+                <div className="group relative bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:bg-white/10 transition-all cursor-pointer overflow-hidden">
+                  {/* Gradient overlay on hover */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${portal.gradient} opacity-0 group-hover:opacity-10 transition-opacity`} />
+                  
+                  <div className="relative">
+                    <div className={`inline-flex items-center justify-center w-14 h-14 bg-gradient-to-r ${portal.gradient} rounded-xl mb-4 text-white`}>
+                      {portal.icon}
+                    </div>
+                    
+                    <h2 className="text-2xl font-light text-white mb-2">{portal.title}</h2>
+                    <p className="text-white/60 mb-6">{portal.description}</p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {portal.features.map((feature) => (
+                        <span
+                          key={feature}
+                          className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/80"
+                        >
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                    
+                    <div className="flex items-center text-white/60 group-hover:text-white transition-colors">
+                      <span className="text-sm">Enter Portal</span>
+                      <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Key Features */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10">
+            <Globe className="w-8 h-8 text-purple-400 mb-4" />
+            <h3 className="text-white font-medium mb-2">Multi-Venue Support</h3>
+            <p className="text-white/60 text-sm">Dubai, Berlin, Ibiza, Costa Rica - unified experience across all locations</p>
+          </div>
+          <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10">
+            <Zap className="w-8 h-8 text-yellow-400 mb-4" />
+            <h3 className="text-white font-medium mb-2">AI-Powered Plans</h3>
+            <p className="text-white/60 text-sm">Personalized hydration and wellness recommendations based on lifestyle</p>
+          </div>
+          <div className="bg-white/5 backdrop-blur-lg rounded-xl p-6 border border-white/10">
+            <Shield className="w-8 h-8 text-green-400 mb-4" />
+            <h3 className="text-white font-medium mb-2">Seamless Integration</h3>
+            <p className="text-white/60 text-sm">All-in-one platform for bookings, check-ins, and payment processing</p>
+          </div>
+        </motion.div>
+
+        {/* Mobile Optimized Note */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+          className="mt-12 text-center"
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <p className="text-white/40 text-sm">
+            ✨ Optimized for mobile and tablet devices • Works seamlessly on staff iPads
+          </p>
+        </motion.div>
+      </div>
     </div>
-  );
+  )
 }
