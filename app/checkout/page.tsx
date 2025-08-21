@@ -71,7 +71,7 @@ export default function Checkout() {
               <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
                 <div className="flex items-center gap-3 mb-4">
                   <Sparkles className="w-5 h-5 text-purple-400" />
-                  <h2 className="text-xl text-white">Today's Session</h2>
+                  <h2 className="text-xl text-white">Today&apos;s Session</h2>
                 </div>
                 
                 <div className="space-y-3">

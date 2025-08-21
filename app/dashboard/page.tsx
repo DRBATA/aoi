@@ -326,7 +326,7 @@ export default function StaffDashboard() {
               <div className="space-y-6">
                 {/* Step 1: Diet Lean */}
                 <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-white font-medium mb-4">What's your usual diet like?</h3>
+                  <h3 className="text-white font-medium mb-4">What&apos;s your usual diet like?</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                       { icon: "🍎", label: "Fruits", value: 3 },
@@ -351,7 +351,7 @@ export default function StaffDashboard() {
 
                 {/* Step 2: Weekly Events */}
                 <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-white font-medium mb-4">What's happening this week?</h3>
+                  <h3 className="text-white font-medium mb-4">What&apos;s happening this week?</h3>
                   <div className="grid grid-cols-7 gap-2 mb-4">
                     {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
                       <div key={day} className="text-center">
@@ -442,7 +442,7 @@ export default function StaffDashboard() {
                       Add to Session Checkout
                     </button>
                     <p className="text-white/40 text-xs text-center mt-3">
-                      The complete plan with usage instructions will be available in {selectedGuest.name}'s profile
+                      The complete plan with usage instructions will be available in {selectedGuest.name}&apos;s profile
                     </p>
                   </div>
                 </div>

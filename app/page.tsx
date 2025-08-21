@@ -20,10 +20,10 @@ export default function Home() {
     {
       title: "Staff Dashboard",
       description: "Manage bookings and check-ins",
-      href: "/dashboard",
+      href: "/udash",
       icon: <Users className="w-6 h-6" />,
       gradient: "from-blue-500 to-cyan-500",
-      features: ["Check-in Guests", "Hydration Plans", "Session Control"]
+      features: ["Check-in Guests", "AI Recommendations", "Room Management"]
     },
     {
       title: "Member Portal",

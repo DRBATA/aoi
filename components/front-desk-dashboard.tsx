@@ -591,7 +591,7 @@ function ProfileModal() {
             </p>
             <p>
               <span className="font-semibold">Experience:</span> {selectedGuest.experience}{" "}
-              {selectedGuest.experience && `($${priceList[selectedGuest.experience] || 0})`}
+              {selectedGuest.experience && `($${(priceList as any)[selectedGuest.experience] || 0})`}
             </p>
             <div>
               <p className="mb-1 font-semibold">Session progress</p>

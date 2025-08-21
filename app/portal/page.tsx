@@ -173,7 +173,7 @@ export default function UserPortal() {
               {/* Hydration Widget */}
               <div className="space-y-6">
                 <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-white font-medium mb-4">Today's Hydration</h3>
+                  <h3 className="text-white font-medium mb-4">Today&apos;s Hydration</h3>
                   <div className="relative w-32 h-32 mx-auto mb-4">
                     <svg className="w-32 h-32 transform -rotate-90">
                       <circle

@@ -50,7 +50,7 @@ export default function CheckIn() {
             <p className="text-xl text-white/60 mb-12">Your AOI BED session begins in 5 minutes</p>
             
             <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 text-left">
-              <h2 className="text-2xl font-light text-white mb-6">While you're here...</h2>
+              <h2 className="text-2xl font-light text-white mb-6">While you&apos;re here...</h2>
               <p className="text-white/80 mb-8">
                 Would you like a complimentary wellness assessment? It takes 30 seconds and creates your personalized hydration plan for the week.
               </p>
@@ -241,7 +241,7 @@ export default function CheckIn() {
                     onClick={() => setStep("complete")}
                     className="w-full p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:scale-[1.02] transition-transform"
                   >
-                    Add to Today's Checkout
+                    Add to Today&apos;s Checkout
                   </button>
                   <button
                     onClick={() => setStep("complete")}
@@ -276,7 +276,7 @@ export default function CheckIn() {
               <Check className="w-12 h-12 text-white" />
             </motion.div>
             
-            <h1 className="text-4xl font-light text-white mb-4">You're All Set</h1>
+            <h1 className="text-4xl font-light text-white mb-4">You&apos;re All Set</h1>
             <p className="text-xl text-white/60 mb-8">Your wellness concierge will escort you to the AOI BED</p>
             
             <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10">

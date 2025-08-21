@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Unused components for now
+components/front-desk-dashboard.tsx
+components/kokonutui/action-search-bar.tsx
+lib/supabase.ts
