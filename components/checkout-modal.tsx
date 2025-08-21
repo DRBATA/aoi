@@ -4,9 +4,9 @@ import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   X, ShoppingCart, CreditCard, Mail, Phone, User,
-  Check, ChevronRight, Droplets, Calendar,
+  Check, ChevronRight, Droplets,
   Clock, MapPin, Sparkles, Download, Send,
-  DollarSign, Receipt, MessageSquare, Banknote
+  Receipt, MessageSquare, Banknote
 } from "lucide-react"
 
 interface CheckoutModalProps {
@@ -38,7 +38,7 @@ interface CheckoutModalProps {
     email?: string
     phone?: string
   }
-  onComplete?: (data: any) => void
+  onComplete?: (data: unknown) => void
 }
 
 export default function CheckoutModal({ 
@@ -168,7 +168,7 @@ export default function CheckoutModal({
                     <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
                       <div className="flex items-center gap-3 mb-4">
                         <Sparkles className="w-5 h-5 text-purple-400" />
-                        <h3 className="text-xl text-white">Today's Session</h3>
+                        <h3 className="text-xl text-white">Today&apos;s Session</h3>
                       </div>
                       
                       <div className="space-y-3">

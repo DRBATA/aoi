@@ -2,30 +2,13 @@
 
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import CheckinModal from './checkin-modal'
 import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Calendar, 
-  Clock, 
-  Users, 
-  ShoppingCart, 
-  Settings, 
-  Bell, 
-  CheckCircle, 
-  AlertCircle, 
-  ChevronDown,
-  Check,
-  Grid3x3,
-  List,
-  BarChart,
-  User,
-  MapPinned,
-  TrendingUp,
-  X,
-  Home,
+  Calendar,
+  Clock,
+  Users,
   MapPin,
+  X,
+  TrendingUp,
   CreditCard,
   Package
 } from 'lucide-react'
@@ -243,7 +226,7 @@ export default function UnifiedDashboard() {
   const [bookings, setBookings] = useState<Booking[]>(mockBookings)
   const [groupCheckout, setGroupCheckout] = useState<Booking[]>([])
   // const [stockLevels, setStockLevels] = useState<StockItem[]>([])
-  const [loading, setLoading] = useState(false)
+  // const [loading, setLoading] = useState(false)
 
   // Supabase data loading disabled for demo mode
   // useEffect(() => {

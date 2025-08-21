@@ -4,9 +4,8 @@ import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   X, Sparkles, ChevronRight, Check, 
-  User, Calendar, Clock, Droplets,
-  Weight, Activity, Brain, Moon,
-  Coffee, Pizza, Apple, Salad
+  Calendar, Droplets,
+  Weight, Activity, Brain, Moon
 } from "lucide-react"
 
 interface CheckinModalProps {
@@ -21,7 +20,7 @@ interface CheckinModalProps {
       room?: string
     }
   }
-  onComplete?: (data: any) => void
+  onComplete?: (data: unknown) => void
 }
 
 export default function CheckinModal({ isOpen, onClose, guestData, onComplete }: CheckinModalProps) {
@@ -426,7 +425,7 @@ export default function CheckinModal({ isOpen, onClose, guestData, onComplete }:
                       <div className="bg-white/5 rounded-xl p-4">
                         <Droplets className="w-5 h-5 text-blue-400 mb-2" />
                         <p className="text-white text-lg font-light">2.8L/day</p>
-                        <p className="text-white/40 text-xs">Hydration Target</p>
+                        <p className="text-white/60 text-sm">Let's get you feeling your best</p>
                       </div>
                       <div className="bg-white/5 rounded-xl p-4">
                         <Activity className="w-5 h-5 text-green-400 mb-2" />

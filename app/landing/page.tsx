@@ -3,11 +3,11 @@
 import { useState } from "react"
 import ShaderBackground from "@/components/shader-background"
 import FloatingPaths from "@/components/kokonutui/floating-paths"
-import { motion, AnimatePresence } from "framer-motion"
-import { ChevronDown, Sparkles, Zap, Heart, Brain, Shield, Clock } from "lucide-react"
+import { motion } from "framer-motion"
+import { ChevronDown, Sparkles, Zap, Brain, Clock } from "lucide-react"
 
 export default function LandingPage() {
-  const [selectedExperience, setSelectedExperience] = useState<string | null>(null)
+  const [, setSelectedExperience] = useState<string | null>(null)
   const [selectedVenue, setSelectedVenue] = useState("dubai")
 
   const experiences = [
