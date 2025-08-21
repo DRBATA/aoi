@@ -44,3 +44,6 @@ next-env.d.ts
 components/front-desk-dashboard.tsx
 components/kokonutui/action-search-bar.tsx
 lib/supabase.ts
+
+# Backup files
+*.bak
