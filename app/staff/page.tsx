@@ -4,6 +4,7 @@ import { useState } from "react"
 import ShaderBackground from "@/components/shader-background"
 import { motion } from "framer-motion"
 import { Lock, User, Eye, EyeOff } from "lucide-react"
+import { signInStaff } from "@/lib/supabase"
 
 export default function StaffLoginPage() {
   const [formData, setFormData] = useState({
@@ -12,18 +13,27 @@ export default function StaffLoginPage() {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     
-    // Simulate login process
-    setTimeout(() => {
-      console.log('Staff login attempt:', formData)
+    try {
+      const result = await signInStaff(formData.username, formData.password)
+      
+      if (result.success) {
+        // Redirect to staff dashboard
+        window.location.href = '/udash'
+      } else {
+        setError(result.error || 'Login failed')
+      }
+    } catch (err) {
+      setError('An unexpected error occurred')
+    } finally {
       setIsLoading(false)
-      // Redirect to staff dashboard
-      window.location.href = '/staff/dashboard'
-    }, 1500)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,6 +69,12 @@ export default function StaffLoginPage() {
             </div>
 
             <h2 className="text-2xl font-bold text-white text-center mb-8">Staff Login</h2>
+
+            {error && (
+              <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-3 mb-6">
+                <p className="text-red-200 text-sm text-center">{error}</p>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>

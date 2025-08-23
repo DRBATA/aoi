@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { 
   Users, Calendar, Package, 
   Plus, ShoppingCart,
-  Home, TrendingUp
+  Home, TrendingUp, Sparkles
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import CheckinModal from "./checkin-modal"
 import CheckoutModal from "./checkout-modal"
+import { createClient } from '@/lib/supabase/client'
 
 // Types
 type BookingStatus = 'waiting' | 'checked-in' | 'active' | 'completed'
@@ -59,16 +60,95 @@ const serviceRooms = [
 export default function UnifiedDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>("all")
   const [rooms] = useState(serviceRooms)
-
-  useEffect(() => {
-    console.log('🎯 SPA DASHBOARD: Demo mode - LiveKit disabled')
-    return () => {}
-  }, [])
-  
-  const [bookings] = useState<Booking[]>(mockBookings)
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [selectedGuest, setSelectedGuest] = useState<Booking | null>(null)
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
+  const [inventory, setInventory] = useState<any[]>([])
+  const supabase = createClient()
+
+  useEffect(() => {
+    // Subscribe to real-time cart updates
+    const fetchBookings = async () => {
+      const { data } = await supabase
+        .from('cart_items')
+        .select(`
+          *,
+          cart_headers!inner(*)
+        `)
+        .not('booking_metadata', 'is', null)
+        .order('created_at', { ascending: false })
+      
+      if (data) {
+        const formattedBookings = data.map(item => ({
+          id: item.id,
+          name: item.cart_headers?.customer_name || 'Guest',
+          time: item.booking_metadata?.time || 'TBD',
+          service: item.product_name,
+          status: item.booking_status || 'waiting',
+          assignedRoom: item.booking_metadata?.room,
+          cart: [item],
+          recommendations: item.ai_recommendation ? [item.ai_recommendation] : [],
+          venueId: item.venue_id
+        }))
+        setBookings(formattedBookings as any)
+      }
+    }
+
+    // Fetch live inventory
+    const fetchInventory = async () => {
+      const { data } = await supabase
+        .from('venue_stock')
+        .select(`
+          *,
+          products!inner(*)
+        `)
+        .eq('venue_id', 'aoi_wellness_hub')
+        .gt('quantity', 0)
+        .order('quantity', { ascending: true })
+        .limit(5)
+      
+      if (data) {
+        setInventory(data)
+      }
+    }
+
+    fetchBookings()
+    fetchInventory()
+
+    // Real-time subscriptions
+    const bookingChannel = supabase
+      .channel('cart-bookings')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cart_items',
+          filter: 'booking_metadata=not.is.null'
+        },
+        () => fetchBookings()
+      )
+      .subscribe()
+
+    const inventoryChannel = supabase
+      .channel('inventory-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'venue_stock'
+        },
+        () => fetchInventory()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(bookingChannel)
+      supabase.removeChannel(inventoryChannel)
+    }
+  }, [])
 
   const filteredBookings = bookings
 
@@ -96,32 +176,34 @@ export default function UnifiedDashboard() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-cyan-400 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 via-pink-500 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg">
-            <Home className="w-6 h-6 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-cyan-400 p-4 md:p-6">
+      {/* Mobile-First Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-yellow-400 via-pink-500 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg">
+            <Home className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-light text-white">AOI Wellness Hub</h1>
-            <p className="text-white/60">Front Desk Dashboard</p>
+            <h1 className="text-xl md:text-2xl font-light text-white">AOI Wellness</h1>
+            <p className="text-white/60 text-sm">Front Desk</p>
           </div>
         </div>
         
-        <div className="flex gap-3">
+        {/* Mobile-Optimized Action Buttons - Stack on mobile */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Button 
             variant="secondary" 
-            className="bg-gradient-to-r from-emerald-400 to-cyan-400 text-white hover:from-emerald-500 hover:to-cyan-500 shadow-lg"
+            className="w-full sm:w-auto bg-gradient-to-r from-emerald-400 to-cyan-400 text-white hover:from-emerald-500 hover:to-cyan-500 shadow-lg"
             onClick={() => setShowCheckinModal(true)}
           >
             <Plus className="w-4 h-4 mr-2" />
-            New Guest
+            <span className="sm:inline">New Guest</span>
           </Button>
           <Button 
             variant="secondary" 
-            className="bg-gradient-to-r from-orange-400 to-pink-500 text-white hover:from-orange-500 hover:to-pink-600 shadow-lg"
+            className="w-full sm:w-auto bg-gradient-to-r from-orange-400 to-pink-500 text-white hover:from-orange-500 hover:to-pink-600 shadow-lg"
             onClick={() => {
+              // Quick sale for walk-in customer - one drink purchase
               setSelectedGuest({
                 id: "walk-in-" + Date.now(),
                 name: "Walk-in Customer",
@@ -134,74 +216,75 @@ export default function UnifiedDashboard() {
               setShowCheckoutModal(true)
             }}
           >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Quick Sale
+            <ShoppingCart className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="sm:inline">Quick Sale</span>
           </Button>
           <Button 
             variant="secondary" 
-            className="bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 text-white hover:from-purple-600 hover:via-pink-600 hover:to-yellow-500 shadow-lg"
+            className="w-full sm:w-auto bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 text-white hover:from-purple-600 hover:via-pink-600 hover:to-yellow-500 shadow-lg"
             onClick={() => console.log('Group checkout feature coming soon')}
           >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Group Checkout
+            <Users className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Group</span>
+            <span className="sm:hidden">Group Checkout</span>
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-4">
+      {/* Stats Cards - 2x2 on mobile, 1x4 on desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+        <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-3 md:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/60 text-sm">Today&apos;s Bookings</p>
-              <p className="text-2xl font-light text-white">{bookings.length}</p>
+              <p className="text-white/60 text-xs md:text-sm">Bookings</p>
+              <p className="text-xl md:text-2xl font-light text-white">{bookings.length}</p>
             </div>
-            <Calendar className="w-8 h-8 text-yellow-400" />
+            <Calendar className="w-6 h-6 md:w-8 md:h-8 text-yellow-400" />
           </div>
         </Card>
         
-        <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-4">
+        <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-3 md:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/60 text-sm">Active Now</p>
-              <p className="text-2xl font-light text-white">
+              <p className="text-white/60 text-xs md:text-sm">Active</p>
+              <p className="text-xl md:text-2xl font-light text-white">
                 {bookings.filter(b => b.status === "active").length}
               </p>
             </div>
-            <Users className="w-8 h-8 text-emerald-400" />
+            <Users className="w-6 h-6 md:w-8 md:h-8 text-emerald-400" />
           </div>
         </Card>
         
-        <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-4">
+        <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-3 md:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/60 text-sm">Revenue</p>
-              <p className="text-2xl font-light text-white">2,450 AED</p>
+              <p className="text-white/60 text-xs md:text-sm">Revenue</p>
+              <p className="text-xl md:text-2xl font-light text-white">2.4k</p>
             </div>
-            <TrendingUp className="w-8 h-8 text-orange-400" />
+            <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-orange-400" />
           </div>
         </Card>
         
-        <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-4">
+        <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-3 md:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/60 text-sm">Stock Alert</p>
-              <p className="text-2xl font-light text-white">3 Low</p>
+              <p className="text-white/60 text-xs md:text-sm">Low Stock</p>
+              <p className="text-xl md:text-2xl font-light text-white">{inventory.filter(i => i.quantity <= 5).length}</p>
             </div>
-            <Package className="w-8 h-8 text-pink-400" />
+            <Package className="w-6 h-6 md:w-8 md:h-8 text-pink-400" />
           </div>
         </Card>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Bookings Table */}
-        <div className="lg:col-span-2">
+      {/* Main Content - Stack on mobile */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
+        {/* Bookings Table - Full width on mobile/tablet */}
+        <div className="xl:col-span-2 order-2 xl:order-1">
           <Card className="bg-white/10 backdrop-blur-xl border-white/20">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-light text-white">Today&apos;s Schedule</h2>
-                <div className="flex gap-2">
+            <div className="p-4 md:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <h2 className="text-lg md:text-xl font-light text-white">Today&apos;s Schedule</h2>
+                <div className="flex gap-1 sm:gap-2 overflow-x-auto">
                   {(['all', 'arrived', 'active', 'complete'] as ViewMode[]).map((mode) => (
                     <Button
                       key={mode}
@@ -219,7 +302,9 @@ export default function UnifiedDashboard() {
                 </div>
               </div>
               
-              <Table>
+              {/* Mobile-responsive table */}
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow className="border-white/10">
                     <TableHead className="text-white/60">Time</TableHead>
@@ -273,21 +358,53 @@ export default function UnifiedDashboard() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           </Card>
         </div>
 
-        {/* Service Rooms */}
-        <div>
+        {/* Sidebar - Live Inventory & Room Status */}
+        <div className="order-1 xl:order-2 space-y-4">
+          {/* Live Inventory Card */}
           <Card className="bg-white/10 backdrop-blur-xl border-white/20">
-            <div className="p-6">
+            <div className="p-4 md:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-light text-white">Service Rooms</h3>
-                <Badge className="bg-gradient-to-r from-emerald-400/30 to-green-400/30 text-emerald-200 border-emerald-400/50">
-                  {rooms.filter(r => r.status === 'available').length} available
-                </Badge>
+                <h2 className="text-lg md:text-xl font-light text-white">Live Inventory</h2>
+                <Package className="w-5 h-5 text-pink-400" />
               </div>
-              
+              <div className="space-y-3">
+                {inventory.length > 0 ? (
+                  inventory.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-white text-sm">{item.products?.name}</p>
+                        <p className="text-white/40 text-xs">{item.products?.category}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-medium ${
+                          item.quantity <= 5 ? 'text-red-400' : 
+                          item.quantity <= 10 ? 'text-yellow-400' : 
+                          'text-emerald-400'
+                        }`}>
+                          {item.quantity} left
+                        </p>
+                        {item.quantity <= 5 && (
+                          <p className="text-red-400/60 text-xs">Low stock</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-white/40 text-sm">Loading inventory...</p>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* Room Status Card */}
+          <Card className="bg-white/10 backdrop-blur-xl border-white/20">
+            <div className="p-4 md:p-6">
+              <h2 className="text-lg md:text-xl font-light text-white mb-4">Room Status</h2>
               <div className="space-y-3">
                 {rooms.map((room) => (
                   <div key={room.id} className="p-3 rounded-lg bg-gradient-to-br from-white/10 to-white/5 border border-white/20 shadow-lg">

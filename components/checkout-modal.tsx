@@ -1,13 +1,30 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   X, ShoppingCart, CreditCard, Mail, Phone, User,
-  Check, ChevronRight, Droplets,
+  Check, ChevronRight, Droplets, Trash2,
   Clock, MapPin, Sparkles, Download, Send,
   Receipt, MessageSquare, Banknote
 } from "lucide-react"
+import { createClient } from '@/lib/supabase/client'
+
+interface CartItem {
+  id: string
+  product_name: string
+  quantity: number
+  price: number
+  ai_recommendation?: {
+    hydration_pairing?: string
+    timing?: string
+    benefits?: string
+  }
+  booking_metadata?: {
+    time?: string
+    room?: string
+  }
+}
 
 interface CheckoutModalProps {
   isOpen: boolean
@@ -37,6 +54,8 @@ interface CheckoutModalProps {
     name: string
     email?: string
     phone?: string
+    cart?: any[]
+    recommendations?: any[]
   }
   onComplete?: (data: unknown) => void
 }
@@ -55,6 +74,26 @@ export default function CheckoutModal({
   const [phone, setPhone] = useState(guestData?.phone || "")
   const [receiptMethod, setReceiptMethod] = useState<"email" | "print" | "both">("email")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  const supabase = createClient()
+
+  useEffect(() => {
+    if (guestData?.cart && guestData.cart.length > 0) {
+      // Load cart items from guest data
+      setCartItems(guestData.cart as CartItem[])
+    }
+  }, [guestData])
+
+  const removeItem = async (itemId: string) => {
+    // Remove from database
+    await supabase
+      .from('cart_items')
+      .delete()
+      .eq('id', itemId)
+    
+    // Update local state
+    setCartItems(prev => prev.filter(item => item.id !== itemId))
+  }
   
   // Default data if not provided
   const session = sessionData || {
@@ -189,8 +228,77 @@ export default function CheckoutModal({
                       </div>
                     </div>
 
-                    {/* Hydration Plan Summary (if exists) */}
-                    {plan.items.length > 0 && (
+                    {/* Cart Items with AI Recommendations */}
+                    {cartItems.length > 0 && (
+                      <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-xl rounded-2xl p-6 border border-purple-400/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Droplets className="w-5 h-5 text-blue-400" />
+                            <h3 className="text-xl text-white">Cart Items & AI Recommendations</h3>
+                          </div>
+                          <span className="text-sm text-white/60 bg-white/10 px-3 py-1 rounded-full">
+                            {cartItems.length} items
+                          </span>
+                        </div>
+                        
+                        <div className="space-y-3 mb-4">
+                          {cartItems.map((item) => (
+                            <div key={item.id} className="bg-white/5 rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xl">💧</span>
+                                  <div>
+                                    <p className="text-white font-medium">{item.product_name}</p>
+                                    <p className="text-white/60 text-sm">Qty: {item.quantity} • {item.price} DHS each</p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => removeItem(item.id)}
+                                  className="p-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4 text-red-400" />
+                                </button>
+                              </div>
+                              
+                              {/* AI Recommendation Display */}
+                              {item.ai_recommendation && (
+                                <div className="mt-3 p-3 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 rounded-lg border border-cyan-400/20">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                                    <span className="text-sm font-medium text-cyan-400">AI Recommendation</span>
+                                  </div>
+                                  {item.ai_recommendation.hydration_pairing && (
+                                    <p className="text-white/80 text-sm mb-1">
+                                      <span className="text-white/60">Pairing:</span> {item.ai_recommendation.hydration_pairing}
+                                    </p>
+                                  )}
+                                  {item.ai_recommendation.timing && (
+                                    <p className="text-white/80 text-sm mb-1">
+                                      <span className="text-white/60">Best timing:</span> {item.ai_recommendation.timing}
+                                    </p>
+                                  )}
+                                  {item.ai_recommendation.benefits && (
+                                    <p className="text-white/80 text-sm">
+                                      <span className="text-white/60">Benefits:</span> {item.ai_recommendation.benefits}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="flex justify-between pt-3 border-t border-white/10">
+                          <span className="text-white/60">Subtotal</span>
+                          <span className="text-white font-medium">
+                            {cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)} DHS
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Original Hydration Plan Summary (if exists and no cart items) */}
+                    {plan.items.length > 0 && cartItems.length === 0 && (
                       <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 backdrop-blur-xl rounded-2xl p-6 border border-purple-400/20">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
