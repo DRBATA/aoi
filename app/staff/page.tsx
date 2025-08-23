@@ -4,7 +4,7 @@ import { useState } from "react"
 import ShaderBackground from "@/components/shader-background"
 import { motion } from "framer-motion"
 import { Lock, User, Eye, EyeOff } from "lucide-react"
-import { signInStaff } from "@/lib/supabase"
+import { createClient } from "@/lib/supabase/client"
 
 export default function StaffLoginPage() {
   const [formData, setFormData] = useState({
@@ -21,13 +21,31 @@ export default function StaffLoginPage() {
     setError('')
     
     try {
-      const result = await signInStaff(formData.username, formData.password)
+      const supabase = createClient()
       
-      if (result.success) {
-        // Redirect to staff dashboard
-        window.location.href = '/udash'
-      } else {
-        setError(result.error || 'Login failed')
+      // Sign in with email (username is email in our system)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.username.includes('@') ? formData.username : `${formData.username}@artofimplosion.com`,
+        password: formData.password
+      })
+      
+      if (error) {
+        setError(error.message)
+      } else if (data.user) {
+        // Check if user is staff
+        const { data: staffProfile } = await supabase
+          .from('staff_profiles')
+          .select('*')
+          .eq('auth_id', data.user.id)
+          .single()
+        
+        if (staffProfile) {
+          // Redirect to staff dashboard
+          window.location.href = '/udash'
+        } else {
+          setError('Access denied: Not a staff member')
+          await supabase.auth.signOut()
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred')
