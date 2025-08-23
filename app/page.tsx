@@ -4,12 +4,13 @@ import { useState } from "react"
 import ShaderBackground from "@/components/shader-background"
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import { motion } from "framer-motion"
-import { ChevronDown, Sparkles, Zap, Brain, Clock, Menu, X } from "lucide-react"
+import { ChevronDown, Sparkles, Zap, Brain, Clock, Menu, X, Award, Users, Globe, Lightbulb } from "lucide-react"
 
 export default function LandingPage() {
   const [, setSelectedExperience] = useState<string | null>(null)
   const [selectedVenue, setSelectedVenue] = useState("dubai")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('science')
 
   const experiences = [
     {
@@ -17,9 +18,27 @@ export default function LandingPage() {
       name: "AOI AIR",
       description: "Standing light & sound shower with 10 LED panels for movement-based release",
       icon: "✨",
-      duration: "45 min",
+      duration: "20 min",
       benefits: ["Energy boost", "Mental clarity", "Posture alignment"],
       color: "from-purple-400 to-pink-400"
+    },
+    {
+      id: "aoi-air-pro",
+      name: "AOI AIR PRO",
+      description: "Enhanced standing experience with premium light & sound protocols",
+      icon: "⭐",
+      duration: "20 min",
+      benefits: ["Peak performance", "Advanced healing", "Optimal alignment"],
+      color: "from-purple-500 to-pink-500"
+    },
+    {
+      id: "aoi-air-extended",
+      name: "AOI AIR Extended",
+      description: "Extended standing session for deeper transformation",
+      icon: "✨",
+      duration: "50 min",
+      benefits: ["Deep transformation", "Extended healing", "Complete alignment"],
+      color: "from-purple-400 via-pink-400 to-cyan-400"
     },
     {
       id: "aoi-bed",
@@ -40,31 +59,13 @@ export default function LandingPage() {
       color: "from-green-400 to-emerald-400"
     },
     {
-      id: "aoi-heat",
-      name: "AOI HEAT",
-      description: "Detoxifying sauna experience with light therapy",
-      icon: "🔥",
+      id: "aoi-float",
+      name: "AOI FLOAT",
+      description: "30-minute flotation tank for deep relaxation and toxin expulsion",
+      icon: "🌊",
       duration: "30 min",
-      benefits: ["Detox", "Circulation", "Skin health"],
-      color: "from-orange-400 to-red-400"
-    },
-    {
-      id: "aoi-ice",
-      name: "AOI ICE",
-      description: "Invigorating cold plunge for recovery and resilience",
-      icon: "❄️",
-      duration: "15 min",
-      benefits: ["Recovery", "Immunity", "Mental strength"],
-      color: "from-cyan-400 to-blue-500"
-    },
-    {
-      id: "detox-trinity",
-      name: "Detox Trinity Cycle",
-      description: "Ultimate detoxification journey combining heat, cold, and light",
-      icon: "♾️",
-      duration: "90 min",
-      benefits: ["Complete detox", "Full reset", "Peak performance"],
-      color: "from-purple-500 via-pink-500 to-orange-500"
+      benefits: ["Deep relaxation", "Detoxification", "Muscle recovery"],
+      color: "from-cyan-400 to-blue-400"
     }
   ]
 
@@ -254,25 +255,142 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          {/* Tab Navigation */}
+          <div className="flex flex-wrap justify-center gap-2 mb-12">
             {[
-              { icon: <Sparkles className="w-8 h-8" />, title: "528 Hz Frequency", description: "The love frequency that resonates with DNA repair and transformation" },
-              { icon: <Brain className="w-8 h-8" />, title: "Biophotonic Field", description: "Light patterns targeting energetic pathways for cellular communication" },
-              { icon: <Zap className="w-8 h-8" />, title: "Synchronized Delivery", description: "Light and sound work in harmony for maximum cellular absorption" }
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.2 }}
-                viewport={{ once: true }}
-                className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:bg-white/10 transition-all"
+              { id: 'science', label: 'The Science', icon: <Brain className="w-4 h-4" /> },
+              { id: 'technology', label: 'Technology', icon: <Zap className="w-4 h-4" /> },
+              { id: 'benefits', label: 'Benefits', icon: <Award className="w-4 h-4" /> },
+              { id: 'founder', label: 'Founder', icon: <Users className="w-4 h-4" /> }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
               >
-                <div className="text-purple-400 mb-4">{item.icon}</div>
-                <h3 className="text-xl font-medium text-white mb-3">{item.title}</h3>
-                <p className="text-white/60">{item.description}</p>
-              </motion.div>
+                {tab.icon}
+                {tab.label}
+              </button>
             ))}
+          </div>
+
+          {/* Tab Content */}
+          <div className="max-w-4xl mx-auto">
+            {activeTab === 'science' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid md:grid-cols-3 gap-6"
+              >
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <Sparkles className="w-8 h-8 text-purple-400 mb-4" />
+                  <h3 className="text-lg font-medium text-white mb-3">528 Hz Frequency</h3>
+                  <p className="text-white/60 text-sm">The love frequency that resonates with DNA repair and transformation</p>
+                </div>
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <Brain className="w-8 h-8 text-cyan-400 mb-4" />
+                  <h3 className="text-lg font-medium text-white mb-3">Biophotonic Field</h3>
+                  <p className="text-white/60 text-sm">Light patterns targeting energetic pathways for cellular communication</p>
+                </div>
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <Zap className="w-8 h-8 text-pink-400 mb-4" />
+                  <h3 className="text-lg font-medium text-white mb-3">360° Cell Rejuvenation</h3>
+                  <p className="text-white/60 text-sm">Synchronized sound and light frequencies for maximum cellular absorption</p>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'technology' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <h3 className="text-xl font-medium text-white mb-4">AOI AIR - Light & Sound Shower</h3>
+                  <p className="text-white/60 mb-4">Standing device with 10 LED panels for movement-based release. Bodies naturally gravitate towards bodily expression, enabling release of mental and emotional patterns.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">10 LED Panels</span>
+                    <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Interactive Release</span>
+                    <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Movement Based</span>
+                  </div>
+                </div>
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <h3 className="text-xl font-medium text-white mb-4">AOI BED - Light & Sound Bed</h3>
+                  <p className="text-white/60 mb-4">Comfortable relaxation experience like a solarium. Subwoofer installed on lower glass surface induces vibrations throughout the user's entire body for energy retention.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-cyan-500/20 rounded-full text-xs text-cyan-300">Full Body Vibration</span>
+                    <span className="px-3 py-1 bg-cyan-500/20 rounded-full text-xs text-cyan-300">Energy Retention</span>
+                    <span className="px-3 py-1 bg-cyan-500/20 rounded-full text-xs text-cyan-300">Solarium Style</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'benefits' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <Award className="w-8 h-8 text-yellow-400 mb-4" />
+                  <h3 className="text-xl font-medium text-white mb-4">Nobel Prize Science</h3>
+                  <p className="text-white/60 mb-4">Low Level Light Therapy (LLLT) - Nobel Prize 1903 Niels Ryberg Finsen for treating diseases with concentrated light. Over 4,000 scientific studies since 1967.</p>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10">
+                    <h4 className="text-lg font-medium text-white mb-2">Mental Health</h4>
+                    <p className="text-white/60 text-sm">Treats depression, anxiety, PTSD, substance abuse, traumatic brain injury</p>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10">
+                    <h4 className="text-lg font-medium text-white mb-2">Brain Function</h4>
+                    <p className="text-white/60 text-sm">Boosts brain function, improves mental health, enhances cognitive performance</p>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10">
+                    <h4 className="text-lg font-medium text-white mb-2">Physical Recovery</h4>
+                    <p className="text-white/60 text-sm">Enhanced muscle recovery, improved circulation, cellular rejuvenation</p>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10">
+                    <h4 className="text-lg font-medium text-white mb-2">Overall Wellness</h4>
+                    <p className="text-white/60 text-sm">Stress relief, improved sleep, enhanced mood, increased energy</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'founder' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10"
+              >
+                <div className="flex flex-col md:flex-row gap-6 items-center">
+                  <div className="w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                    <Users className="w-16 h-16 text-white" />
+                  </div>
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="text-2xl font-medium text-white mb-2">Johny Dar</h3>
+                    <p className="text-purple-400 mb-4">Founder & Creator of AOI</p>
+                    <p className="text-white/60 mb-4">
+                      Multi-talented artist, designer, musician, philanthropist, and inventor. 
+                      Fashion designer since 1999, launched Johny Wonder label. 
+                      Driven to chase dreams and passionate about realization.
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Artist</span>
+                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Designer</span>
+                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Inventor</span>
+                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Philanthropist</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
       </section>
