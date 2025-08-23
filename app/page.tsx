@@ -321,7 +321,7 @@ export default function LandingPage() {
                 </div>
                 <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
                   <h3 className="text-xl font-medium text-white mb-4">AOI BED - Light & Sound Bed</h3>
-                  <p className="text-white/60 mb-4">Comfortable relaxation experience like a solarium. Subwoofer installed on lower glass surface induces vibrations throughout the user's entire body for energy retention.</p>
+                  <p className="text-white/60 mb-4">Comfortable relaxation experience like a solarium. Subwoofer installed on lower glass surface induces vibrations throughout the user&apos;s entire body for energy retention.</p>
                   <div className="flex flex-wrap gap-2">
                     <span className="px-3 py-1 bg-cyan-500/20 rounded-full text-xs text-cyan-300">Full Body Vibration</span>
                     <span className="px-3 py-1 bg-cyan-500/20 rounded-full text-xs text-cyan-300">Energy Retention</span>
