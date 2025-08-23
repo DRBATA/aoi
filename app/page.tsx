@@ -4,7 +4,7 @@ import { useState } from "react"
 import ShaderBackground from "@/components/shader-background"
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import { motion } from "framer-motion"
-import { ChevronDown, Sparkles, Zap, Brain, Clock, Menu, X, Award, Users, Globe, Lightbulb } from "lucide-react"
+import { ChevronDown, Sparkles, Zap, Brain, Clock, Menu, X, Award, Users } from "lucide-react"
 
 export default function LandingPage() {
   const [, setSelectedExperience] = useState<string | null>(null)
