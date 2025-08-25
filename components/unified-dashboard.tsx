@@ -57,7 +57,7 @@ export default function UnifiedDashboard() {
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [inventory, setInventory] = useState<Array<{id: string, quantity: number, products: {name: string, category: string}}>>([])
-  const [experiences, setExperiences] = useState<Array<{id: string, name: string, price: number, duration_minutes: number, stripe_price_id: string}>>([])
+  const [experiences] = useState<Array<{id: string, name: string, price: number, duration_minutes: number, stripe_price_id: string}>>([]);
   const [currentVenue, setCurrentVenue] = useState<{
     id?: string;
     name?: string;
@@ -172,7 +172,7 @@ export default function UnifiedDashboard() {
               max_capacity: item.max_capacity
             };
           })
-        setExperiences(availableExperiences)
+        // setExperiences(availableExperiences) - experiences not used in component
       }
     }
 

@@ -25,6 +25,9 @@ export default function LandingPage() {
   const [aiMessages, setAiMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
   const [userInput, setUserInput] = useState("")
   const [isAiThinking, setIsAiThinking] = useState(false)
+  const [activeBookingMode, setActiveBookingMode] = useState<'quick_order' | 'profile_build'>('quick_order')
+  const [userMode, setUserMode] = useState<'anonymous' | 'authenticated'>('anonymous')
+  const [showEmailCapture, setShowEmailCapture] = useState(false)
   const supabase = createClient()
 
   const experiences = [
@@ -105,12 +108,15 @@ export default function LandingPage() {
       if (data) {
         const experiences = data
           .filter(item => item.experiences)
-          .map(item => ({
-            id: item.experiences.id,
-            name: item.experiences.name,
-            price: parseFloat(item.experiences.price),
-            duration_minutes: item.experiences.duration_minutes
-          }))
+          .map(item => {
+            const exp = item.experiences as any;
+            return {
+              id: exp.id,
+              name: exp.name,
+              price: parseFloat(exp.price),
+              duration_minutes: exp.duration_minutes
+            };
+          })
         setRealExperiences(experiences)
       }
     }
@@ -207,7 +213,7 @@ export default function LandingPage() {
     } else {
       setAvailableTimeSlots([])
     }
-  }, [bookingDate, selectedBookingExperience, realExperiences])
+  }, [bookingDate, selectedBookingExperience, realExperiences, generateAvailableSlots])
 
   // Handle booking form submission
   const handleBookingSubmit = async (e: React.FormEvent) => {
@@ -323,7 +329,8 @@ Let's start with something simple - what's drawing you to AOI today?`
           setBookingTime(aiResponse.recommendations.time)
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error('AI chat error:', error)
       setAiMessages(prev => [...prev, {
         role: 'assistant',
         content: "I'm having trouble connecting right now. Let me help you manually select the perfect experience for your journey."
@@ -751,17 +758,49 @@ Let's start with something simple - what's drawing you to AOI today?`
               </div>
             </div>
 
+            {/* Booking Mode Tabs */}
+            <div className="mb-8">
+              <div className="flex bg-white/5 rounded-xl p-1 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setActiveBookingMode('quick_order')}
+                  className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
+                    activeBookingMode === 'quick_order'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                      : 'text-white/60 hover:text-white/80'
+                  }`}
+                >
+                  Order at Venue
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveBookingMode('profile_build')}
+                  className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
+                    activeBookingMode === 'profile_build'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                      : 'text-white/60 hover:text-white/80'
+                  }`}
+                >
+                  Build Profile for Recommendations
+                </button>
+              </div>
+            </div>
+
             <form onSubmit={handleBookingSubmit}>
               {/* Experience Selector */}
               <div className="mb-8">
-                <label className="text-white/70 text-sm mb-3 block">Select Experience</label>
+                <label className="text-white/70 text-sm mb-3 block">
+                  {activeBookingMode === 'quick_order' ? 'Select Experience' : 'Initial Experience (we\'ll recommend more)'}
+                </label>
                 <select 
                   value={selectedBookingExperience}
                   onChange={(e) => setSelectedBookingExperience(e.target.value)}
                   className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white appearance-none cursor-pointer"
                   required
                 >
-                  <option value="">Choose an experience...</option>
+                  <option value="">
+                    {activeBookingMode === 'quick_order' ? 'Choose an experience...' : 'Start with any experience...'}
+                  </option>
                   {realExperiences.map((exp) => (
                     <option key={exp.id} value={exp.id}>
                       {exp.name} - {exp.duration_minutes}min - AED {exp.price}
@@ -814,34 +853,114 @@ Let's start with something simple - what's drawing you to AOI today?`
                 </div>
               </div>
 
-              {/* Contact Info */}
-              <div className="grid md:grid-cols-2 gap-4 mb-8">
-                <input 
-                  placeholder="Your Name" 
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
-                  required
-                />
-                <input 
-                  placeholder="Email" 
-                  type="email" 
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
-                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
-                />
-              </div>
+              {/* User Mode Selection */}
+              {activeBookingMode === 'quick_order' && (
+                <div className="mb-6">
+                  <div className="flex bg-white/5 rounded-xl p-1 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setUserMode('anonymous')}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                        userMode === 'anonymous'
+                          ? 'bg-white/10 text-white'
+                          : 'text-white/50 hover:text-white/70'
+                      }`}
+                    >
+                      Continue as Guest
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUserMode('authenticated')}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
+                        userMode === 'authenticated'
+                          ? 'bg-white/10 text-white'
+                          : 'text-white/50 hover:text-white/70'
+                      }`}
+                    >
+                      Save My Preferences
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Contact Info - Conditional based on mode */}
+              {userMode === 'authenticated' || activeBookingMode === 'profile_build' ? (
+                <div className="grid md:grid-cols-2 gap-4 mb-8">
+                  <input 
+                    placeholder="Your Name" 
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
+                    required
+                  />
+                  <input 
+                    placeholder="Email" 
+                    type="email" 
+                    value={guestEmail}
+                    onChange={(e) => setGuestEmail(e.target.value)}
+                    className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
+                    required={activeBookingMode === 'profile_build'}
+                  />
+                </div>
+              ) : (
+                <div className="mb-8">
+                  <input 
+                    placeholder="First name or nickname (optional)" 
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
+                  />
+                  <p className="text-white/40 text-xs mt-2">
+                    Anonymous booking - no email required. Payment at venue.
+                  </p>
+                </div>
+              )}
 
               <button 
                 type="submit"
                 className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:scale-[1.02] transition-transform"
               >
-                Reserve Your Session
+                {userMode === 'anonymous' && activeBookingMode === 'quick_order' 
+                  ? 'Reserve Anonymously' 
+                  : activeBookingMode === 'profile_build'
+                  ? 'Start Building My Profile'
+                  : 'Reserve Your Session'
+                }
               </button>
+              
+              {/* Optional email capture for anonymous users */}
+              {userMode === 'anonymous' && activeBookingMode === 'quick_order' && (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailCapture(!showEmailCapture)}
+                    className="text-white/60 text-sm hover:text-white/80 transition-colors"
+                  >
+                    {showEmailCapture ? '↑ Hide' : '↓ Want session reminders?'}
+                  </button>
+                  {showEmailCapture && (
+                    <div className="mt-3">
+                      <input 
+                        placeholder="Email for booking confirmation (optional)" 
+                        type="email" 
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 text-sm" 
+                      />
+                      <p className="text-white/30 text-xs mt-1">
+                        We'll only send booking confirmation - no marketing emails
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </form>
 
             <p className="text-white/40 text-xs text-center mt-4">
-              Payment is collected at the venue after your session
+              {userMode === 'anonymous' 
+                ? 'Anonymous booking - payment at venue, no data stored'
+                : 'Payment is collected at the venue after your session'
+              }
             </p>
           </motion.div>
         </div>
