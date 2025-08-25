@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { 
   Users, Calendar, Package, 
   Plus, ShoppingCart,
-  Home, TrendingUp, Sparkles
+  Home, TrendingUp
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -42,14 +42,6 @@ export interface Booking {
   room?: string
 }
 
-// Mock data
-const mockBookings: Booking[] = [
-  { id: "1", name: "Sarah Chen", time: "2:30 PM", service: "Sauna + Ice Bath", status: "waiting", assignedRoom: "Sauna 1", duration: 60, phone: "+971501234567", email: "sarah@email.com", cart: [], recommendations: [], guestProfile: { weight: 65, gender: 'female', activityLevel: 'moderate', dietStyle: 'balanced' }, venueId: 'aoi_wellness_hub', experience: "Sauna + Ice Bath", room: "Sauna 1" },
-  { id: "2", name: "Ahmed Al-Rashid", time: "3:00 PM", service: "Float Tank", status: "checked-in", assignedRoom: "Float 1", duration: 90, phone: "+971509876543", email: "ahmed@email.com", cart: [], recommendations: [], guestProfile: { weight: 78, gender: 'male', activityLevel: 'high', dietStyle: 'keto', lastVisit: '2024-01-15T10:00:00Z' }, venueId: 'aoi_wellness_hub', experience: "Float Tank", room: "Float 1" },
-  { id: "3", name: "Emma Wilson", time: "3:45 PM", service: "Detox Trinity", status: "active", assignedRoom: "Suite 2", duration: 120, phone: "+971507654321", email: "emma@email.com", cart: [], recommendations: [], guestProfile: { weight: 58, gender: 'female', activityLevel: 'low', dietStyle: 'vegan' }, venueId: 'aoi_wellness_hub', experience: "Detox Trinity", room: "Suite 2" },
-  { id: "4", name: "James Taylor", time: "3:30 PM", service: "AOI HEAT", status: "waiting", phone: "+971 50 456 7890", cart: [], recommendations: [], experience: "AOI HEAT" },
-  { id: "5", name: "Lisa Anderson", time: "4:00 PM", service: "AOI ICE", status: "completed", phone: "+971 50 567 8901", assignedRoom: "Suite 1", cart: [], recommendations: [], experience: "AOI ICE", room: "Suite 1" },
-]
 
 const serviceRooms = [
   { id: 'suite1', name: 'Suite 1', status: 'occupied' as const, guest: 'Emma Wilson', service: 'Detox Trinity', timeRemaining: 45 },
@@ -64,8 +56,32 @@ export default function UnifiedDashboard() {
   const [selectedGuest, setSelectedGuest] = useState<Booking | null>(null)
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
-  const [inventory, setInventory] = useState<any[]>([])
+  const [inventory, setInventory] = useState<Array<{id: string, quantity: number, products?: {name: string, category: string}}>>([])
+  const [currentVenue, setCurrentVenue] = useState<any>(null)
   const supabase = createClient()
+
+  // Fetch AOI venue data
+  useEffect(() => {
+    const fetchVenueData = async () => {
+      try {
+        const { data: venue } = await supabase
+          .from('venue')
+          .select('*')
+          .ilike('name', '%Art of Implosion%')
+          .single();
+        setCurrentVenue(venue);
+      } catch (error) {
+        console.error('Error fetching venue:', error);
+        // Fallback for AOI
+        setCurrentVenue({
+          name: "Art of Implosion x Johny Dar Experience",
+          address: "Dubai", 
+          opening_hours: "9:00 AM - 10:00 PM"
+        });
+      }
+    };
+    fetchVenueData();
+  }, [currentVenue?.id]);
 
   useEffect(() => {
     // Subscribe to real-time cart updates
@@ -91,19 +107,22 @@ export default function UnifiedDashboard() {
           recommendations: item.ai_recommendation ? [item.ai_recommendation] : [],
           venueId: item.venue_id
         }))
-        setBookings(formattedBookings as any)
+        setBookings(formattedBookings as Booking[])
       }
     }
 
-    // Fetch live inventory
+    // Fetch inventory data for AOI venue
     const fetchInventory = async () => {
+      if (!currentVenue?.id) return;
+      
       const { data } = await supabase
         .from('venue_stock')
         .select(`
-          *,
-          products!inner(*)
+          id,
+          quantity,
+          products(name, category)
         `)
-        .eq('venue_id', 'aoi_wellness_hub')
+        .eq('venue_id', currentVenue.id)
         .gt('quantity', 0)
         .order('quantity', { ascending: true })
         .limit(5)
@@ -114,7 +133,9 @@ export default function UnifiedDashboard() {
     }
 
     fetchBookings()
-    fetchInventory()
+    if (currentVenue?.id) {
+      fetchInventory()
+    }
 
     // Real-time subscriptions
     const bookingChannel = supabase
@@ -148,7 +169,7 @@ export default function UnifiedDashboard() {
       supabase.removeChannel(bookingChannel)
       supabase.removeChannel(inventoryChannel)
     }
-  }, [])
+  }, [supabase])
 
   const filteredBookings = bookings
 
@@ -184,8 +205,15 @@ export default function UnifiedDashboard() {
             <Home className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl md:text-2xl font-light text-white">AOI Wellness</h1>
-            <p className="text-white/60 text-sm">Front Desk</p>
+            <h1 className="text-xl md:text-2xl font-light text-white">
+              {currentVenue?.name || "Art of Implosion"}
+            </h1>
+            <p className="text-white/60 text-sm">
+              {currentVenue?.opening_hours || "Loading hours..."}
+            </p>
+            {currentVenue?.address && (
+              <p className="text-white/40 text-xs">{currentVenue.address}</p>
+            )}
           </div>
         </div>
         

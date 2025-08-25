@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from 'next/link'
 import ShaderBackground from "@/components/shader-background"
 import { motion } from "framer-motion"
-import { Instagram, MessageCircle, Mail, Phone, MapPin, Send } from "lucide-react"
+import { Instagram, MessageCircle, Mail, Phone, MapPin } from "lucide-react"
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({

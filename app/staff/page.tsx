@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from 'next/link'
 import ShaderBackground from "@/components/shader-background"
 import { motion } from "framer-motion"
 import { Lock, User, Eye, EyeOff } from "lucide-react"
@@ -47,7 +48,7 @@ export default function StaffLoginPage() {
           await supabase.auth.signOut()
         }
       }
-    } catch (err) {
+    } catch (error) {
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
@@ -151,9 +152,9 @@ export default function StaffLoginPage() {
             </form>
 
             <div className="mt-6 text-center">
-              <a href="/" className="text-white/60 hover:text-white/80 transition-colors text-sm">
+              <Link href="/" className="text-white/60 hover:text-white/80 transition-colors text-sm">
                 ← Back to Main Site
-              </a>
+              </Link>
             </div>
           </div>
 

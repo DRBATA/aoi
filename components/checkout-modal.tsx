@@ -54,8 +54,8 @@ interface CheckoutModalProps {
     name: string
     email?: string
     phone?: string
-    cart?: any[]
-    recommendations?: any[]
+    cart?: unknown[]
+    recommendations?: unknown[]
   }
   onComplete?: (data: unknown) => void
 }

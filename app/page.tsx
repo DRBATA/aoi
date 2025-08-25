@@ -2,9 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Heart, Shield, Activity } from 'lucide-react'
-import BookingWithAI from '@/components/booking-with-ai'
+import { motion } from 'framer-motion'
+import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 'lucide-react'
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 

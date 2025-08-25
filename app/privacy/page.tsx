@@ -1,5 +1,6 @@
 "use client"
 
+import Link from 'next/link'
 import ShaderBackground from "@/components/shader-background"
 import { motion } from "framer-motion"
 import { Shield, Eye, Lock, Database, UserCheck, Globe } from "lucide-react"
@@ -16,7 +17,7 @@ export default function PrivacyPolicyPage() {
                 AOI <span className="text-sm font-normal text-white/60">ART OF IMPLOSION</span>
               </div>
               <div className="hidden md:flex items-center space-x-8">
-                <a href="/" className="text-white/70 hover:text-white transition-colors">Home</a>
+                <Link href="/" className="text-white/70 hover:text-white transition-colors">Home</Link>
                 <a href="/technology" className="text-white/70 hover:text-white transition-colors">Technology</a>
                 <a href="/experiences" className="text-white/70 hover:text-white transition-colors">Experiences</a>
                 <a href="/book-session" className="text-white/70 hover:text-white transition-colors">Book Session</a>
