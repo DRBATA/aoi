@@ -1,7 +1,8 @@
 "use client"
 
 import ShaderBackground from "@/components/shader-background"
-import { motion } from "framer-motion"
+import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { FileText, AlertTriangle, Users, Calendar } from "lucide-react"
 
 export default function TermsOfServicePage() {
@@ -16,8 +17,8 @@ export default function TermsOfServicePage() {
                 AOI <span className="text-sm font-normal text-white/60">ART OF IMPLOSION</span>
               </div>
               <div className="hidden md:flex items-center space-x-8">
-                <a href="/" className="text-white/70 hover:text-white transition-colors">Home</a>
-                <a href="/contact" className="text-white/70 hover:text-white transition-colors">Contact</a>
+                <Link href="/" className="text-white/70 hover:text-white transition-colors">Home</Link>
+                <Link href="/contact" className="text-white/70 hover:text-white transition-colors">Contact</Link>
               </div>
             </div>
           </div>

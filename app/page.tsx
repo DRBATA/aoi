@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
-import ShaderBackground from "@/components/shader-background"
+import { useState } from 'react'
+import Link from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Heart, Shield, Activity } from 'lucide-react'
+import BookingWithAI from '@/components/booking-with-ai'
+import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
-import { motion } from "framer-motion"
-import { ChevronDown, Sparkles, Zap, Brain, Clock, Menu, X, Award, Users } from "lucide-react"
 
 export default function LandingPage() {
   const [, setSelectedExperience] = useState<string | null>(null)
@@ -87,18 +89,18 @@ export default function LandingPage() {
               <div className="text-xs text-white/60 tracking-widest">ART OF IMPLOSION</div>
             </div>
             <div className="hidden md:flex items-center gap-6">
-              <a href="#home" className="text-white/70 hover:text-white transition-colors">Home</a>
-              <a href="#how-it-works" className="text-white/70 hover:text-white transition-colors">Technology</a>
-              <a href="#experiences" className="text-white/70 hover:text-white transition-colors">Experiences</a>
-              <a href="#booking" className="text-white/70 hover:text-white transition-colors">Book Session</a>
-              <a href="#contact" className="text-white/70 hover:text-white transition-colors">Contact</a>
+              <Link href="#home" className="text-white/70 hover:text-white transition-colors">Home</Link>
+              <Link href="#how-it-works" className="text-white/70 hover:text-white transition-colors">Technology</Link>
+              <Link href="#experiences" className="text-white/70 hover:text-white transition-colors">Experiences</Link>
+              <Link href="#booking" className="text-white/70 hover:text-white transition-colors">Book Session</Link>
+              <Link href="#contact" className="text-white/70 hover:text-white transition-colors">Contact</Link>
             </div>
             
             {/* Desktop CTA */}
             <div className="hidden md:block">
-              <a href="#booking" className="px-6 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white text-sm hover:bg-white/20 transition-all">
+              <Link href="#booking" className="px-6 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white text-sm hover:bg-white/20 transition-all">
                 Book AOI Session
-              </a>
+              </Link>
             </div>
             
             {/* Mobile Menu Button */}
@@ -120,49 +122,49 @@ export default function LandingPage() {
             className="md:hidden absolute top-16 left-0 right-0 bg-black/95 backdrop-blur-xl border-b border-white/10 z-40"
           >
             <div className="px-4 py-6 space-y-4">
-              <a 
+              <Link 
                 href="#home" 
                 className="block text-white/70 hover:text-white transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Home
-              </a>
-              <a 
+              </Link>
+              <Link 
                 href="#how-it-works" 
                 className="block text-white/70 hover:text-white transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Technology
-              </a>
-              <a 
+              </Link>
+              <Link 
                 href="#experiences" 
                 className="block text-white/70 hover:text-white transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Experiences
-              </a>
-              <a 
+              </Link>
+              <Link 
                 href="#booking" 
                 className="block text-white/70 hover:text-white transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Book Session
-              </a>
-              <a 
+              </Link>
+              <Link 
                 href="#contact" 
                 className="block text-white/70 hover:text-white transition-colors py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Contact
-              </a>
+              </Link>
               <div className="border-t border-white/10 pt-4">
-                <a 
+                <Link 
                   href="/udash" 
                   className="block text-purple-400 hover:text-purple-300 transition-colors py-2 font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Staff Login
-                </a>
+                  Staff Dashboard
+                </Link>
               </div>
             </div>
           </motion.div>
@@ -215,12 +217,12 @@ export default function LandingPage() {
               transition={{ duration: 0.8, delay: 0.6 }}
               className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16"
             >
-              <a href="#booking" className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-white font-medium hover:scale-105 transition-transform shadow-2xl inline-block">
+              <Link href="#booking" className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full text-white font-medium hover:scale-105 transition-transform shadow-2xl inline-block">
                 Book Your Session
-              </a>
-              <a href="#how-it-works" className="px-8 py-4 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white font-medium hover:bg-white/20 transition-all inline-block">
+              </Link>
+              <Link href="#how-it-works" className="px-8 py-4 bg-white/10 backdrop-blur-lg border border-white/20 rounded-full text-white font-medium hover:bg-white/20 transition-all inline-block">
                 Learn More
-              </a>
+              </Link>
             </motion.div>
 
             <motion.div
@@ -536,9 +538,9 @@ export default function LandingPage() {
               <div className="text-white/40 text-sm">Art of Implosion © 2024</div>
             </div>
             <div className="flex gap-8">
-              <a href="#" className="text-white/60 hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="text-white/60 hover:text-white transition-colors">Terms</a>
-              <a href="#" className="text-white/60 hover:text-white transition-colors">Contact</a>
+              <Link href="/privacy" className="text-white/60 hover:text-white transition-colors">Privacy</Link>
+              <Link href="/terms" className="text-white/60 hover:text-white transition-colors">Terms</Link>
+              <Link href="/contact" className="text-white/60 hover:text-white transition-colors">Contact</Link>
             </div>
           </div>
         </div>

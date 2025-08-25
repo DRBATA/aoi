@@ -1,9 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import Link from 'next/link'
 import ShaderBackground from "@/components/shader-background"
 import { motion } from "framer-motion"
-import { Instagram, MessageCircle, Mail, Phone, MapPin } from "lucide-react"
+import { Instagram, MessageCircle, Mail, Phone, MapPin, Send } from "lucide-react"
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -36,11 +37,11 @@ export default function ContactPage() {
                 AOI <span className="text-sm font-normal text-white/60">ART OF IMPLOSION</span>
               </div>
               <div className="hidden md:flex items-center space-x-8">
-                <a href="/" className="text-white/70 hover:text-white transition-colors">Home</a>
-                <a href="/technology" className="text-white/70 hover:text-white transition-colors">Technology</a>
-                <a href="/experiences" className="text-white/70 hover:text-white transition-colors">Experiences</a>
-                <a href="/book-session" className="text-white/70 hover:text-white transition-colors">Book Session</a>
-                <a href="/contact" className="text-white font-medium">Contact</a>
+                <Link href="/" className="text-white/70 hover:text-white transition-colors">Home</Link>
+                <Link href="/technology" className="text-white/70 hover:text-white transition-colors">Technology</Link>
+                <Link href="/experiences" className="text-white/70 hover:text-white transition-colors">Experiences</Link>
+                <Link href="/book-session" className="text-white/70 hover:text-white transition-colors">Book Session</Link>
+                <Link href="/contact" className="text-white font-medium">Contact</Link>
               </div>
               <button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-full hover:from-purple-600 hover:to-pink-600 transition-all">
                 Book AOI Session
@@ -83,14 +84,13 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="text-white font-medium">DM Us Directly</h3>
-                    <a 
+                    <Link 
                       href="https://instagram.com/artofimplosion" 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-purple-300 hover:text-purple-200 transition-colors"
-                    >
-                      @artofimplosion
-                    </a>
+                      className="text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-2 mt-2"
+                    >  @artofimplosion
+                    </Link>
                   </div>
                 </div>
 
