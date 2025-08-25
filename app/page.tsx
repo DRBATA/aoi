@@ -1,17 +1,31 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 'lucide-react'
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
+import { createClient } from '@/lib/supabase/client'
 
 export default function LandingPage() {
   const [, setSelectedExperience] = useState<string | null>(null)
   const [selectedVenue, setSelectedVenue] = useState("dubai")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('science')
+  const [realExperiences, setRealExperiences] = useState<Array<{id: string, name: string, price: number, duration_minutes: number}>>([])
+  const [selectedBookingExperience, setSelectedBookingExperience] = useState("")
+  const [bookingDate, setBookingDate] = useState("")
+  const [bookingTime, setBookingTime] = useState("")
+  const [guestName, setGuestName] = useState("")
+  const [guestEmail, setGuestEmail] = useState("")
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [showAIChat, setShowAIChat] = useState(false)
+  const [aiMessages, setAiMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
+  const [userInput, setUserInput] = useState("")
+  const [isAiThinking, setIsAiThinking] = useState(false)
+  const supabase = createClient()
 
   const experiences = [
     {
@@ -76,6 +90,248 @@ export default function LandingPage() {
     { id: "ibiza", name: "Ibiza", location: "Coming Soon", address: "" },
     { id: "costa-rica", name: "Costa Rica", location: "Coming Soon", address: "" }
   ]
+
+  // Fetch real experiences from Supabase
+  useEffect(() => {
+    const fetchExperiences = async () => {
+      const { data } = await supabase
+        .from('venue_experiences')
+        .select(`
+          experiences(id, name, price, duration_minutes)
+        `)
+        .eq('venue_id', '20c2f440-9133-42ec-a8d6-6336e649ec4b') // AOI venue ID
+        .eq('is_available', true)
+      
+      if (data) {
+        const experiences = data
+          .filter(item => item.experiences)
+          .map(item => ({
+            id: item.experiences.id,
+            name: item.experiences.name,
+            price: parseFloat(item.experiences.price),
+            duration_minutes: item.experiences.duration_minutes
+          }))
+        setRealExperiences(experiences)
+      }
+    }
+    fetchExperiences()
+  }, [supabase])
+
+  // Generate available time slots based on existing bookings
+  const generateAvailableSlots = async (date: string, experienceId: string) => {
+    if (!date || !experienceId) return []
+    
+    setLoadingSlots(true)
+    
+    try {
+      // Get selected experience duration
+      const selectedExp = realExperiences.find(exp => exp.id === experienceId)
+      const duration = selectedExp?.duration_minutes || 30
+      
+      // Fetch existing bookings for the date and experience
+      const { data: existingBookings } = await supabase
+        .from('cart_items')
+        .select(`
+          booking_metadata,
+          booking_status
+        `)
+        .eq('item_type', 'booking')
+        .eq('item_id', experienceId)
+        .in('booking_status', ['pending', 'confirmed', 'checked-in', 'active'])
+      
+      // Extract booked time slots
+      const bookedSlots = existingBookings
+        ?.filter(booking => 
+          booking.booking_metadata?.date === date
+        )
+        .map(booking => ({
+          time: booking.booking_metadata.time,
+          duration: booking.booking_metadata.duration_minutes || 30
+        })) || []
+      
+      // Generate all possible 15-minute slots from 9 AM to 9 PM
+      const allSlots: string[] = []
+      for (let hour = 9; hour < 21; hour++) {
+        for (let minute = 0; minute < 60; minute += 15) {
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+          allSlots.push(timeString)
+        }
+      }
+      
+      // Filter out unavailable slots (with 10-minute buffer)
+      const availableSlots = allSlots.filter(slot => {
+        const [slotHour, slotMinute] = slot.split(':').map(Number)
+        const slotStart = slotHour * 60 + slotMinute
+        const slotEnd = slotStart + duration
+        
+        return !bookedSlots.some(booked => {
+          const [bookedHour, bookedMinute] = booked.time.split(':').map(Number)
+          const bookedStart = bookedHour * 60 + bookedMinute - 10 // 10-min buffer before
+          const bookedEnd = bookedStart + booked.duration + 20 // 10-min buffer after
+          
+          // Check if slot overlaps with booked time (including buffers)
+          return (slotStart < bookedEnd && slotEnd > bookedStart)
+        })
+      })
+      
+      // AI-powered time suggestions: prioritize optimal times
+      const suggestedSlots = availableSlots.sort((a, b) => {
+        const [aHour] = a.split(':').map(Number)
+        const [bHour] = b.split(':').map(Number)
+        
+        // Priority order: 10-12 AM (morning energy), 2-4 PM (afternoon clarity), 6-8 PM (evening wind-down)
+        const getTimePriority = (hour: number) => {
+          if (hour >= 10 && hour < 12) return 1 // Morning priority
+          if (hour >= 14 && hour < 16) return 2 // Afternoon priority  
+          if (hour >= 18 && hour < 20) return 3 // Evening priority
+          return 4 // Other times
+        }
+        
+        return getTimePriority(aHour) - getTimePriority(bHour)
+      })
+      
+      setAvailableTimeSlots(suggestedSlots)
+      return suggestedSlots
+    } catch (error) {
+      console.error('Error generating time slots:', error)
+      return []
+    } finally {
+      setLoadingSlots(false)
+    }
+  }
+
+  // Update available slots when date or experience changes
+  useEffect(() => {
+    if (bookingDate && selectedBookingExperience) {
+      generateAvailableSlots(bookingDate, selectedBookingExperience)
+    } else {
+      setAvailableTimeSlots([])
+    }
+  }, [bookingDate, selectedBookingExperience, realExperiences])
+
+  // Handle booking form submission
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!selectedBookingExperience || !bookingDate || !bookingTime || !guestName) {
+      alert('Please fill in all required fields')
+      return
+    }
+
+    try {
+      // Create a cart session for the booking
+      const sessionId = crypto.randomUUID()
+      
+      // Create cart header
+      const { data: cartHeader } = await supabase
+        .from('cart_headers')
+        .insert({
+          session_id: sessionId,
+          customer_name: guestName,
+          customer_email: guestEmail,
+          venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b'
+        })
+        .select()
+        .single()
+
+      if (cartHeader) {
+        // Find the selected experience
+        const selectedExp = realExperiences.find(exp => exp.id === selectedBookingExperience)
+        
+        // Create cart item with booking metadata
+        await supabase
+          .from('cart_items')
+          .insert({
+            cart_id: cartHeader.id,
+            item_id: selectedBookingExperience,
+            qty: 1,
+            item_type: 'booking',
+            booking_status: 'pending',
+            booking_metadata: {
+              date: bookingDate,
+              time: bookingTime,
+              duration_minutes: selectedExp?.duration_minutes,
+              experience_name: selectedExp?.name,
+              guest_name: guestName,
+              guest_email: guestEmail,
+              venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b'
+            }
+          })
+
+        alert('Booking request submitted! You will be redirected to complete payment.')
+        // TODO: Redirect to payment or confirmation page
+      }
+    } catch (error) {
+      console.error('Booking error:', error)
+      alert('There was an error processing your booking. Please try again.')
+    }
+  }
+
+  // AI Journey Planning Agent
+  const startAIJourney = () => {
+    setShowAIChat(true)
+    setAiMessages([{
+      role: 'assistant',
+      content: `Welcome to AOI! I'm your personal journey architect. 
+
+I'll help you craft the perfect transformation experience by understanding:
+🎯 **Your intentions** - What brings you here today?
+🧘 **Your current state** - How are you feeling right now?
+⚡ **Your desired outcome** - What would you like to take away?
+
+Let's start with something simple - what's drawing you to AOI today?`
+    }])
+  }
+
+  const sendAIMessage = async () => {
+    if (!userInput.trim()) return
+    
+    const newUserMessage = { role: 'user' as const, content: userInput }
+    setAiMessages(prev => [...prev, newUserMessage])
+    setUserInput("")
+    setIsAiThinking(true)
+
+    try {
+      // AI Journey Planning Logic
+      const response = await fetch('/api/ai-journey-planner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...aiMessages, newUserMessage],
+          availableExperiences: realExperiences,
+          availableSlots: availableTimeSlots,
+          userProfile: { name: guestName, email: guestEmail }
+        })
+      })
+
+      const aiResponse = await response.json()
+      
+      setAiMessages(prev => [...prev, {
+        role: 'assistant',
+        content: aiResponse.message
+      }])
+
+      // Auto-fill booking form if AI makes recommendations
+      if (aiResponse.recommendations) {
+        if (aiResponse.recommendations.experience) {
+          setSelectedBookingExperience(aiResponse.recommendations.experience)
+        }
+        if (aiResponse.recommendations.date) {
+          setBookingDate(aiResponse.recommendations.date)
+        }
+        if (aiResponse.recommendations.time) {
+          setBookingTime(aiResponse.recommendations.time)
+        }
+      }
+    } catch (error) {
+      setAiMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "I'm having trouble connecting right now. Let me help you manually select the perfect experience for your journey."
+      }])
+    } finally {
+      setIsAiThinking(false)
+    }
+  }
 
   return (
     <div className="relative bg-black">
@@ -463,21 +719,28 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-white/10"
           >
-            <h2 className="text-3xl md:text-4xl font-light text-white mb-8 text-center">
-              Book Your <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">AOI Session</span>
-            </h2>
-
-            {/* Venue Selector */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-light text-white">Reserve Your Transformation</h3>
+              <button
+                onClick={startAIJourney}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white text-sm hover:scale-105 transition-transform"
+              >
+                <Brain className="w-4 h-4" />
+                AI Journey Planner
+              </button>
+            </div>
+            
+            {/* Venue Selection */}
             <div className="mb-8">
               <label className="text-white/70 text-sm mb-3 block">Select Location</label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {venues.map((venue) => (
                   <button
                     key={venue.id}
                     onClick={() => setSelectedVenue(venue.id)}
                     className={`p-4 rounded-xl border transition-all ${
                       selectedVenue === venue.id
-                        ? "bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-400/50 text-white"
+                        ? "bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-400 text-white"
                         : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
                     }`}
                   >
@@ -488,38 +751,94 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Experience Selector */}
-            <div className="mb-8">
-              <label className="text-white/70 text-sm mb-3 block">Select Experience</label>
-              <select className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white appearance-none cursor-pointer">
-                <option value="">Choose an experience...</option>
-                {experiences.map((exp) => (
-                  <option key={exp.id} value={exp.id}>{exp.name} - {exp.duration}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Date & Time */}
-            <div className="grid md:grid-cols-2 gap-4 mb-8">
-              <div>
-                <label className="text-white/70 text-sm mb-2 block">Date</label>
-                <input type="date" className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white" />
+            <form onSubmit={handleBookingSubmit}>
+              {/* Experience Selector */}
+              <div className="mb-8">
+                <label className="text-white/70 text-sm mb-3 block">Select Experience</label>
+                <select 
+                  value={selectedBookingExperience}
+                  onChange={(e) => setSelectedBookingExperience(e.target.value)}
+                  className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white appearance-none cursor-pointer"
+                  required
+                >
+                  <option value="">Choose an experience...</option>
+                  {realExperiences.map((exp) => (
+                    <option key={exp.id} value={exp.id}>
+                      {exp.name} - {exp.duration_minutes}min - AED {exp.price}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div>
-                <label className="text-white/70 text-sm mb-2 block">Time</label>
-                <input type="time" className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white" />
+
+              {/* Date & Time */}
+              <div className="grid md:grid-cols-2 gap-4 mb-8">
+                <div>
+                  <label className="text-white/70 text-sm mb-2 block">Date</label>
+                  <input 
+                    type="date" 
+                    value={bookingDate}
+                    onChange={(e) => setBookingDate(e.target.value)}
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white" 
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div>
+                  <label className="text-white/70 text-sm mb-2 block">
+                    Available Times
+                    {loadingSlots && <span className="text-purple-400 ml-2">Loading...</span>}
+                  </label>
+                  {availableTimeSlots.length > 0 ? (
+                    <select
+                      value={bookingTime}
+                      onChange={(e) => setBookingTime(e.target.value)}
+                      className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white appearance-none cursor-pointer"
+                      required
+                    >
+                      <option value="">Select available time...</option>
+                      {availableTimeSlots.map((slot) => (
+                        <option key={slot} value={slot}>
+                          {slot}
+                        </option>
+                      ))}
+                    </select>
+                  ) : bookingDate && selectedBookingExperience && !loadingSlots ? (
+                    <div className="w-full p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm">
+                      No available slots for this date. Please select another date.
+                    </div>
+                  ) : (
+                    <div className="w-full p-4 bg-white/5 border border-white/10 rounded-xl text-white/50 text-sm">
+                      Select date and experience to see available times
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Contact Info */}
-            <div className="grid md:grid-cols-2 gap-4 mb-8">
-              <input placeholder="Your Name" className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" />
-              <input placeholder="Email" type="email" className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" />
-            </div>
+              {/* Contact Info */}
+              <div className="grid md:grid-cols-2 gap-4 mb-8">
+                <input 
+                  placeholder="Your Name" 
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
+                  required
+                />
+                <input 
+                  placeholder="Email" 
+                  type="email" 
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
+                />
+              </div>
 
-            <button className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:scale-[1.02] transition-transform">
-              Reserve Your Session
-            </button>
+              <button 
+                type="submit"
+                className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:scale-[1.02] transition-transform"
+              >
+                Reserve Your Session
+              </button>
+            </form>
 
             <p className="text-white/40 text-xs text-center mt-4">
               Payment is collected at the venue after your session
@@ -527,6 +846,91 @@ export default function LandingPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* AI Journey Chat Modal */}
+      {showAIChat && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-gradient-to-b from-purple-950/90 to-black/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl w-full max-w-2xl h-[600px] flex flex-col"
+          >
+            {/* Chat Header */}
+            <div className="flex items-center justify-between p-6 border-b border-purple-500/20">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <Brain className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-white font-medium">AI Journey Architect</h3>
+                  <p className="text-purple-300 text-sm">Crafting your perfect transformation</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAIChat(false)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {aiMessages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] p-4 rounded-2xl ${
+                      message.role === 'user'
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                        : 'bg-white/10 text-white border border-white/20'
+                    }`}
+                  >
+                    <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
+                  </div>
+                </div>
+              ))}
+              {isAiThinking && (
+                <div className="flex justify-start">
+                  <div className="bg-white/10 border border-white/20 rounded-2xl p-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                      </div>
+                      <span className="text-purple-300 text-sm">Thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Chat Input */}
+            <div className="p-6 border-t border-purple-500/20">
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendAIMessage()}
+                  placeholder="Tell me about your intentions, current state, or desired outcome..."
+                  className="flex-1 p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-purple-400"
+                />
+                <button
+                  onClick={sendAIMessage}
+                  disabled={!userInput.trim() || isAiThinking}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer id="contact" className="py-12 px-4 border-t border-white/10 bg-black">

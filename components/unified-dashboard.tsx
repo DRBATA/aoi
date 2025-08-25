@@ -56,8 +56,14 @@ export default function UnifiedDashboard() {
   const [selectedGuest, setSelectedGuest] = useState<Booking | null>(null)
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
-  const [inventory, setInventory] = useState<Array<{id: string, quantity: number, products?: {name: string, category: string}}>>([])
-  const [currentVenue, setCurrentVenue] = useState<any>(null)
+  const [inventory, setInventory] = useState<Array<{id: string, quantity: number, products: {name: string, category: string}}>>([])
+  const [experiences, setExperiences] = useState<Array<{id: string, name: string, price: number, duration_minutes: number, stripe_price_id: string}>>([])
+  const [currentVenue, setCurrentVenue] = useState<{
+    id?: string;
+    name?: string;
+    address?: string;
+    opening_hours?: string;
+  } | null>(null)
   const supabase = createClient()
 
   // Fetch AOI venue data
@@ -81,7 +87,7 @@ export default function UnifiedDashboard() {
       }
     };
     fetchVenueData();
-  }, [currentVenue?.id]);
+  }, [currentVenue?.id, supabase]);
 
   useEffect(() => {
     // Subscribe to real-time cart updates
@@ -124,17 +130,56 @@ export default function UnifiedDashboard() {
         `)
         .eq('venue_id', currentVenue.id)
         .gt('quantity', 0)
-        .order('quantity', { ascending: true })
-        .limit(5)
+        .order('products.name', { ascending: true })
       
       if (data) {
-        setInventory(data)
+        // Transform the data to match our expected type structure
+        const transformedData = data.map(item => ({
+          id: item.id,
+          quantity: item.quantity,
+          products: Array.isArray(item.products) ? item.products[0] : item.products
+        })).filter(item => item.products) // Filter out items without product data
+        setInventory(transformedData)
+      }
+    }
+
+    // Fetch AOI experiences available at this venue
+    const fetchExperiences = async () => {
+      if (!currentVenue?.id) return;
+      
+      const { data } = await supabase
+        .from('venue_experiences')
+        .select(`
+          experience_id,
+          is_available,
+          max_capacity,
+          experiences(id, name, price, duration_minutes, stripe_price_id)
+        `)
+        .eq('venue_id', currentVenue.id)
+        .eq('is_available', true)
+      
+      if (data) {
+        const availableExperiences = data
+          .filter(item => item.experiences)
+          .map(item => {
+            const exp = item.experiences as any;
+            return {
+              id: exp.id,
+              name: exp.name,
+              price: parseFloat(exp.price),
+              duration_minutes: exp.duration_minutes,
+              stripe_price_id: exp.stripe_price_id,
+              max_capacity: item.max_capacity
+            };
+          })
+        setExperiences(availableExperiences)
       }
     }
 
     fetchBookings()
     if (currentVenue?.id) {
       fetchInventory()
+      fetchExperiences()
     }
 
     // Real-time subscriptions
@@ -169,7 +214,7 @@ export default function UnifiedDashboard() {
       supabase.removeChannel(bookingChannel)
       supabase.removeChannel(inventoryChannel)
     }
-  }, [supabase])
+  }, [supabase, currentVenue?.id])
 
   const filteredBookings = bookings
 

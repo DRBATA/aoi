@@ -48,7 +48,7 @@ export default function StaffLoginPage() {
           await supabase.auth.signOut()
         }
       }
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
