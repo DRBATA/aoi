@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 'lucide-react'
@@ -13,6 +13,7 @@ export default function LandingPage() {
   const [selectedVenue, setSelectedVenue] = useState("dubai")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('science')
+  const [savedUsername, setSavedUsername] = useState('')
   const [realExperiences, setRealExperiences] = useState<Array<{id: string, name: string, price: number, duration_minutes: number}>>([])
   const [selectedBookingExperience, setSelectedBookingExperience] = useState("")
   const [bookingDate, setBookingDate] = useState("")
@@ -110,6 +111,7 @@ export default function LandingPage() {
           .filter(item => item.experiences)
           .map(item => {
             const exp = item.experiences as any;
+            if (!exp) return null;
             return {
               id: exp.id,
               name: exp.name,
@@ -117,6 +119,7 @@ export default function LandingPage() {
               duration_minutes: exp.duration_minutes
             };
           })
+          .filter((exp): exp is {id: string, name: string, price: number, duration_minutes: number} => exp !== null)
         setRealExperiences(experiences)
       }
     }
@@ -124,7 +127,7 @@ export default function LandingPage() {
   }, [supabase])
 
   // Generate available time slots based on existing bookings
-  const generateAvailableSlots = async (date: string, experienceId: string) => {
+  const generateAvailableSlots = useCallback(async (date: string, experienceId: string) => {
     if (!date || !experienceId) return []
     
     setLoadingSlots(true)
@@ -204,7 +207,7 @@ export default function LandingPage() {
     } finally {
       setLoadingSlots(false)
     }
-  }
+  }, [supabase])
 
   // Update available slots when date or experience changes
   useEffect(() => {
@@ -214,6 +217,54 @@ export default function LandingPage() {
       setAvailableTimeSlots([])
     }
   }, [bookingDate, selectedBookingExperience, realExperiences, generateAvailableSlots])
+
+  // Handle AI chat interaction
+  const handleAiChat = async () => {
+    if (!userInput.trim()) return
+    
+    const newMessage = { role: 'user' as const, content: userInput }
+    setAiMessages(prev => [...prev, newMessage])
+    setUserInput('')
+    setIsAiThinking(true)
+    
+    try {
+      // Context-aware AI interaction
+      const context = {
+        username: savedUsername,
+        bookingMode: activeBookingMode,
+        selectedExperience: selectedBookingExperience,
+        bookingDate,
+        bookingTime,
+        userMode,
+        currentFlow: 'ai_guide'
+      }
+      
+      // Simulate AI response (replace with actual AI call)
+      setTimeout(() => {
+        const aiResponse = { 
+          role: 'assistant' as const, 
+          content: `Hello ${savedUsername || 'there'}! I can see you're in ${activeBookingMode} mode. ${selectedBookingExperience ? `You've selected an experience for ${bookingDate}.` : 'Let me help you choose the perfect experience.'} How can I guide your AOI journey today?`
+        }
+        setAiMessages(prev => [...prev, aiResponse])
+        setIsAiThinking(false)
+      }, 1500)
+    } catch (error) {
+      console.error('AI chat error:', error)
+      setIsAiThinking(false)
+    }
+  }
+
+  // Save username to localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('aoi-username')
+    if (saved) setSavedUsername(saved)
+  }, [])
+  
+  useEffect(() => {
+    if (savedUsername) {
+      localStorage.setItem('aoi-username', savedUsername)
+    }
+  }, [savedUsername])
 
   // Handle booking form submission
   const handleBookingSubmit = async (e: React.FormEvent) => {
@@ -225,78 +276,309 @@ export default function LandingPage() {
     }
 
     try {
-      // Create a cart session for the booking
-      const sessionId = crypto.randomUUID()
-      
-      // Create cart header
-      const { data: cartHeader } = await supabase
-        .from('cart_headers')
-        .insert({
-          session_id: sessionId,
-          customer_name: guestName,
-          customer_email: guestEmail,
-          venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b'
-        })
-        .select()
-        .single()
-
-      if (cartHeader) {
-        // Find the selected experience
-        const selectedExp = realExperiences.find(exp => exp.id === selectedBookingExperience)
-        
-        // Create cart item with booking metadata
-        await supabase
-          .from('cart_items')
-          .insert({
-            cart_id: cartHeader.id,
-            item_id: selectedBookingExperience,
-            qty: 1,
-            item_type: 'booking',
-            booking_status: 'pending',
-            booking_metadata: {
-              date: bookingDate,
-              time: bookingTime,
-              duration_minutes: selectedExp?.duration_minutes,
-              experience_name: selectedExp?.name,
-              guest_name: guestName,
-              guest_email: guestEmail,
-              venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b'
-            }
-          })
-
-        alert('Booking request submitted! You will be redirected to complete payment.')
-        // TODO: Redirect to payment or confirmation page
+      const selectedExp = realExperiences.find(exp => exp.id === selectedBookingExperience)
+      if (!selectedExp) {
+        alert('Selected experience not found')
+        return
       }
+
+      // Check if user has existing active cart to merge with
+      let cartId: string
+      const { data: existingCart } = await supabase
+        .from('cart_headers')
+        .select('id, total_amount')
+        .eq('customer_name', guestName)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (existingCart) {
+        // Merge with existing cart
+        cartId = existingCart.id
+        
+        // Update total amount
+        await supabase
+          .from('cart_headers')
+          .update({
+            total_amount: (existingCart.total_amount || 0) + selectedExp.price
+          })
+          .eq('id', cartId)
+      } else {
+        // Create new cart
+        const { data: cartData, error: cartError } = await supabase
+          .from('cart_headers')
+          .insert({
+            customer_name: guestName,
+            customer_email: guestEmail || null,
+            venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b',
+            status: 'active',
+            total_amount: selectedExp.price,
+            payment_method: 'venue'
+          })
+          .select()
+          .single()
+
+        if (cartError) throw cartError
+        cartId = cartData.id
+      }
+
+      // Add the booking item to cart
+      const { error: itemError } = await supabase
+        .from('cart_items')
+        .insert({
+          cart_id: cartId,
+          item_type: 'booking',
+          item_id: selectedBookingExperience,
+          quantity: 1,
+          unit_price: selectedExp.price,
+          total_price: selectedExp.price,
+          booking_status: 'pending',
+          booking_metadata: {
+            date: bookingDate,
+            time: bookingTime,
+            duration_minutes: selectedExp.duration_minutes,
+            experience_name: selectedExp.name
+          }
+        })
+
+      if (itemError) throw itemError
+
+      const cartMessage = existingCart 
+        ? `Added ${selectedExp.name} to your cart! Continue adding more items or checkout when ready.`
+        : `${selectedExp.name} added to cart for ${bookingDate} at ${bookingTime}. You can add more experiences or drinks before checkout.`
+      
+      alert(cartMessage)
+      
+      // Reset form for next booking
+      setSelectedBookingExperience('')
+      setBookingTime('')
+      
+      // TODO: Show cart preview or redirect to checkout
     } catch (error) {
       console.error('Booking error:', error)
       alert('There was an error processing your booking. Please try again.')
     }
   }
 
-  // AI Journey Planning Agent
-  const startAIJourney = () => {
+  // Location-based context detection
+  const detectLocationContext = (orderSource: string = 'main-booking') => {
+    const locationMap: Record<string, string> = {
+      'wellness-terminal': 'wellness_area',
+      'pre-session-tablet': 'pre_session',
+      'post-session-kiosk': 'post_session',
+      'main-booking': 'general'
+    }
+    return locationMap[orderSource] || 'general'
+  }
+
+  // AI Journey Planning Agent with Location Context
+  const startAIJourney = (orderSource: string = 'main-booking') => {
+    const locationContext = detectLocationContext(orderSource)
+    
     setShowAIChat(true)
+    
+    // Initialize AI with location context
+    const contextualMessage = getContextualWelcome(locationContext)
+    
     setAiMessages([{
-      role: 'assistant',
-      content: `Welcome to AOI! I'm your personal journey architect. 
-
-I'll help you craft the perfect transformation experience by understanding:
-🎯 **Your intentions** - What brings you here today?
-🧘 **Your current state** - How are you feeling right now?
-⚡ **Your desired outcome** - What would you like to take away?
-
-Let's start with something simple - what's drawing you to AOI today?`
+      role: 'assistant' as const,
+      content: contextualMessage
     }])
+    
+    // Trigger context initialization in AI agent
+    initializeAIContext(locationContext, guestName)
+  }
+
+  const getContextualWelcome = (location: string) => {
+    switch(location) {
+      case 'wellness_area':
+        return `Hello! I can see you're in our wellness assessment area at Art of Implosion. I'm your AI wellness guide with access to:
+
+• Hydration analysis and recommendations
+• Experience matching based on your goals  
+• Real-time coordination with our wellness team
+
+I've notified our wellness attendant. What brings you here today?`
+
+      case 'pre_session':
+        return `Hello! Ready for your AOI session? I can help with pre-session preparation:
+
+• Optimal hydration timing (30min before)
+• Energy and electrolyte optimization
+• Session readiness assessment
+
+How are you feeling and what's your session today?`
+
+      case 'post_session':
+        return `Great session! I'm here to help with your recovery and next steps:
+
+• Recovery hydration and replenishment
+• Post-session wellness planning
+• Future experience recommendations
+
+How was your experience and how are you feeling?`
+
+      default:
+        return `Hello! I'm your AOI Journey Architect with cart integration powers!
+
+I can help you:
+• Choose perfect experiences based on your goals
+• Add complementary drinks with precise timing
+• Build your complete transformation cart
+• Access hydration profiles for exact needs
+
+*I have access to:*
+• ${realExperiences.length} experiences
+• Products table for drinks
+• Hydration options for electrolyte precision
+• Your cart for seamless additions
+
+What transformation are you seeking today?`
+    }
+  }
+
+  const initializeAIContext = async (location: string, userId?: string) => {
+    try {
+      const contextData = {
+        location,
+        venue_id: 'aoi_dubai',
+        user_id: userId,
+        timestamp: new Date().toISOString()
+      }
+      
+      // This would call the AI agent's context initialization
+      console.log('Initializing AI context:', contextData)
+      
+      // In a real implementation, this would trigger the MCP function
+      // await aiAgent.initialize_context_awareness(contextData, userId)
+    } catch (error) {
+      console.error('Failed to initialize AI context:', error)
+    }
+  }
+
+  // AI Cart Addition with Drinks Metadata
+  const addToCartViaAI = async (itemType: 'experience' | 'drink', itemId: string, metadata: any) => {
+    if (!guestName) {
+      const namePrompt = prompt('Please enter your name to add items to cart:')
+      if (!namePrompt) return
+      setGuestName(namePrompt)
+    }
+
+    try {
+      let itemData: any
+      let unitPrice = 0
+      
+      if (itemType === 'experience') {
+        itemData = realExperiences.find(exp => exp.id === itemId)
+        unitPrice = itemData?.price || 0
+      } else {
+        // Fetch from products table for drinks
+        const { data: productData } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', itemId)
+          .single()
+        
+        itemData = productData
+        unitPrice = productData?.price || 0
+      }
+
+      if (!itemData) throw new Error('Item not found')
+
+      // Get or create cart
+      let cartId: string
+      const { data: existingCart } = await supabase
+        .from('cart_headers')
+        .select('id, total_amount')
+        .eq('customer_name', guestName)
+        .eq('status', 'active')
+        .maybeSingle()
+
+      if (existingCart) {
+        cartId = existingCart.id
+        await supabase
+          .from('cart_headers')
+          .update({ total_amount: (existingCart.total_amount || 0) + unitPrice })
+          .eq('id', cartId)
+      } else {
+        const { data: cartData, error: cartError } = await supabase
+          .from('cart_headers')
+          .insert({
+            customer_name: guestName,
+            customer_email: guestEmail || null,
+            venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b',
+            status: 'active',
+            total_amount: unitPrice,
+            payment_method: 'venue'
+          })
+          .select().single()
+
+        if (cartError) throw cartError
+        cartId = cartData.id
+      }
+
+      // Add item with appropriate metadata
+      const cartItem: any = {
+        cart_id: cartId,
+        item_type: itemType,
+        item_id: itemId,
+        quantity: 1,
+        unit_price: unitPrice,
+        total_price: unitPrice
+      }
+
+      if (itemType === 'experience') {
+        cartItem.booking_status = 'pending'
+        cartItem.booking_metadata = metadata
+      } else {
+        // Drink metadata with timing
+        cartItem.drink_metadata = {
+          timing: metadata.timing, // 'before', 'during', 'after', 'ongoing'
+          timing_offset: metadata.timing_offset || 0, // minutes before/after
+          electrolyte_profile: metadata.electrolyte_profile || 'balanced',
+          hydration_goal: metadata.hydration_goal || 'general',
+          related_experience_id: metadata.related_experience_id
+        }
+      }
+
+      const { error: itemError } = await supabase
+        .from('cart_items')
+        .insert(cartItem)
+
+      if (itemError) throw itemError
+
+      // AI confirmation
+      const timingText = itemType === 'drink' 
+        ? ` ${metadata.timing} ${metadata.timing_offset ? `(${metadata.timing_offset}min)` : ''}`
+        : ` ${metadata.date} at ${metadata.time}`
+      
+      const confirmationMessage = {
+        role: 'assistant' as const,
+        content: ` Added ${itemData.name} to your cart!
+${timingText}
+ AED ${unitPrice}
+
+${itemType === 'drink' ? ' Electrolyte profile: ' + (metadata.electrolyte_profile || 'balanced') : ''}
+
+What else can I add to optimize your journey?`
+      }
+      
+      setAiMessages((prev: any[]) => [...prev, confirmationMessage])
+      
+    } catch (error) {
+      console.error('AI Cart Error:', error)
+      setAiMessages((prev: any[]) => [...prev, {
+        role: 'assistant' as const,
+        content: ` Error adding item. Please try again or contact support.`
+      }])
+    }
   }
 
   const sendAIMessage = async () => {
     if (!userInput.trim()) return
     
     const newUserMessage = { role: 'user' as const, content: userInput }
-    setAiMessages(prev => [...prev, newUserMessage])
-    setUserInput("")
-    setIsAiThinking(true)
-
+    setAiMessages((prev: any[]) => [...prev, newUserMessage])
+    
     try {
       // AI Journey Planning Logic
       const response = await fetch('/api/ai-journey-planner', {
@@ -655,6 +937,112 @@ Let's start with something simple - what's drawing you to AOI today?`
                 </div>
               </motion.div>
             )}
+
+            {activeTab === 'ai-guide' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10"
+              >
+                <div className="flex flex-col items-center text-center mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-purple-400 rounded-full flex items-center justify-center mb-4">
+                    <Brain className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-2xl font-medium text-white mb-2">AI Journey Guide</h3>
+                  <p className="text-cyan-400 mb-4">Personalized guidance for your transformation</p>
+                </div>
+                
+                {/* Username Input */}
+                <div className="mb-6">
+                  <label className="text-white/70 text-sm mb-2 block">Your Name (saved locally)</label>
+                  <input 
+                    placeholder="Enter your name..." 
+                    value={savedUsername}
+                    onChange={(e) => setSavedUsername(e.target.value)}
+                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
+                  />
+                  <p className="text-white/40 text-xs mt-2">Stored locally - only email needed to unlock your profile</p>
+                </div>
+
+                {/* AI Chat Interface */}
+                <div className="bg-black/20 rounded-xl p-6 mb-6 min-h-[300px]">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-purple-400 rounded-full flex items-center justify-center">
+                      <Brain className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-white font-medium">AOI Guide</span>
+                    <span className="text-green-400 text-xs">● Online</span>
+                  </div>
+                  
+                  <div className="space-y-4 mb-4 max-h-48 overflow-y-auto">
+                    {aiMessages.length === 0 ? (
+                      <div className="text-white/60 text-sm">
+                        👋 Hello! I&apos;m your AOI Journey Guide. I understand where you are in your booking process and can provide personalized recommendations based on your needs.
+                        <br /><br />
+                        I can help with:
+                        <br />• Experience recommendations
+                        <br />• Guided meditation preparation
+                        <br />• Understanding your transformation goals
+                        <br />• Booking assistance
+                      </div>
+                    ) : (
+                      aiMessages.map((msg, idx) => (
+                        <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          {msg.role === 'assistant' && (
+                            <div className="w-6 h-6 bg-gradient-to-br from-cyan-400 to-purple-400 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Brain className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                          <div className={`max-w-xs p-3 rounded-lg text-sm ${
+                            msg.role === 'user' 
+                              ? 'bg-purple-500/20 text-white ml-auto' 
+                              : 'bg-white/10 text-white/90'
+                          }`}>
+                            {msg.content}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <input 
+                      placeholder="Ask about experiences, preparation, or your journey..." 
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      className="flex-1 p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 text-sm" 
+                      onKeyPress={(e) => e.key === 'Enter' && !isAiThinking && userInput.trim() && handleAiChat()}
+                    />
+                    <button 
+                      onClick={handleAiChat}
+                      disabled={isAiThinking || !userInput.trim()}
+                      className="px-4 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg text-white font-medium hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      {isAiThinking ? '...' : 'Send'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Audio Dock */}
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-white font-medium">Guided Meditation</h4>
+                    <span className="text-white/40 text-xs">Preparation Audio</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8 5v10l8-5-8-5z" />
+                      </svg>
+                    </button>
+                    <div className="flex-1 bg-white/10 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-cyan-400 to-purple-400 h-2 rounded-full" style={{width: '0%'}}></div>
+                    </div>
+                    <span className="text-white/60 text-xs">0:00 / 5:30</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
       </section>
@@ -729,7 +1117,7 @@ Let's start with something simple - what's drawing you to AOI today?`
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-light text-white">Reserve Your Transformation</h3>
               <button
-                onClick={startAIJourney}
+                onClick={() => startAIJourney()}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white text-sm hover:scale-105 transition-transform"
               >
                 <Brain className="w-4 h-4" />
@@ -752,7 +1140,11 @@ Let's start with something simple - what's drawing you to AOI today?`
                     }`}
                   >
                     <div className="font-medium">{venue.name}</div>
-                    <div className="text-xs opacity-70 mt-1">{venue.location}</div>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">10 LED Panels</span>
+                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Interactive Release</span>
+                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Movement Based</span>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -790,7 +1182,7 @@ Let's start with something simple - what's drawing you to AOI today?`
               {/* Experience Selector */}
               <div className="mb-8">
                 <label className="text-white/70 text-sm mb-3 block">
-                  {activeBookingMode === 'quick_order' ? 'Select Experience' : 'Initial Experience (we\'ll recommend more)'}
+                  {activeBookingMode === 'quick_order' ? 'Select Experience' : 'Initial Experience (we&apos;ll recommend more)'}
                 </label>
                 <select 
                   value={selectedBookingExperience}
@@ -820,6 +1212,7 @@ Let's start with something simple - what's drawing you to AOI today?`
                     className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white" 
                     required
                     min={new Date().toISOString().split('T')[0]}
+                    max={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                   />
                 </div>
                 <div>
@@ -948,7 +1341,7 @@ Let's start with something simple - what's drawing you to AOI today?`
                         className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 text-sm" 
                       />
                       <p className="text-white/30 text-xs mt-1">
-                        We'll only send booking confirmation - no marketing emails
+                        We&apos;ll only send booking confirmation - no marketing emails
                       </p>
                     </div>
                   )}

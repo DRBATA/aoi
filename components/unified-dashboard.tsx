@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import CheckinModal from "./checkin-modal"
 import CheckoutModal from "./checkout-modal"
+import TimingAlerts from "./timing-alerts"
 import { createClient } from '@/lib/supabase/client'
 
 // Types
@@ -20,15 +21,20 @@ type ViewMode = "all" | "arrived" | "active" | "complete"
 
 export interface Booking {
   id: string
-  name: string
+  guest_name: string
+  name?: string
+  date: string
   time: string
-  service: string
-  status: BookingStatus
+  experience_name: string
+  service?: string
+  status: string
   assignedRoom?: string
   duration?: number
   phone?: string
   email?: string
   cart?: unknown[]
+  cart_items?: any[]
+  total_amount?: number
   recommendations?: unknown[]
   guestProfile?: {
     weight?: number
@@ -57,7 +63,6 @@ export default function UnifiedDashboard() {
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [inventory, setInventory] = useState<Array<{id: string, quantity: number, products: {name: string, category: string}}>>([])
-  const [experiences] = useState<Array<{id: string, name: string, price: number, duration_minutes: number, stripe_price_id: string}>>([]);
   const [currentVenue, setCurrentVenue] = useState<{
     id?: string;
     name?: string;
@@ -90,6 +95,27 @@ export default function UnifiedDashboard() {
   }, [currentVenue?.id, supabase]);
 
   useEffect(() => {
+    // Real-time subscription for dashboard updates
+    const channel = supabase
+      .channel('dashboard-updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public', 
+        table: 'cart_items'
+      }, (payload) => {
+        console.log('Cart item change:', payload)
+        fetchBookings() // Refresh bookings on any cart change
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'cart_headers' 
+      }, (payload) => {
+        console.log('Cart header change:', payload)
+        fetchBookings() // Refresh on cart status changes
+      })
+      .subscribe()
+
     // Subscribe to real-time cart updates
     const fetchBookings = async () => {
       const { data } = await supabase
@@ -99,16 +125,21 @@ export default function UnifiedDashboard() {
           cart_headers!inner(*)
         `)
         .not('booking_metadata', 'is', null)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false }) as any
       
       if (data) {
-        const formattedBookings = data.map(item => ({
+        const formattedBookings = data.map((item: any) => ({
           id: item.id,
+          guest_name: item.cart_headers?.customer_name || 'Guest',
           name: item.cart_headers?.customer_name || 'Guest',
+          date: item.booking_metadata?.date || new Date().toISOString().split('T')[0],
           time: item.booking_metadata?.time || 'TBD',
+          experience_name: item.booking_metadata?.experience_name || item.product_name,
           service: item.product_name,
           status: item.booking_status || 'waiting',
           assignedRoom: item.booking_metadata?.room,
+          cart_items: [],
+          total_amount: item.cart_headers?.total_amount || 0,
           cart: [item],
           recommendations: item.ai_recommendation ? [item.ai_recommendation] : [],
           venueId: item.venue_id
@@ -159,30 +190,14 @@ export default function UnifiedDashboard() {
         .eq('is_available', true)
       
       if (data) {
-        const availableExperiences = data
-          .filter(item => item.experiences)
-          .map(item => {
-            const exp = item.experiences as any;
-            return {
-              id: exp.id,
-              name: exp.name,
-              price: parseFloat(exp.price),
-              duration_minutes: exp.duration_minutes,
-              stripe_price_id: exp.stripe_price_id,
-              max_capacity: item.max_capacity
-            };
-          })
-        // setExperiences(availableExperiences) - experiences not used in component
+        // This data is available for future expansion
       }
     }
 
     fetchBookings()
-    if (currentVenue?.id) {
-      fetchInventory()
-      fetchExperiences()
-    }
-
-    // Real-time subscriptions
+    fetchInventory()
+    
+    // Cleanup subscription on unmount
     const bookingChannel = supabase
       .channel('cart-bookings')
       .on(
@@ -275,22 +290,9 @@ export default function UnifiedDashboard() {
           <Button 
             variant="secondary" 
             className="w-full sm:w-auto bg-gradient-to-r from-orange-400 to-pink-500 text-white hover:from-orange-500 hover:to-pink-600 shadow-lg"
-            onClick={() => {
-              // Quick sale for walk-in customer - one drink purchase
-              setSelectedGuest({
-                id: "walk-in-" + Date.now(),
-                name: "Walk-in Customer",
-                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                service: "Quick Purchase",
-                status: "active",
-                cart: [],
-                recommendations: []
-              })
-              setShowCheckoutModal(true)
-            }}
+            onClick={() => console.log('Quick actions coming soon')}
           >
-            <ShoppingCart className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="sm:inline">Quick Sale</span>
+            Quick Actions
           </Button>
           <Button 
             variant="secondary" 
@@ -436,8 +438,14 @@ export default function UnifiedDashboard() {
           </Card>
         </div>
 
-        {/* Sidebar - Live Inventory & Room Status */}
+        {/* Sidebar - Timing Alerts & Room Status */}
         <div className="order-1 xl:order-2 space-y-4">
+          {/* Timing Alerts */}
+          <TimingAlerts 
+            bookings={bookings}
+            onAlertAcknowledgeAction={(alertId) => console.log('Acknowledged:', alertId)}
+            onMarkServedAction={(alertId) => console.log('Marked served:', alertId)}
+          />
           {/* Live Inventory Card */}
           <Card className="bg-white/10 backdrop-blur-xl border-white/20">
             <div className="p-4 md:p-6">
@@ -446,30 +454,76 @@ export default function UnifiedDashboard() {
                 <Package className="w-5 h-5 text-pink-400" />
               </div>
               <div className="space-y-3">
-                {inventory.length > 0 ? (
-                  inventory.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <div className="flex-1">
-                        <p className="text-white text-sm">{item.products?.name}</p>
-                        <p className="text-white/40 text-xs">{item.products?.category}</p>
+                <div className="space-y-4">
+                {bookings.map((booking) => (
+                  <div key={booking.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-medium text-white">{booking.guest_name || booking.name}</h3>
+                        <p className="text-sm text-white/60">{booking.experience_name || booking.service}</p>
+                        {/* Show cart items count */}
+                        {booking.cart_items && booking.cart_items.length > 1 && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs text-cyan-300">🛒 {booking.cart_items.length} items in cart</span>
+                          </div>
+                        )}
+                        {/* Show cart preview */}
+                        {booking.cart_items && booking.cart_items.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {booking.cart_items.slice(0, 3).map((item, idx) => (
+                              <div key={idx} className="text-xs text-white/50 flex justify-between">
+                                <span>{item.item_type === 'booking' ? '📅' : '🥤'} {item.name || item.booking_metadata?.experience_name}</span>
+                                <span>AED {item.unit_price}</span>
+                              </div>
+                            ))}
+                            {booking.cart_items.length > 3 && (
+                              <div className="text-xs text-white/40">+{booking.cart_items.length - 3} more items</div>
+                            )}
+                            <div className="text-xs text-purple-300 font-medium pt-1 border-t border-white/10">
+                              Total: AED {booking.total_amount || 0}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-medium ${
-                          item.quantity <= 5 ? 'text-red-400' : 
-                          item.quantity <= 10 ? 'text-yellow-400' : 
-                          'text-emerald-400'
-                        }`}>
-                          {item.quantity} left
-                        </p>
-                        {item.quantity <= 5 && (
-                          <p className="text-red-400/60 text-xs">Low stock</p>
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        booking.status === 'confirmed' ? 'bg-green-500/20 text-green-300' :
+                        booking.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
+                        booking.status === 'checked-in' ? 'bg-blue-500/20 text-blue-300' :
+                        'bg-gray-500/20 text-gray-300'
+                      }`}>
+                        {booking.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-white/60">
+                      <span>{booking.date} at {booking.time}</span>
+                      <div className="flex gap-2">
+                        {booking.status === 'confirmed' && (
+                          <button 
+                            onClick={() => {
+                              setSelectedGuest(booking)
+                              setShowCheckinModal(true)
+                            }}
+                            className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded hover:bg-blue-500/30"
+                          >
+                            Check In
+                          </button>
+                        )}
+                        {booking.status === 'checked-in' && (
+                          <button 
+                            onClick={() => {
+                              setSelectedGuest(booking)
+                              setShowCheckoutModal(true)
+                            }}
+                            className="px-3 py-1 bg-green-500/20 text-green-300 rounded hover:bg-green-500/30"
+                          >
+                            Check Out
+                          </button>
                         )}
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-white/40 text-sm">Loading inventory...</p>
-                )}
+                  </div>
+                ))}
+                </div>
               </div>
             </div>
           </Card>
@@ -513,9 +567,9 @@ export default function UnifiedDashboard() {
         onClose={() => setShowCheckinModal(false)}
         guestData={selectedGuest ? {
           id: selectedGuest.id,
-          name: selectedGuest.name,
+          name: selectedGuest.guest_name || selectedGuest.name || 'Guest',
           booking: {
-            experience: selectedGuest.experience || selectedGuest.service,
+            experience: selectedGuest.experience || selectedGuest.experience_name || 'Unknown',
             time: selectedGuest.time,
             room: selectedGuest.room || selectedGuest.assignedRoom
           }
@@ -528,18 +582,18 @@ export default function UnifiedDashboard() {
         isOpen={showCheckoutModal}
         onClose={() => setShowCheckoutModal(false)}
         sessionData={selectedGuest ? {
-          experience: selectedGuest.experience || selectedGuest.service,
-          duration: "60 mins",
-          room: selectedGuest.room || selectedGuest.assignedRoom || "Room 1",
-          time: selectedGuest.time,
-          date: new Date().toLocaleDateString(),
-          price: 150
+          experience: selectedGuest?.experience || selectedGuest?.experience_name || 'Unknown',
+          duration: '60',
+          room: selectedGuest?.room || selectedGuest?.assignedRoom || 'Suite 1',
+          time: selectedGuest?.time || 'TBD',
+          date: selectedGuest?.date || new Date().toISOString().split('T')[0],
+          price: 350
         } : undefined}
         guestData={selectedGuest ? {
-          id: selectedGuest.id,
-          name: selectedGuest.name,
-          email: selectedGuest.email,
-          phone: selectedGuest.phone
+          id: selectedGuest?.id || '',
+          name: selectedGuest?.guest_name || selectedGuest?.name || 'Guest',
+          email: selectedGuest?.email,
+          phone: selectedGuest?.phone
         } : undefined}
         onComplete={handleCheckoutComplete}
       />
