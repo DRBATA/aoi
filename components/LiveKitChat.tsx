@@ -8,7 +8,7 @@ import {
   useLocalParticipant,
   useTracks,
 } from '@livekit/components-react';
-import { Room, Track, DataPacket_Kind } from 'livekit-client';
+import { Room, Track } from 'livekit-client';
 import { ConnectionDetails } from '@/hooks/useConnectionDetails';
 
 interface LiveKitChatProps {
@@ -90,7 +90,8 @@ function ChatInterface() {
       timestamp: Date.now(),
     }));
     
-    await localParticipant.publishData(payload, DataPacket_Kind.RELIABLE, {
+    await localParticipant.publishData(payload, {
+      reliable: true,
       topic: 'chat',
     });
     
