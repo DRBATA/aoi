@@ -74,27 +74,21 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
     return () => clearInterval(interval)
   }, [bookings])
 
-  const calculateServingTime = (booking: Booking, timing: string): Date => {
-    const sessionStart = new Date(`${booking.date}T${booking.time}`)
-    
-    switch(timing) {
-      case 'pre-session':
-        return new Date(sessionStart.getTime() - 30 * 60000) // 30min before
-      case 'during':
-        return sessionStart
-      case 'post-session':
-        return new Date(sessionStart.getTime() + (booking.duration || 60) * 60000)
-      default:
-        return new Date()
-    }
-  }
-
-  const getPriority = (minutesUntil: number): 'high' | 'medium' | 'low' => {
-    if (minutesUntil <= 0 && minutesUntil >= -5) return 'high' // Serve now
-    if (minutesUntil <= 5) return 'high' // Serve very soon
-    if (minutesUntil <= 10) return 'medium' // Prepare soon
-    return 'low' // Future preparation
-  }
+  // const calculateServingTime = (booking: Booking, timing: string): Date => {
+  //   const sessionStart = new Date(`${booking.date}T${booking.time}`)
+  //   
+  //   switch(timing) {
+  //     case 'pre-session':
+  //       return new Date(sessionStart.getTime() - 30 * 60000) // 30min before
+  //     case 'during':
+  //       return sessionStart
+  //     case 'post-session':
+  // const getPriority = (minutesUntil: number): 'high' | 'medium' | 'low' => {
+  //   if (minutesUntil <= 0 && minutesUntil >= -5) return 'high' // Serve now
+  //   if (minutesUntil <= 5) return 'high' // Serve very soon
+  //   if (minutesUntil <= 10) return 'medium' // Prepare soon
+  //   return 'low' // Future preparation
+  // }
 
   const getTimingIcon = (timing: string) => {
     switch(timing) {
