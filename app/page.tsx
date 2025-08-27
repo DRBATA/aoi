@@ -77,7 +77,7 @@ function AIJourneyChatModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <div className="flex-1 overflow-hidden">
-          <LiveKitChat connectionDetails={connectionDetails} onClose={onClose} />
+          <LiveKitChat connectionDetails={connectionDetails} onCloseAction={onClose} />
         </div>
       </motion.div>
     </div>

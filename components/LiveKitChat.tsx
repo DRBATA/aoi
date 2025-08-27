@@ -13,7 +13,7 @@ import { ConnectionDetails } from '@/hooks/useConnectionDetails';
 
 interface LiveKitChatProps {
   connectionDetails: ConnectionDetails;
-  onClose: () => void;
+  onCloseAction: () => void;
 }
 
 interface ChatMessage {
@@ -64,7 +64,7 @@ function ChatInterface() {
       track => track.participant.identity.includes('agent') && 
       track.source === Track.Source.Microphone
     );
-    setIsAgentSpeaking(agentTrack?.isMuted === false);
+    setIsAgentSpeaking(agentTrack?.publication?.isMuted === false);
   }, [tracks]);
 
   // Auto-scroll to bottom
@@ -90,8 +90,7 @@ function ChatInterface() {
       timestamp: Date.now(),
     }));
     
-    await localParticipant.publishData(payload, {
-      kind: DataPacket_Kind.RELIABLE,
+    await localParticipant.publishData(payload, DataPacket_Kind.RELIABLE, {
       topic: 'chat',
     });
     
@@ -173,7 +172,7 @@ function ChatInterface() {
   );
 }
 
-export default function LiveKitChat({ connectionDetails, onClose }: LiveKitChatProps) {
+export default function LiveKitChat({ connectionDetails, onCloseAction }: LiveKitChatProps) {
   const [room] = useState(() => new Room());
 
   return (
@@ -184,7 +183,7 @@ export default function LiveKitChat({ connectionDetails, onClose }: LiveKitChatP
       connect={true}
       audio={true}
       video={false}
-      onDisconnected={onClose}
+      onDisconnected={onCloseAction}
     >
       <RoomAudioRenderer />
       <ChatInterface />
