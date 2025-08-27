@@ -22,6 +22,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/checkin/page.bak", "app/checkout/page.bak", "app/dashboard/page.bak", "app/portal/page.bak", "../archive_aoi/unified-dashboard.tsx", "../staging/lib/supabase.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/checkin/page.bak", "app/checkout/page.bak", "app/dashboard/page.bak", "app/portal/page.bak", "../archive_aoi/unified-dashboard.tsx", "../staging/lib/supabase.ts", "../../archive/archive_aoi/AOIUnifiedChat.tsx", "../../archive/agent-tile.tsx", "../../archive/video-tile.tsx"],
   "exclude": ["node_modules"]
 }

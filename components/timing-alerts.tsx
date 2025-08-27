@@ -19,8 +19,15 @@ interface TimingAlert {
   status: 'pending' | 'acknowledged' | 'served'
 }
 
+interface Booking {
+  id: string
+  guestName: string
+  time: string
+  duration?: number
+}
+
 interface TimingAlertsProps {
-  bookings: any[]
+  bookings: Booking[]
   onAlertAcknowledgeAction: (alertId: string) => void
   onMarkServedAction: (alertId: string) => void
 }
@@ -87,7 +94,7 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
     }
   }
 
-  const getPriority = (minutesUntil: number, timing: string): 'high' | 'medium' | 'low' => {
+  const getPriority = (minutesUntil: number): 'high' | 'medium' | 'low' => {
     if (minutesUntil <= 0 && minutesUntil >= -5) return 'high' // Serve now
     if (minutesUntil <= 5) return 'high' // Serve very soon
     if (minutesUntil <= 15) return 'medium' // Prepare soon

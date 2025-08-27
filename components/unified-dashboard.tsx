@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react'
 import { 
-  Users, Calendar, Package, 
-  Plus, ShoppingCart,
-  Home, TrendingUp
+  Clock, User, MapPin, Phone, Mail, 
+  Calendar, CheckCircle, AlertCircle, XCircle, 
+  Plus, Minus, Edit, Trash2, Save, X, 
+  Package, ShoppingCart, Home, TrendingUp
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -96,25 +97,25 @@ export default function UnifiedDashboard() {
 
   useEffect(() => {
     // Real-time subscription for dashboard updates
-    const channel = supabase
-      .channel('dashboard-updates')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public', 
-        table: 'cart_items'
-      }, (payload) => {
-        console.log('Cart item change:', payload)
-        fetchBookings() // Refresh bookings on any cart change
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'cart_headers' 
-      }, (payload) => {
-        console.log('Cart header change:', payload)
-        fetchBookings() // Refresh on cart status changes
-      })
-      .subscribe()
+    // const channel = supabase
+    //   .channel('dashboard-updates')
+    //   .on('postgres_changes', {
+    //     event: '*',
+    //     schema: 'public', 
+    //     table: 'cart_items'
+    //   }, (payload) => {
+    //     console.log('Cart item change:', payload)
+    //     fetchBookings() // Refresh bookings on any cart change
+    //   })
+    //   .on('postgres_changes', {
+    //     event: '*',
+    //     schema: 'public',
+    //     table: 'cart_headers' 
+    //   }, (payload) => {
+    //     console.log('Cart header change:', payload)
+    //     fetchBookings() // Refresh on cart status changes
+    //   })
+    //   .subscribe()
 
     // Subscribe to real-time cart updates
     const fetchBookings = async () => {
@@ -188,24 +189,24 @@ export default function UnifiedDashboard() {
     }
 
     // Fetch AOI experiences available at this venue
-    const fetchExperiences = async () => {
-      if (!currentVenue?.id) return;
-      
-      const { data } = await supabase
-        .from('venue_experiences')
-        .select(`
-          experience_id,
-          is_available,
-          max_capacity,
-          experiences(id, name, price, duration_minutes, stripe_price_id)
-        `)
-        .eq('venue_id', currentVenue.id)
-        .eq('is_available', true)
-      
-      if (data) {
-        // This data is available for future expansion
-      }
-    }
+    // const fetchExperiences = async () => {
+    //   if (!currentVenue?.id) return;
+    //   
+    //   const { data } = await supabase
+    //     .from('venue_experiences')
+    //     .select(`
+    //       experience_id,
+    //       is_available,
+    //       max_capacity,
+    //       experiences(id, name, price, duration_minutes, stripe_price_id)
+    //     `)
+    //     .eq('venue_id', currentVenue.id)
+    //     .eq('is_available', true)
+    //   
+    //   if (data) {
+    //     // This data is available for future expansion
+    //   }
+    // }
 
     fetchBookings()
     fetchInventory()

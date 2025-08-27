@@ -7,7 +7,6 @@ import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import { createClient } from '@/lib/supabase/client'
-import PyramidUI from '@/components/pyramid-ui'
 import { Room, RoomEvent, RemoteParticipant } from 'livekit-client'
 
 export default function LandingPage() {
@@ -25,12 +24,6 @@ export default function LandingPage() {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [showAIChat, setShowAIChat] = useState(false)
-  const [showPyramidUI, setShowPyramidUI] = useState(false)
-  const [pyramidData, setPyramidData] = useState<{
-    apex: { label: string; action: string; mode: string }
-    options: Array<{ key: string; label: string }>
-    context: string
-  } | null>(null)
   const [aiMessages, setAiMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
   const [userInput, setUserInput] = useState("")
   const [isAiThinking, setIsAiThinking] = useState(false)
@@ -227,7 +220,7 @@ export default function LandingPage() {
     }
   }, [bookingDate, selectedBookingExperience, realExperiences, generateAvailableSlots])
 
-  // Handle AI chat interaction
+  // Handle AI chat interaction via LiveKit agent
   const handleAiChat = async () => {
     if (!userInput.trim()) return
     
@@ -237,28 +230,41 @@ export default function LandingPage() {
     setIsAiThinking(true)
     
     try {
-      // Context-aware AI interaction
-      const context = {
-        username: savedUsername,
-        bookingMode: activeBookingMode,
-        selectedExperience: selectedBookingExperience,
-        bookingDate,
-        bookingTime,
-        userMode,
-        currentFlow: 'ai_guide'
+      // Connect to LiveKit agent if not already connected
+      if (!room) {
+        await initializeLiveKitConnection()
       }
       
-      // Simulate AI response (replace with actual AI call)
-      setTimeout(() => {
-        const aiResponse = { 
-          role: 'assistant' as const, 
-          content: `Hello ${savedUsername || 'there'}! I can see you're in ${activeBookingMode} mode. ${selectedBookingExperience ? `You've selected an experience for ${bookingDate}.` : 'Let me help you choose the perfect experience.'} How can I guide your AOI journey today?`
-        }
-        setAiMessages(prev => [...prev, aiResponse])
-        setIsAiThinking(false)
-      }, 1500)
+      // Send message to agent with context for MCP functions
+      if (room) {
+        await room.localParticipant.publishData(
+          new TextEncoder().encode(JSON.stringify({
+            type: 'aoi_chat_message',
+            content: userInput,
+            userContext: {
+              name: guestName || savedUsername,
+              email: guestEmail,
+              bookingMode: activeBookingMode,
+              selectedExperience: selectedBookingExperience,
+              bookingDate,
+              bookingTime,
+              userMode,
+              venue: 'AOI'
+            },
+            requestContext: true // Ask agent to get user journey context via MCP
+          })),
+          { reliable: true }
+        )
+      } else {
+        throw new Error('LiveKit connection not available')
+      }
+      
     } catch (error) {
       console.error('AI chat error:', error)
+      setAiMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "I'm having trouble connecting to the AI agent right now. Please try again in a moment."
+      }])
       setIsAiThinking(false)
     }
   }
@@ -387,7 +393,7 @@ export default function LandingPage() {
     if (qrToken) {
       // Agent gets WHO + WHERE + WHEN + WHAT THEY'RE DOING
       initializeQRContext(qrToken, locationContext, guestName)
-      setShowPyramidUI(true) // Show pyramid instead of chat
+      setShowAIChat(true) // Show chat for QR context
     } else {
       setShowAIChat(true) // Fallback to chat
       const contextualMessage = getContextualWelcome(locationContext)
@@ -461,9 +467,9 @@ What transformation are you seeking today?`
       
       console.log('QR Context:', contextData)
       
-      // Agent sends UIUpdate via LiveKit RPC based on location
-      const mockPyramidData = getPyramidDataForLocation(location)
-      setPyramidData(mockPyramidData)
+      // Agent sends context via LiveKit RPC based on location
+      const locationData = getPyramidDataForLocation(location)
+      console.log('Location data:', locationData)
       
     } catch (error) {
       console.error('Failed to initialize QR context:', error)
@@ -531,8 +537,9 @@ What transformation are you seeking today?`
       await addToCartViaAI('drink', 'mock-drink-id', metadata)
     } else if (action === 'book') {
       // Switch to booking flow
-      setShowPyramidUI(false)
+      setShowAIChat(true)
       // Could trigger booking modal or scroll to booking section
+      window.location.href = '#booking';
     }
   }
 
@@ -542,13 +549,13 @@ What transformation are you seeking today?`
     if (key === 'remind') {
       // Set reminder logic
       console.log('Setting reminder...')
-      setShowPyramidUI(false)
+      setShowAIChat(false)
+      window.location.href = '#booking';
     } else if (key === 'electrolyte' || key === 'water') {
       // Alternative drink option
       handlePyramidApexClick('dispense', key)
     } else if (key === 'ai_guide') {
       // Switch to AI chat
-      setShowPyramidUI(false)
       setShowAIChat(true)
     }
   }
@@ -1279,12 +1286,7 @@ What else can I add to optimize your journey?`
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-light text-white">Reserve Your Transformation</h3>
               <button
-                onClick={() => {
-                  // Check for QR parameter in URL
-                  const urlParams = new URLSearchParams(window.location.search)
-                  const qrToken = urlParams.get('qr')
-                  startAIJourney('main-booking', qrToken || undefined)
-                }}
+                onClick={() => setShowAIChat(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white text-sm hover:scale-105 transition-transform"
               >
                 <Brain className="w-4 h-4" />
