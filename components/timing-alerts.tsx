@@ -38,20 +38,18 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
   useEffect(() => {
     // Generate timing alerts from bookings with drink metadata
     const generateAlerts = () => {
-      const newAlerts: TimingAlert[] = []
-      
-      bookings.forEach(booking => {
+      const newAlerts: TimingAlert[] = bookings.flatMap((booking: Booking) => {
         if (booking.cart_items) {
-          booking.cart_items.forEach((item: any) => {
+          return booking.cart_items.flatMap((item: any) => {
             if (item.drink_metadata && item.drink_metadata.timing) {
               const servingTime = calculateServingTime(booking, item.drink_metadata.timing)
               const minutesUntil = Math.round((servingTime.getTime() - new Date().getTime()) / 60000)
               
               // Only show alerts for upcoming or current timing
               if (minutesUntil > -30 && minutesUntil < 120) {
-                newAlerts.push({
+                return {
                   id: `${booking.id}-${item.id}`,
-                  guest_name: booking.guest_name || booking.name,
+                  guest_name: booking.guestName,
                   drink_name: item.product_name || 'Wellness Drink',
                   timing_type: item.drink_metadata.timing,
                   minutes_until_serve: minutesUntil,
@@ -60,10 +58,16 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
                   session_time: booking.time,
                   experience_name: booking.experience_name,
                   status: 'pending'
-                })
+                }
+              } else {
+                return []
               }
+            } else {
+              return []
             }
           })
+        } else {
+          return []
         }
       })
       
@@ -80,7 +84,7 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
   }, [bookings])
 
   const calculateServingTime = (booking: any, timing: string): Date => {
-    const sessionStart = new Date(`${booking.date} ${booking.time}`)
+    const sessionStart = new Date(`${booking.date}T${booking.time}`)
     
     switch(timing) {
       case 'pre-session':

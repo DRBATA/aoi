@@ -218,14 +218,15 @@ export default function LandingPage() {
     } else {
       setAvailableTimeSlots([])
     }
-  }, [bookingDate, selectedBookingExperience, realExperiences, generateAvailableSlots])
+  }, [bookingDate, selectedBookingExperience, generateAvailableSlots])
 
   // Handle AI chat interaction via LiveKit agent
   const handleAiChat = async () => {
-    if (!userInput.trim()) return
+    if (!userInput.trim() || isAiThinking) return
     
     const newMessage = { role: 'user' as const, content: userInput }
     setAiMessages(prev => [...prev, newMessage])
+    const currentInput = userInput
     setUserInput('')
     setIsAiThinking(true)
     
@@ -240,7 +241,7 @@ export default function LandingPage() {
         await room.localParticipant.publishData(
           new TextEncoder().encode(JSON.stringify({
             type: 'aoi_chat_message',
-            content: userInput,
+            content: currentInput,
             userContext: {
               name: guestName || savedUsername,
               email: guestEmail,
@@ -260,7 +261,7 @@ export default function LandingPage() {
       }
       
     } catch (error) {
-      console.error('AI chat error:', error)
+      console.error('AI message error:', error)
       setAiMessages(prev => [...prev, {
         role: 'assistant',
         content: "I'm having trouble connecting to the AI agent right now. Please try again in a moment."
@@ -455,26 +456,6 @@ What transformation are you seeking today?`
     }
   }
 
-  const initializeQRContext = async (qrToken: string, location: string, userId?: string) => {
-    try {
-      const contextData = {
-        qr_token: qrToken,
-        location,
-        venue_id: 'aoi_dubai',
-        user_id: userId,
-        timestamp: new Date().toISOString()
-      }
-      
-      console.log('QR Context:', contextData)
-      
-      // Agent sends context via LiveKit RPC based on location
-      const locationData = getPyramidDataForLocation(location)
-      console.log('Location data:', locationData)
-      
-    } catch (error) {
-      console.error('Failed to initialize QR context:', error)
-    }
-  }
 
   const initializeAIContext = async (location: string, userId?: string) => {
     try {
@@ -561,7 +542,7 @@ What transformation are you seeking today?`
   // }
 
   // AI Cart Addition with Drinks Metadata
-  const addToCartViaAI = async (itemType: 'experience' | 'drink', itemId: string, metadata: any) => {
+  const addToCartViaAI = async (itemType: 'experience' | 'drink', itemId: string, metadata: Record<string, unknown>) => {
     if (!guestName) {
       const namePrompt = prompt('Please enter your name to add items to cart:')
       if (!namePrompt) return
@@ -678,102 +659,46 @@ What else can I add to optimize your journey?`
     }
   }
 
-  const sendAIMessage = async () => {
-    if (!userInput.trim()) return
-    
-    const newUserMessage = { role: 'user' as const, content: userInput }
-    setAiMessages((prev: any[]) => [...prev, newUserMessage])
-    setUserInput('')
-    setIsAiThinking(true)
-    
-    try {
-      // Connect to LiveKit agent instead of simple API
-      if (!room) {
-        // Initialize LiveKit connection if not already connected
-        await initializeLiveKitConnection()
-      }
-      
-      // Send message to LiveKit agent via data channel
-      if (room) {
-        await room.localParticipant.publishData(
-          new TextEncoder().encode(JSON.stringify({
-            type: 'chat_message',
-            content: newUserMessage.content,
-            userProfile: { name: guestName, email: guestEmail },
-            availableExperiences: realExperiences,
-            availableSlots: availableTimeSlots
-          })),
-          { reliable: true }
-        )
-      } else {
-        throw new Error('LiveKit connection not available')
-      }
-      
-    } catch (error: unknown) {
-      console.error('AI chat error:', error)
-      setAiMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "I'm having trouble connecting to the AI agent right now. Let me help you manually select the perfect experience for your journey."
-      }])
-      setIsAiThinking(false)
-    }
-  }
 
   const initializeLiveKitConnection = async () => {
     try {
       const response = await fetch('/api/livekit-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          participantName: guestName || 'Guest',
-          participantMetadata: JSON.stringify({
-            userProfile: { name: guestName, email: guestEmail },
-            venue: 'AOI',
-            context: 'booking_chat'
-          })
-        })
+        body: JSON.stringify({ identity: guestName || 'anonymous' })
       })
-
-      const { token, url } = await response.json()
       
+      const { token, url } = await response.json()
       const newRoom = new Room()
       
       // Handle agent responses
-      newRoom.on(RoomEvent.DataReceived, (payload: Uint8Array, participant?: RemoteParticipant) => {
-        if (participant?.identity === 'agent') {
+      newRoom.on(RoomEvent.DataReceived, (payload, participant) => {
+        if (participant?.isAgent) {
           try {
             const data = JSON.parse(new TextDecoder().decode(payload))
-            if (data.type === 'chat_response') {
+            
+            if (data.type === "aoi_chat_response") {
               setAiMessages(prev => [...prev, {
                 role: 'assistant',
                 content: data.content
               }])
+              setIsAiThinking(false)
               
-              // Handle booking recommendations
-              if (data.recommendations) {
-                if (data.recommendations.experience) {
-                  setSelectedBookingExperience(data.recommendations.experience)
-                }
-                if (data.recommendations.date) {
-                  setBookingDate(data.recommendations.date)
-                }
-                if (data.recommendations.time) {
-                  setBookingTime(data.recommendations.time)
-                }
-                
-                // Auto-add to cart if confirmed
-                if (data.recommendations.experienceData && data.autoBook) {
-                  const exp = data.recommendations.experienceData
-                  addToCartViaAI('experience', exp.id, {
-                    date: bookingDate || new Date().toISOString().split('T')[0],
-                    time: bookingTime || '14:00',
-                    duration_minutes: exp.duration_minutes,
-                    experience_name: exp.name
-                  })
-                }
+              // Handle booking confirmations from agent
+              if (data.bookingCreated) {
+                setAiMessages(prev => [...prev, {
+                  role: 'assistant',
+                  content: `✅ Perfect! I've created your booking. Would you like me to add any complementary drinks or adjust the timing?`
+                }])
               }
               
-              setIsAiThinking(false)
+              // Handle drink recommendations
+              if (data.drinksAdded) {
+                setAiMessages(prev => [...prev, {
+                  role: 'assistant',
+                  content: `🥤 I've also added hydration recommendations based on your experience. Check the staff dashboard - they'll have everything ready for you!`
+                }])
+              }
             }
           } catch (e) {
             console.error('Error parsing agent response:', e)
@@ -1583,13 +1508,13 @@ What else can I add to optimize your journey?`
                   type="text"
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendAIMessage()}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAiChat()}
                   placeholder="Ask about experiences, timing, or your wellness goals..."
                   className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-purple-400"
                   disabled={isAiThinking}
                 />
                 <button
-                  onClick={sendAIMessage}
+                  onClick={handleAiChat}
                   disabled={isAiThinking || !userInput.trim()}
                   className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >

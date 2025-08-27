@@ -14,8 +14,8 @@ import TimingAlerts from "./timing-alerts"
 import { createClient } from '@/lib/supabase/client'
 
 // Types
-type BookingStatus = 'waiting' | 'checked-in' | 'active' | 'completed'
 type ViewMode = "all" | "arrived" | "active" | "complete"
+type BookingStatus = 'waiting' | 'checked-in' | 'active' | 'completed'
 
 export interface Booking {
   id: string
@@ -56,7 +56,7 @@ const serviceRooms = [
 export default function UnifiedDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>("all")
   const [rooms] = useState(serviceRooms)
-  const [bookings, setBookings] = useState<Booking[]>([])
+  const [bookings, setBookings] = useState<Array<Record<string, unknown>>>([])
   const [selectedGuest, setSelectedGuest] = useState<Booking | null>(null)
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
@@ -155,7 +155,7 @@ export default function UnifiedDashboard() {
             staffNotes: item.booking_metadata?.staff_notes || ''
           }
         }))
-        setBookings(formattedBookings as Booking[])
+        setBookings(formattedBookings as Record<string, unknown>[])
       }
     }
 
@@ -176,11 +176,11 @@ export default function UnifiedDashboard() {
       
       if (data) {
         // Transform the data to match our expected type structure
-        const transformedData = data.map(item => ({
+        const transformedData = data.map((item: Record<string, unknown>) => ({
           id: item.id,
           quantity: item.quantity,
           products: Array.isArray(item.products) ? item.products[0] : item.products
-        })).filter(item => item.products) // Filter out items without product data
+        })).filter((item: Record<string, unknown>) => item.products) // Filter out items without product data
         setInventory(transformedData)
       }
     }
