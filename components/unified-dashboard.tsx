@@ -185,11 +185,11 @@ export default function UnifiedDashboard() {
       
       if (data) {
         // Transform the data to match our expected type structure
-        const transformedData = data.map((item: any) => ({
+        const transformedData = data.map((item: {id: unknown, quantity: unknown, products: unknown}) => ({
           id: String(item.id),
           quantity: Number(item.quantity),
           products: Array.isArray(item.products) ? item.products[0] : item.products
-        })).filter((item: any) => item.products) // Filter out items without product data
+        })).filter((item: {products: unknown}) => item.products) // Filter out items without product data
         setInventory(transformedData)
       }
     }
