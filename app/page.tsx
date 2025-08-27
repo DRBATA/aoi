@@ -111,7 +111,7 @@ export default function LandingPage() {
         const experiences = data
           .filter(item => item.experiences)
           .map(item => {
-            const exp = item.experiences as {id: string, name: string, price: number, duration_minutes: number};
+            const exp = Array.isArray(item.experiences) ? item.experiences[0] : item.experiences;
             if (!exp) return null;
             return {
               id: exp.id,

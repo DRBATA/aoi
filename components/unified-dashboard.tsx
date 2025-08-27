@@ -65,7 +65,7 @@ const serviceRooms = [
 export default function UnifiedDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>("all")
   const [rooms] = useState(serviceRooms)
-  const [bookings, setBookings] = useState<Array<Record<string, unknown>>>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [selectedGuest, setSelectedGuest] = useState<Booking | null>(null)
   const [showCheckinModal, setShowCheckinModal] = useState(false)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
@@ -164,7 +164,7 @@ export default function UnifiedDashboard() {
             staffNotes: item.booking_metadata?.staff_notes || ''
           }
         }))
-        setBookings(formattedBookings as Record<string, unknown>[])
+        setBookings(formattedBookings as Booking[])
       }
     }
 
@@ -185,11 +185,11 @@ export default function UnifiedDashboard() {
       
       if (data) {
         // Transform the data to match our expected type structure
-        const transformedData = data.map((item: Record<string, unknown>) => ({
-          id: item.id,
-          quantity: item.quantity,
+        const transformedData = data.map((item: any) => ({
+          id: String(item.id),
+          quantity: Number(item.quantity),
           products: Array.isArray(item.products) ? item.products[0] : item.products
-        })).filter((item: Record<string, unknown>) => item.products) // Filter out items without product data
+        })).filter((item: any) => item.products) // Filter out items without product data
         setInventory(transformedData)
       }
     }
@@ -482,13 +482,13 @@ export default function UnifiedDashboard() {
                         <h3 className="font-medium text-white">{booking.guest_name || booking.name}</h3>
                         <p className="text-sm text-white/60">{booking.experience_name || booking.service}</p>
                         {/* Show cart items count */}
-                        {booking.cart_items && booking.cart_items.length > 1 && (
+                        {booking.cart_items && Array.isArray(booking.cart_items) && booking.cart_items.length > 1 && (
                           <div className="flex items-center gap-1 mt-1">
                             <span className="text-xs text-cyan-300">🛒 {booking.cart_items.length} items in cart</span>
                           </div>
                         )}
                         {/* Show cart preview */}
-                        {booking.cart_items && booking.cart_items.length > 0 && (
+                        {booking.cart_items && Array.isArray(booking.cart_items) && booking.cart_items.length > 0 && (
                           <div className="mt-2 space-y-1">
                             {booking.cart_items.slice(0, 3).map((item, idx) => (
                               <div key={idx} className="text-xs text-white/50 flex justify-between">
