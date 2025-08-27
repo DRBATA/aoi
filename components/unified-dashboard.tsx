@@ -142,7 +142,20 @@ export default function UnifiedDashboard() {
           total_amount: item.cart_headers?.total_amount || 0,
           cart: [item],
           recommendations: item.ai_recommendation ? [item.ai_recommendation] : [],
-          venueId: item.venue_id
+          venueId: item.venue_id,
+          email: item.cart_headers?.customer_email,
+          phone: item.cart_headers?.customer_phone || item.cart_headers?.phone,
+          // Staff-only booking context metadata
+          bookingContext: {
+            experienceType: item.booking_metadata?.experience_type || 'general',
+            duration: item.booking_metadata?.duration_minutes || 30,
+            room: item.booking_metadata?.room,
+            specialRequests: item.booking_metadata?.special_requests,
+            arrivalTime: item.booking_metadata?.arrival_time,
+            lastInteraction: item.updated_at,
+            chatHistory: item.booking_metadata?.chat_history || [],
+            staffNotes: item.booking_metadata?.staff_notes || ''
+          }
         }))
         setBookings(formattedBookings as Booking[])
       }

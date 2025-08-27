@@ -7,6 +7,8 @@ import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import { createClient } from '@/lib/supabase/client'
+import PyramidUI from '@/components/pyramid-ui'
+import { Room, RoomEvent, RemoteParticipant } from 'livekit-client'
 
 export default function LandingPage() {
   const [, setSelectedExperience] = useState<string | null>(null)
@@ -23,12 +25,19 @@ export default function LandingPage() {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [showAIChat, setShowAIChat] = useState(false)
+  const [showPyramidUI, setShowPyramidUI] = useState(false)
+  const [pyramidData, setPyramidData] = useState<{
+    apex: { label: string; action: string; mode: string }
+    options: Array<{ key: string; label: string }>
+    context: string
+  } | null>(null)
   const [aiMessages, setAiMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
   const [userInput, setUserInput] = useState("")
   const [isAiThinking, setIsAiThinking] = useState(false)
   const [activeBookingMode, setActiveBookingMode] = useState<'quick_order' | 'profile_build'>('quick_order')
   const [userMode, setUserMode] = useState<'anonymous' | 'authenticated'>('anonymous')
   const [showEmailCapture, setShowEmailCapture] = useState(false)
+  const [room, setRoom] = useState<Room | null>(null)
   const supabase = createClient()
 
   const experiences = [
@@ -370,19 +379,23 @@ export default function LandingPage() {
     return locationMap[orderSource] || 'general'
   }
 
-  // AI Journey Planning Agent with Location Context
-  const startAIJourney = (orderSource: string = 'main-booking') => {
+  // QR + AI Journey Planning Agent with Location Context
+  const startAIJourney = (orderSource: string = 'main-booking', qrToken?: string) => {
     const locationContext = detectLocationContext(orderSource)
     
-    setShowAIChat(true)
-    
-    // Initialize AI with location context
-    const contextualMessage = getContextualWelcome(locationContext)
-    
-    setAiMessages([{
-      role: 'assistant' as const,
-      content: contextualMessage
-    }])
+    // QR scan provides precise location context
+    if (qrToken) {
+      // Agent gets WHO + WHERE + WHEN + WHAT THEY'RE DOING
+      initializeQRContext(qrToken, locationContext, guestName)
+      setShowPyramidUI(true) // Show pyramid instead of chat
+    } else {
+      setShowAIChat(true) // Fallback to chat
+      const contextualMessage = getContextualWelcome(locationContext)
+      setAiMessages([{
+        role: 'assistant' as const,
+        content: contextualMessage
+      }])
+    }
     
     // Trigger context initialization in AI agent
     initializeAIContext(locationContext, guestName)
@@ -436,6 +449,27 @@ What transformation are you seeking today?`
     }
   }
 
+  const initializeQRContext = async (qrToken: string, location: string, userId?: string) => {
+    try {
+      const contextData = {
+        qr_token: qrToken,
+        location,
+        venue_id: 'aoi_dubai',
+        user_id: userId,
+        timestamp: new Date().toISOString()
+      }
+      
+      console.log('QR Context:', contextData)
+      
+      // Agent sends UIUpdate via LiveKit RPC based on location
+      const mockPyramidData = getPyramidDataForLocation(location)
+      setPyramidData(mockPyramidData)
+      
+    } catch (error) {
+      console.error('Failed to initialize QR context:', error)
+    }
+  }
+
   const initializeAIContext = async (location: string, userId?: string) => {
     try {
       const contextData = {
@@ -445,13 +479,77 @@ What transformation are you seeking today?`
         timestamp: new Date().toISOString()
       }
       
-      // This would call the AI agent's context initialization
       console.log('Initializing AI context:', contextData)
       
-      // In a real implementation, this would trigger the MCP function
-      // await aiAgent.initialize_context_awareness(contextData, userId)
     } catch (error) {
       console.error('Failed to initialize AI context:', error)
+    }
+  }
+
+  const getPyramidDataForLocation = (location: string) => {
+    switch(location) {
+      case 'wellness_area':
+        return {
+          apex: { label: 'Hydration Assessment', action: 'assess', mode: 'water' },
+          options: [{ key: 'skip', label: 'Skip Assessment' }, { key: 'remind', label: 'Remind Later' }],
+          context: 'Pre-session hydration • Optimize your experience'
+        }
+      case 'pre_session':
+        return {
+          apex: { label: '+250ml Water', action: 'dispense', mode: 'water' },
+          options: [{ key: 'electrolyte', label: 'Electrolyte' }, { key: 'remind', label: 'Remind in 30min' }],
+          context: '30min before session • Optimal hydration timing'
+        }
+      case 'post_session':
+        return {
+          apex: { label: 'Electrolyte Recovery', action: 'dispense', mode: 'electrolyte' },
+          options: [{ key: 'water', label: 'Plain Water' }, { key: 'remind', label: 'Remind Later' }],
+          context: 'Post-session recovery • Replenish electrolytes'
+        }
+      default:
+        return {
+          apex: { label: 'Book Experience', action: 'book', mode: 'experience' },
+          options: [{ key: 'browse', label: 'Browse Options' }, { key: 'ai_guide', label: 'AI Guide' }],
+          context: 'Welcome to AOI • Choose your transformation'
+        }
+    }
+  }
+
+  const handlePyramidApexClick = async (action: string, mode: string) => {
+    console.log('Pyramid Apex Click:', { action, mode })
+    
+    if (action === 'dispense') {
+      // Add to cart via existing system
+      const metadata = {
+        timing: mode === 'electrolyte' ? 'post_session' : 'pre_session',
+        timing_offset: 0,
+        electrolyte_profile: mode === 'electrolyte' ? 'recovery' : 'balanced',
+        hydration_goal: mode === 'electrolyte' ? 'recovery' : 'preparation'
+      }
+      
+      // Use existing addToCartViaAI function
+      await addToCartViaAI('drink', 'mock-drink-id', metadata)
+    } else if (action === 'book') {
+      // Switch to booking flow
+      setShowPyramidUI(false)
+      // Could trigger booking modal or scroll to booking section
+    }
+  }
+
+  const handlePyramidOptionClick = (key: string) => {
+    console.log('Pyramid Option Click:', key)
+    
+    if (key === 'remind') {
+      // Set reminder logic
+      console.log('Setting reminder...')
+      setShowPyramidUI(false)
+    } else if (key === 'electrolyte' || key === 'water') {
+      // Alternative drink option
+      handlePyramidApexClick('dispense', key)
+    } else if (key === 'ai_guide') {
+      // Switch to AI chat
+      setShowPyramidUI(false)
+      setShowAIChat(true)
     }
   }
 
@@ -578,47 +676,111 @@ What else can I add to optimize your journey?`
     
     const newUserMessage = { role: 'user' as const, content: userInput }
     setAiMessages((prev: any[]) => [...prev, newUserMessage])
+    setUserInput('')
+    setIsAiThinking(true)
     
     try {
-      // AI Journey Planning Logic
-      const response = await fetch('/api/ai-journey-planner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [...aiMessages, newUserMessage],
-          availableExperiences: realExperiences,
-          availableSlots: availableTimeSlots,
-          userProfile: { name: guestName, email: guestEmail }
-        })
-      })
-
-      const aiResponse = await response.json()
-      
-      setAiMessages(prev => [...prev, {
-        role: 'assistant',
-        content: aiResponse.message
-      }])
-
-      // Auto-fill booking form if AI makes recommendations
-      if (aiResponse.recommendations) {
-        if (aiResponse.recommendations.experience) {
-          setSelectedBookingExperience(aiResponse.recommendations.experience)
-        }
-        if (aiResponse.recommendations.date) {
-          setBookingDate(aiResponse.recommendations.date)
-        }
-        if (aiResponse.recommendations.time) {
-          setBookingTime(aiResponse.recommendations.time)
-        }
+      // Connect to LiveKit agent instead of simple API
+      if (!room) {
+        // Initialize LiveKit connection if not already connected
+        await initializeLiveKitConnection()
       }
+      
+      // Send message to LiveKit agent via data channel
+      if (room) {
+        await room.localParticipant.publishData(
+          new TextEncoder().encode(JSON.stringify({
+            type: 'chat_message',
+            content: newUserMessage.content,
+            userProfile: { name: guestName, email: guestEmail },
+            availableExperiences: realExperiences,
+            availableSlots: availableTimeSlots
+          })),
+          { reliable: true }
+        )
+      } else {
+        throw new Error('LiveKit connection not available')
+      }
+      
     } catch (error: unknown) {
       console.error('AI chat error:', error)
       setAiMessages(prev => [...prev, {
         role: 'assistant',
-        content: "I'm having trouble connecting right now. Let me help you manually select the perfect experience for your journey."
+        content: "I'm having trouble connecting to the AI agent right now. Let me help you manually select the perfect experience for your journey."
       }])
-    } finally {
       setIsAiThinking(false)
+    }
+  }
+
+  const initializeLiveKitConnection = async () => {
+    try {
+      const response = await fetch('/api/livekit-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantName: guestName || 'Guest',
+          participantMetadata: JSON.stringify({
+            userProfile: { name: guestName, email: guestEmail },
+            venue: 'AOI',
+            context: 'booking_chat'
+          })
+        })
+      })
+
+      const { token, url } = await response.json()
+      
+      const newRoom = new Room()
+      
+      // Handle agent responses
+      newRoom.on(RoomEvent.DataReceived, (payload: Uint8Array, participant?: RemoteParticipant) => {
+        if (participant?.identity === 'agent') {
+          try {
+            const data = JSON.parse(new TextDecoder().decode(payload))
+            if (data.type === 'chat_response') {
+              setAiMessages(prev => [...prev, {
+                role: 'assistant',
+                content: data.content
+              }])
+              
+              // Handle booking recommendations
+              if (data.recommendations) {
+                if (data.recommendations.experience) {
+                  setSelectedBookingExperience(data.recommendations.experience)
+                }
+                if (data.recommendations.date) {
+                  setBookingDate(data.recommendations.date)
+                }
+                if (data.recommendations.time) {
+                  setBookingTime(data.recommendations.time)
+                }
+                
+                // Auto-add to cart if confirmed
+                if (data.recommendations.experienceData && data.autoBook) {
+                  const exp = data.recommendations.experienceData
+                  addToCartViaAI('experience', exp.id, {
+                    date: bookingDate || new Date().toISOString().split('T')[0],
+                    time: bookingTime || '14:00',
+                    duration_minutes: exp.duration_minutes,
+                    experience_name: exp.name
+                  })
+                }
+              }
+              
+              setIsAiThinking(false)
+            }
+          } catch (e) {
+            console.error('Error parsing agent response:', e)
+            setIsAiThinking(false)
+          }
+        }
+      })
+
+      await newRoom.connect(url, token)
+      setRoom(newRoom)
+      
+    } catch (error) {
+      console.error('Failed to initialize LiveKit connection:', error)
+      throw error
     }
   }
 
@@ -1117,7 +1279,12 @@ What else can I add to optimize your journey?`
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-light text-white">Reserve Your Transformation</h3>
               <button
-                onClick={() => startAIJourney()}
+                onClick={() => {
+                  // Check for QR parameter in URL
+                  const urlParams = new URLSearchParams(window.location.search)
+                  const qrToken = urlParams.get('qr')
+                  startAIJourney('main-booking', qrToken || undefined)
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white text-sm hover:scale-105 transition-transform"
               >
                 <Brain className="w-4 h-4" />
@@ -1368,73 +1535,61 @@ What else can I add to optimize your journey?`
             className="bg-gradient-to-b from-purple-950/90 to-black/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl w-full max-w-2xl h-[600px] flex flex-col"
           >
             {/* Chat Header */}
-            <div className="flex items-center justify-between p-6 border-b border-purple-500/20">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <Brain className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-white font-medium">AI Journey Architect</h3>
-                  <p className="text-purple-300 text-sm">Crafting your perfect transformation</p>
-                </div>
-              </div>
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <h3 className="text-xl font-light text-white">AI Journey Guide</h3>
               <button
                 onClick={() => setShowAIChat(false)}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-white/70 hover:text-white transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
-
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {aiMessages.map((message, index) => (
                 <div
                   key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`p-3 rounded-lg ${
+                    message.role === 'user'
+                      ? 'bg-purple-500/20 text-white ml-8'
+                      : 'bg-white/10 text-white/90 mr-8'
+                  }`}
                 >
-                  <div
-                    className={`max-w-[80%] p-4 rounded-2xl ${
-                      message.role === 'user'
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                        : 'bg-white/10 text-white border border-white/20'
-                    }`}
-                  >
-                    <p className="text-sm leading-relaxed whitespace-pre-line">{message.content}</p>
+                  <div className="text-sm opacity-70 mb-1">
+                    {message.role === 'user' ? 'You' : 'AI Guide'}
                   </div>
+                  <div className="whitespace-pre-wrap">{message.content}</div>
                 </div>
               ))}
+              
               {isAiThinking && (
-                <div className="flex justify-start">
-                  <div className="bg-white/10 border border-white/20 rounded-2xl p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                      </div>
-                      <span className="text-purple-300 text-sm">Thinking...</span>
-                    </div>
+                <div className="bg-white/10 text-white/90 mr-8 p-3 rounded-lg">
+                  <div className="text-sm opacity-70 mb-1">AI Guide</div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                    <span className="text-white/70">Thinking...</span>
                   </div>
                 </div>
               )}
             </div>
-
-            {/* Chat Input */}
-            <div className="p-6 border-t border-purple-500/20">
-              <div className="flex gap-3">
+            
+            <div className="p-4 border-t border-white/10">
+              <div className="flex gap-2">
                 <input
                   type="text"
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && sendAIMessage()}
-                  placeholder="Tell me about your intentions, current state, or desired outcome..."
-                  className="flex-1 p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-purple-400"
+                  placeholder="Ask about experiences, timing, or your wellness goals..."
+                  className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-purple-400"
+                  disabled={isAiThinking}
                 />
                 <button
                   onClick={sendAIMessage}
-                  disabled={!userInput.trim() || isAiThinking}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                  disabled={isAiThinking || !userInput.trim()}
+                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
                   Send
                 </button>
