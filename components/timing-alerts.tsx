@@ -21,7 +21,6 @@ interface TimingAlert {
 
 interface Booking {
   id: string
-  guestName: string
   guest_name: string
   date: string
   time: string
@@ -49,7 +48,7 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
         if (minutesUntil > -30 && minutesUntil < 120) {
           return {
             id: booking.id,
-            guest_name: booking.guestName,
+            guest_name: booking.guest_name,
             drink_name: 'Session Starting Soon',
             timing_type: 'session',
             minutes_until_serve: minutesUntil,
@@ -61,7 +60,7 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
           }
         }
         return null
-      }).filter((alert): alert is TimingAlert => alert !== null)
+      }).filter((alert) => alert !== null) as TimingAlert[]
       
       setAlerts(newAlerts)
       
