@@ -2,10 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { 
-  Clock, User, MapPin, Phone, Mail, 
-  Calendar, CheckCircle, AlertCircle, XCircle, 
-  Plus, Minus, Edit, Trash2, Save, X, 
-  Package, ShoppingCart, Home, TrendingUp
+  Calendar, Plus, Package, Home, TrendingUp, Users
 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

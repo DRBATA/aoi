@@ -386,26 +386,26 @@ export default function LandingPage() {
   }
 
   // QR + AI Journey Planning Agent with Location Context
-  const startAIJourney = (orderSource: string = 'main-booking', qrToken?: string) => {
-    const locationContext = detectLocationContext(orderSource)
-    
-    // QR scan provides precise location context
-    if (qrToken) {
-      // Agent gets WHO + WHERE + WHEN + WHAT THEY'RE DOING
-      initializeQRContext(qrToken, locationContext, guestName)
-      setShowAIChat(true) // Show chat for QR context
-    } else {
-      setShowAIChat(true) // Fallback to chat
-      const contextualMessage = getContextualWelcome(locationContext)
-      setAiMessages([{
-        role: 'assistant' as const,
-        content: contextualMessage
-      }])
-    }
-    
-    // Trigger context initialization in AI agent
-    initializeAIContext(locationContext, guestName)
-  }
+  // const startAIJourney = (orderSource: string = 'main-booking', qrToken?: string) => {
+  //   const locationContext = detectLocationContext(orderSource)
+  //   
+  //   // QR scan provides precise location context
+  //   if (qrToken) {
+  //     // Agent gets WHO + WHERE + WHEN + WHAT THEY'RE DOING
+  //     initializeQRContext(qrToken, locationContext, guestName)
+  //     setShowAIChat(true) // Show chat for QR context
+  //   } else {
+  //     setShowAIChat(true) // Fallback to chat
+  //     const contextualMessage = getContextualWelcome(locationContext)
+  //     setAiMessages([{
+  //       role: 'assistant' as const,
+  //       content: contextualMessage
+  //     }])
+  //   }
+  //   
+  //   // Trigger context initialization in AI agent
+  //   initializeAIContext(locationContext, guestName)
+  // }
 
   const getContextualWelcome = (location: string) => {
     switch(location) {
@@ -543,22 +543,22 @@ What transformation are you seeking today?`
     }
   }
 
-  const handlePyramidOptionClick = (key: string) => {
-    console.log('Pyramid Option Click:', key)
-    
-    if (key === 'remind') {
-      // Set reminder logic
-      console.log('Setting reminder...')
-      setShowAIChat(false)
-      window.location.href = '#booking';
-    } else if (key === 'electrolyte' || key === 'water') {
-      // Alternative drink option
-      handlePyramidApexClick('dispense', key)
-    } else if (key === 'ai_guide') {
-      // Switch to AI chat
-      setShowAIChat(true)
-    }
-  }
+  // const handlePyramidOptionClick = (key: string) => {
+  //   console.log('Pyramid Option Click:', key)
+  //   
+  //   if (key === 'remind') {
+  //     // Set reminder logic
+  //     console.log('Setting reminder...')
+  //     setShowAIChat(false)
+  //     window.location.href = '#booking';
+  //   } else if (key === 'electrolyte' || key === 'water') {
+  //     // Alternative drink option
+  //     handlePyramidApexClick('dispense', key)
+  //   } else if (key === 'ai_guide') {
+  //     // Switch to AI chat
+  //     setShowAIChat(true)
+  //   }
+  // }
 
   // AI Cart Addition with Drinks Metadata
   const addToCartViaAI = async (itemType: 'experience' | 'drink', itemId: string, metadata: any) => {
