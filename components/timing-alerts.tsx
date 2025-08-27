@@ -55,7 +55,7 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
             minutes_until_serve: minutesUntil,
             priority: minutesUntil <= 15 ? 'high' : minutesUntil <= 30 ? 'medium' : 'low',
             ai_reasoning: `${booking.experience_name} session`,
-            session_time: booking.time,
+            session_time: booking.time || 'TBD',
             experience_name: booking.experience_name,
             status: 'pending'
           }
