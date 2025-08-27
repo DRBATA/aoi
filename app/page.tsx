@@ -8,6 +8,81 @@ import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import { createClient } from '@/lib/supabase/client'
 import { Room, RoomEvent } from 'livekit-client'
+import useConnectionDetails from '@/hooks/useConnectionDetails'
+import LiveKitChat from '@/components/LiveKitChat'
+
+// AI Journey Chat Modal Component
+function AIJourneyChatModal({ onClose }: { onClose: () => void }) {
+  const { connectionDetails, isLoading, error } = useConnectionDetails();
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-gradient-to-b from-purple-950/90 to-black/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-8"
+        >
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-white/80">Connecting to AI Journey Guide...</p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-gradient-to-b from-purple-950/90 to-black/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-8 max-w-md"
+        >
+          <div className="flex flex-col items-center gap-4">
+            <X className="w-12 h-12 text-red-400" />
+            <p className="text-white/80 text-center">Unable to connect to AI agent</p>
+            <p className="text-white/60 text-sm text-center">{error}</p>
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-white rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!connectionDetails) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-gradient-to-b from-purple-950/90 to-black/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl w-full max-w-2xl h-[600px] flex flex-col overflow-hidden"
+      >
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
+          <h3 className="text-xl font-light text-white">AI Journey Guide</h3>
+          <button
+            onClick={onClose}
+            className="text-white/70 hover:text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <LiveKitChat connectionDetails={connectionDetails} onClose={onClose} />
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 export default function LandingPage() {
   const [selectedVenue, setSelectedVenue] = useState("dubai")
@@ -1214,77 +1289,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* AI Journey Chat Modal */}
+      {/* AI Journey Chat Modal with LiveKit */}
       {showAIChat && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-b from-purple-950/90 to-black/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl w-full max-w-2xl h-[600px] flex flex-col"
-          >
-            {/* Chat Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/10">
-              <h3 className="text-xl font-light text-white">AI Journey Guide</h3>
-              <button
-                onClick={() => setShowAIChat(false)}
-                className="text-white/70 hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {aiMessages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg ${
-                    message.role === 'user'
-                      ? 'bg-purple-500/20 text-white ml-8'
-                      : 'bg-white/10 text-white/90 mr-8'
-                  }`}
-                >
-                  <div className="text-sm opacity-70 mb-1">
-                    {message.role === 'user' ? 'You' : 'AI Guide'}
-                  </div>
-                  <div className="whitespace-pre-wrap">{message.content}</div>
-                </div>
-              ))}
-              
-              {isAiThinking && (
-                <div className="bg-white/10 text-white/90 mr-8 p-3 rounded-lg">
-                  <div className="text-sm opacity-70 mb-1">AI Guide</div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                    <span className="text-white/70">Thinking...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="p-4 border-t border-white/10">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAiChat()}
-                  placeholder="Ask about experiences, timing, or your wellness goals..."
-                  className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-purple-400"
-                  disabled={isAiThinking}
-                />
-                <button
-                  onClick={handleAiChat}
-                  disabled={isAiThinking || !userInput.trim()}
-                  className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  Send
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+        <AIJourneyChatModal onClose={() => setShowAIChat(false)} />
       )}
 
       {/* Footer */}

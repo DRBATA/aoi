@@ -1,25 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 export type ConnectionDetails = {
-  serverUrl: string;
+  url: string;
+  token: string;
   roomName: string;
-  participantName: string;
-  participantToken: string;
+  participantIdentity: string;
 };
 
 export default function useConnectionDetails() {
   const [connectionDetails, setConnectionDetails] = useState<ConnectionDetails | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const refreshConnectionDetails = async () => {
+  const refreshConnectionDetails = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      const response = await fetch('/api/livekit-token', {
-        method: 'POST',
+      const response = await fetch('/api/connection-details', {
+        method: 'GET',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          guestName: 'AOI Guest',
-          experienceType: 'general',
-          bookingStatus: 'pending'
-        })
       });
       
       if (!response.ok) {
@@ -27,15 +27,23 @@ export default function useConnectionDetails() {
       }
       
       const details = await response.json();
-      setConnectionDetails(details);
+      setConnectionDetails({
+        url: details.url,
+        token: details.token,
+        roomName: details.roomName,
+        participantIdentity: details.participantIdentity,
+      });
     } catch (error) {
       console.error('Error fetching connection details:', error);
+      setError(error instanceof Error ? error.message : 'Failed to connect');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshConnectionDetails();
-  }, []);
+  }, [refreshConnectionDetails]);
 
-  return { connectionDetails, refreshConnectionDetails };
+  return { connectionDetails, refreshConnectionDetails, isLoading, error };
 }
