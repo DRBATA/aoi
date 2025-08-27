@@ -6,10 +6,9 @@ import {
   RoomAudioRenderer,
   useDataChannel,
   useLocalParticipant,
-  useRemoteParticipants,
   useTracks,
 } from '@livekit/components-react';
-import { Room, Track, RoomEvent, DataPacket_Kind } from 'livekit-client';
+import { Room, Track, DataPacket_Kind } from 'livekit-client';
 import { ConnectionDetails } from '@/hooks/useConnectionDetails';
 
 interface LiveKitChatProps {
@@ -31,7 +30,7 @@ function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { localParticipant } = useLocalParticipant();
-  const remoteParticipants = useRemoteParticipants();
+  // const remoteParticipants = useRemoteParticipants(); // Reserved for future use
   const tracks = useTracks();
 
   // Handle data channel messages
