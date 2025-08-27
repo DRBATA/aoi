@@ -111,12 +111,12 @@ export default function LandingPage() {
         const experiences = data
           .filter(item => item.experiences)
           .map(item => {
-            const exp = item.experiences as {id: string, name: string, price: string, duration_minutes: number};
+            const exp = item.experiences as {id: string, name: string, price: number, duration_minutes: number};
             if (!exp) return null;
             return {
               id: exp.id,
               name: exp.name,
-              price: parseFloat(exp.price),
+              price: exp.price,
               duration_minutes: exp.duration_minutes
             };
           })
@@ -419,123 +419,6 @@ export default function LandingPage() {
   //   }
   // }
 
-  // AI Cart Addition with Drinks Metadata
-  const addToCartViaAI = async (itemType: 'experience' | 'drink', itemId: string, metadata: Record<string, unknown>) => {
-    if (!guestName) {
-      const namePrompt = prompt('Please enter your name to add items to cart:')
-      if (!namePrompt) return
-      setGuestName(namePrompt)
-    }
-
-    try {
-      let itemData: {id: string, name: string, price: number} | null = null
-      let unitPrice = 0
-      
-      if (itemType === 'experience') {
-        itemData = realExperiences.find(exp => exp.id === itemId)
-        unitPrice = itemData?.price || 0
-      } else {
-        // Fetch from products table for drinks
-        const { data: productData } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', itemId)
-          .single()
-        
-        itemData = productData
-        unitPrice = productData?.price || 0
-      }
-
-      if (!itemData) throw new Error('Item not found')
-
-      // Get or create cart
-      let cartId: string
-      const { data: existingCart } = await supabase
-        .from('cart_headers')
-        .select('id, total_amount')
-        .eq('customer_name', guestName)
-        .eq('status', 'active')
-        .maybeSingle()
-
-      if (existingCart) {
-        cartId = existingCart.id
-        await supabase
-          .from('cart_headers')
-          .update({ total_amount: (existingCart.total_amount || 0) + unitPrice })
-          .eq('id', cartId)
-      } else {
-        const { data: cartData, error: cartError } = await supabase
-          .from('cart_headers')
-          .insert({
-            customer_name: guestName,
-            customer_email: guestEmail || null,
-            venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b',
-            status: 'active',
-            total_amount: unitPrice,
-            payment_method: 'venue'
-          })
-          .select().single()
-
-        if (cartError) throw cartError
-        cartId = cartData.id
-      }
-
-      // Add item with appropriate metadata
-      const cartItem: Record<string, unknown> = {
-        cart_id: cartId,
-        item_type: itemType,
-        item_id: itemId,
-        quantity: 1,
-        unit_price: unitPrice,
-        total_price: unitPrice
-      }
-
-      if (itemType === 'experience') {
-        cartItem.booking_status = 'pending'
-        cartItem.booking_metadata = metadata
-      } else {
-        // Drink metadata with timing
-        cartItem.drink_metadata = {
-          timing: metadata.timing, // 'before', 'during', 'after', 'ongoing'
-          timing_offset: metadata.timing_offset || 0, // minutes before/after
-          electrolyte_profile: metadata.electrolyte_profile || 'balanced',
-          hydration_goal: metadata.hydration_goal || 'general',
-          related_experience_id: metadata.related_experience_id
-        }
-      }
-
-      const { error: itemError } = await supabase
-        .from('cart_items')
-        .insert(cartItem)
-
-      if (itemError) throw itemError
-
-      // AI confirmation
-      const timingText = itemType === 'drink' 
-        ? ` ${metadata.timing} ${metadata.timing_offset ? `(${metadata.timing_offset}min)` : ''}`
-        : ` ${metadata.date} at ${metadata.time}`
-      
-      const confirmationMessage = {
-        role: 'assistant' as const,
-        content: ` Added ${itemData.name} to your cart!
-${timingText}
- AED ${unitPrice}
-
-${itemType === 'drink' ? ' Electrolyte profile: ' + (metadata.electrolyte_profile || 'balanced') : ''}
-
-What else can I add to optimize your journey?`
-      }
-      
-      setAiMessages(prev => [...prev, confirmationMessage])
-      
-    } catch (error) {
-      console.error('AI Cart Error:', error)
-      setAiMessages(prev => [...prev, {
-        role: 'assistant' as const,
-        content: ` Error adding item. Please try again or contact support.`
-      }])
-    }
-  }
 
 
   const initializeLiveKitConnection = async () => {
@@ -1045,7 +928,7 @@ What else can I add to optimize your journey?`
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                onClick={() => setSelectedExperience(exp.id)}
+                onClick={() => setSelectedBookingExperience(exp.id)}
                 className="relative bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer group"
               >
                 <div 

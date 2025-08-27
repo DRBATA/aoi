@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import CheckinModal from "./checkin-modal"
 import CheckoutModal from "./checkout-modal"
+import TimingAlerts from "./timing-alerts"
 import { createClient } from '@/lib/supabase/client'
 
 // Types
@@ -33,6 +34,12 @@ interface Booking {
     product_name?: string
     quantity?: number
     price?: number
+    item_type?: string
+    name?: string
+    unit_price?: number
+    booking_metadata?: {
+      experience_name?: string
+    }
   }>
   total_amount?: number
   recommendations?: unknown[]

@@ -22,7 +22,10 @@ interface TimingAlert {
 interface Booking {
   id: string
   guestName: string
+  guest_name: string
+  date: string
   time: string
+  experience_name: string
   duration?: number
 }
 
@@ -38,7 +41,7 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
   useEffect(() => {
     // Generate simple timing alerts from bookings
     const generateAlerts = () => {
-      const newAlerts: TimingAlert[] = bookings.map((booking: Booking) => {
+      const newAlerts = bookings.map((booking: Booking) => {
         const sessionStart = new Date(`${booking.date}T${booking.time}`)
         const minutesUntil = Math.round((sessionStart.getTime() - new Date().getTime()) / 60000)
         
@@ -60,15 +63,14 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
         return null
       }).filter((alert): alert is TimingAlert => alert !== null)
       
-      // Sort by urgency (soonest first)
-      newAlerts.sort((a, b) => a.minutes_until_serve - b.minutes_until_serve)
       setAlerts(newAlerts)
+      
     }
 
     generateAlerts()
     
-    // Update alerts every minute
-    const interval = setInterval(generateAlerts, 60000)
+    // Update alerts every 30 seconds
+    const interval = setInterval(generateAlerts, 30000)
     return () => clearInterval(interval)
   }, [bookings])
 
@@ -90,7 +92,7 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
   const getPriority = (minutesUntil: number): 'high' | 'medium' | 'low' => {
     if (minutesUntil <= 0 && minutesUntil >= -5) return 'high' // Serve now
     if (minutesUntil <= 5) return 'high' // Serve very soon
-    if (minutesUntil <= 15) return 'medium' // Prepare soon
+    if (minutesUntil <= 10) return 'medium' // Prepare soon
     return 'low' // Future preparation
   }
 
