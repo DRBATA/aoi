@@ -36,40 +36,29 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
   const [alerts, setAlerts] = useState<TimingAlert[]>([])
 
   useEffect(() => {
-    // Generate timing alerts from bookings with drink metadata
+    // Generate simple timing alerts from bookings
     const generateAlerts = () => {
-      const newAlerts: TimingAlert[] = bookings.flatMap((booking: Booking) => {
-        if (booking.cart_items) {
-          return booking.cart_items.flatMap((item: any) => {
-            if (item.drink_metadata && item.drink_metadata.timing) {
-              const servingTime = calculateServingTime(booking, item.drink_metadata.timing)
-              const minutesUntil = Math.round((servingTime.getTime() - new Date().getTime()) / 60000)
-              
-              // Only show alerts for upcoming or current timing
-              if (minutesUntil > -30 && minutesUntil < 120) {
-                return {
-                  id: `${booking.id}-${item.id}`,
-                  guest_name: booking.guestName,
-                  drink_name: item.product_name || 'Wellness Drink',
-                  timing_type: item.drink_metadata.timing,
-                  minutes_until_serve: minutesUntil,
-                  priority: getPriority(minutesUntil, item.drink_metadata.timing),
-                  ai_reasoning: item.drink_metadata.hydration_goal || 'Optimal hydration timing',
-                  session_time: booking.time,
-                  experience_name: booking.experience_name,
-                  status: 'pending'
-                }
-              } else {
-                return []
-              }
-            } else {
-              return []
-            }
-          })
-        } else {
-          return []
+      const newAlerts: TimingAlert[] = bookings.map((booking: Booking) => {
+        const sessionStart = new Date(`${booking.date}T${booking.time}`)
+        const minutesUntil = Math.round((sessionStart.getTime() - new Date().getTime()) / 60000)
+        
+        // Only show alerts for upcoming sessions
+        if (minutesUntil > -30 && minutesUntil < 120) {
+          return {
+            id: booking.id,
+            guest_name: booking.guestName,
+            drink_name: 'Session Starting Soon',
+            timing_type: 'session',
+            minutes_until_serve: minutesUntil,
+            priority: minutesUntil <= 15 ? 'high' : minutesUntil <= 30 ? 'medium' : 'low',
+            ai_reasoning: `${booking.experience_name} session`,
+            session_time: booking.time,
+            experience_name: booking.experience_name,
+            status: 'pending'
+          }
         }
-      })
+        return null
+      }).filter((alert): alert is TimingAlert => alert !== null)
       
       // Sort by urgency (soonest first)
       newAlerts.sort((a, b) => a.minutes_until_serve - b.minutes_until_serve)
@@ -83,7 +72,7 @@ export default function TimingAlerts({ bookings, onAlertAcknowledgeAction, onMar
     return () => clearInterval(interval)
   }, [bookings])
 
-  const calculateServingTime = (booking: any, timing: string): Date => {
+  const calculateServingTime = (booking: Booking, timing: string): Date => {
     const sessionStart = new Date(`${booking.date}T${booking.time}`)
     
     switch(timing) {

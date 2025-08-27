@@ -7,10 +7,9 @@ import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import { createClient } from '@/lib/supabase/client'
-import { Room, RoomEvent, RemoteParticipant } from 'livekit-client'
+import { Room, RoomEvent } from 'livekit-client'
 
 export default function LandingPage() {
-  const [, setSelectedExperience] = useState<string | null>(null)
   const [selectedVenue, setSelectedVenue] = useState("dubai")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('science')
@@ -112,7 +111,7 @@ export default function LandingPage() {
         const experiences = data
           .filter(item => item.experiences)
           .map(item => {
-            const exp = item.experiences as any;
+            const exp = item.experiences as {id: string, name: string, price: string, duration_minutes: number};
             if (!exp) return null;
             return {
               id: exp.id,
@@ -209,7 +208,7 @@ export default function LandingPage() {
     } finally {
       setLoadingSlots(false)
     }
-  }, [supabase])
+  }, [supabase, realExperiences])
 
   // Update available slots when date or experience changes
   useEffect(() => {
@@ -375,16 +374,6 @@ export default function LandingPage() {
     }
   }
 
-  // Location-based context detection
-  const detectLocationContext = (orderSource: string = 'main-booking') => {
-    const locationMap: Record<string, string> = {
-      'wellness-terminal': 'wellness_area',
-      'pre-session-tablet': 'pre_session',
-      'post-session-kiosk': 'post_session',
-      'main-booking': 'general'
-    }
-    return locationMap[orderSource] || 'general'
-  }
 
   // QR + AI Journey Planning Agent with Location Context
   // const startAIJourney = (orderSource: string = 'main-booking', qrToken?: string) => {
@@ -408,121 +397,10 @@ export default function LandingPage() {
   //   initializeAIContext(locationContext, guestName)
   // }
 
-  const getContextualWelcome = (location: string) => {
-    switch(location) {
-      case 'wellness_area':
-        return `Hello! I can see you're in our wellness assessment area at Art of Implosion. I'm your AI wellness guide with access to:
-
-• Hydration analysis and recommendations
-• Experience matching based on your goals  
-• Real-time coordination with our wellness team
-
-I've notified our wellness attendant. What brings you here today?`
-
-      case 'pre_session':
-        return `Hello! Ready for your AOI session? I can help with pre-session preparation:
-
-• Optimal hydration timing (30min before)
-• Energy and electrolyte optimization
-• Session readiness assessment
-
-How are you feeling and what's your session today?`
-
-      case 'post_session':
-        return `Great session! I'm here to help with your recovery and next steps:
-
-• Recovery hydration and replenishment
-• Post-session wellness planning
-• Future experience recommendations
-
-How was your experience and how are you feeling?`
-
-      default:
-        return `Hello! I'm your AOI Journey Architect with cart integration powers!
-
-I can help you:
-• Choose perfect experiences based on your goals
-• Add complementary drinks with precise timing
-• Build your complete transformation cart
-• Access hydration profiles for exact needs
-
-*I have access to:*
-• ${realExperiences.length} experiences
-• Products table for drinks
-• Hydration options for electrolyte precision
-• Your cart for seamless additions
-
-What transformation are you seeking today?`
-    }
-  }
 
 
-  const initializeAIContext = async (location: string, userId?: string) => {
-    try {
-      const contextData = {
-        location,
-        venue_id: 'aoi_dubai',
-        user_id: userId,
-        timestamp: new Date().toISOString()
-      }
-      
-      console.log('Initializing AI context:', contextData)
-      
-    } catch (error) {
-      console.error('Failed to initialize AI context:', error)
-    }
-  }
 
-  const getPyramidDataForLocation = (location: string) => {
-    switch(location) {
-      case 'wellness_area':
-        return {
-          apex: { label: 'Hydration Assessment', action: 'assess', mode: 'water' },
-          options: [{ key: 'skip', label: 'Skip Assessment' }, { key: 'remind', label: 'Remind Later' }],
-          context: 'Pre-session hydration • Optimize your experience'
-        }
-      case 'pre_session':
-        return {
-          apex: { label: '+250ml Water', action: 'dispense', mode: 'water' },
-          options: [{ key: 'electrolyte', label: 'Electrolyte' }, { key: 'remind', label: 'Remind in 30min' }],
-          context: '30min before session • Optimal hydration timing'
-        }
-      case 'post_session':
-        return {
-          apex: { label: 'Electrolyte Recovery', action: 'dispense', mode: 'electrolyte' },
-          options: [{ key: 'water', label: 'Plain Water' }, { key: 'remind', label: 'Remind Later' }],
-          context: 'Post-session recovery • Replenish electrolytes'
-        }
-      default:
-        return {
-          apex: { label: 'Book Experience', action: 'book', mode: 'experience' },
-          options: [{ key: 'browse', label: 'Browse Options' }, { key: 'ai_guide', label: 'AI Guide' }],
-          context: 'Welcome to AOI • Choose your transformation'
-        }
-    }
-  }
 
-  const handlePyramidApexClick = async (action: string, mode: string) => {
-    console.log('Pyramid Apex Click:', { action, mode })
-    
-    if (action === 'dispense') {
-      // Add to cart via existing system
-      const metadata = {
-        timing: mode === 'electrolyte' ? 'post_session' : 'pre_session',
-        timing_offset: 0,
-        electrolyte_profile: mode === 'electrolyte' ? 'recovery' : 'balanced',
-        hydration_goal: mode === 'electrolyte' ? 'recovery' : 'preparation'
-      }
-      
-      // Use existing addToCartViaAI function
-      await addToCartViaAI('drink', 'mock-drink-id', metadata)
-    } else if (action === 'book') {
-      // Switch to booking flow
-      setShowAIChat(true)
-      // Could trigger booking modal or scroll to booking section
-      window.location.href = '#booking';
-    }
-  }
 
   // const handlePyramidOptionClick = (key: string) => {
   //   console.log('Pyramid Option Click:', key)
@@ -550,7 +428,7 @@ What transformation are you seeking today?`
     }
 
     try {
-      let itemData: any
+      let itemData: {id: string, name: string, price: number} | null = null
       let unitPrice = 0
       
       if (itemType === 'experience') {
@@ -603,7 +481,7 @@ What transformation are you seeking today?`
       }
 
       // Add item with appropriate metadata
-      const cartItem: any = {
+      const cartItem: Record<string, unknown> = {
         cart_id: cartId,
         item_type: itemType,
         item_id: itemId,
@@ -648,11 +526,11 @@ ${itemType === 'drink' ? ' Electrolyte profile: ' + (metadata.electrolyte_profil
 What else can I add to optimize your journey?`
       }
       
-      setAiMessages((prev: any[]) => [...prev, confirmationMessage])
+      setAiMessages(prev => [...prev, confirmationMessage])
       
     } catch (error) {
       console.error('AI Cart Error:', error)
-      setAiMessages((prev: any[]) => [...prev, {
+      setAiMessages(prev => [...prev, {
         role: 'assistant' as const,
         content: ` Error adding item. Please try again or contact support.`
       }])

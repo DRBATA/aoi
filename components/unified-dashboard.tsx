@@ -10,14 +10,11 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import CheckinModal from "./checkin-modal"
 import CheckoutModal from "./checkout-modal"
-import TimingAlerts from "./timing-alerts"
 import { createClient } from '@/lib/supabase/client'
 
 // Types
 type ViewMode = "all" | "arrived" | "active" | "complete"
-type BookingStatus = 'waiting' | 'checked-in' | 'active' | 'completed'
-
-export interface Booking {
+interface Booking {
   id: string
   guest_name: string
   name?: string
@@ -31,7 +28,12 @@ export interface Booking {
   phone?: string
   email?: string
   cart?: unknown[]
-  cart_items?: any[]
+  cart_items?: Array<{
+    id: string
+    product_name?: string
+    quantity?: number
+    price?: number
+  }>
   total_amount?: number
   recommendations?: unknown[]
   guestProfile?: {
@@ -123,10 +125,10 @@ export default function UnifiedDashboard() {
           cart_headers!inner(*)
         `)
         .not('booking_metadata', 'is', null)
-        .order('created_at', { ascending: false }) as any
+        .order('created_at', { ascending: false })
       
       if (data) {
-        const formattedBookings = data.map((item: any) => ({
+        const formattedBookings = data.map((item) => ({
           id: item.id,
           guest_name: item.cart_headers?.customer_name || 'Guest',
           name: item.cart_headers?.customer_name || 'Guest',
