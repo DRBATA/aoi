@@ -7,16 +7,16 @@ import {
   useTranscriptions,
 } from '@livekit/components-react';
 
-function transcriptionToChatMessage(transcription: TextStreamData, room: any): ReceivedChatMessage {
+function transcriptionToChatMessage(transcription: TextStreamData, room: any, index: number): ReceivedChatMessage {
   return {
-    id: `transcription-${transcription.timestamp}`,
+    id: `transcription-${Date.now()}-${index}`,
     message: transcription.text || '',
-    timestamp: transcription.timestamp || Date.now(),
+    timestamp: Date.now(),
     from: {
-      identity: transcription.participant?.identity || 'user',
-      name: transcription.participant?.name || 'User',
-      isLocal: transcription.participant?.isLocal || false,
-    },
+      identity: 'transcription',
+      name: 'AI Agent',
+      isLocal: false,
+    } as any,
   };
 }
 
@@ -27,7 +27,7 @@ export default function useChatAndTranscription() {
 
   const mergedTranscriptions = useMemo(() => {
     const merged: Array<ReceivedChatMessage> = [
-      ...transcriptions.map((transcription) => transcriptionToChatMessage(transcription, room)),
+      ...transcriptions.map((transcription, index) => transcriptionToChatMessage(transcription, room, index)),
       ...chat.chatMessages,
     ];
     return merged.sort((a, b) => a.timestamp - b.timestamp);
