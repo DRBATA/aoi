@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 
 export type ConnectionDetails = {
-  url: string;
-  token: string;
+  serverUrl: string;
+  participantToken: string;
   roomName: string;
-  participantIdentity: string;
+  participantName: string;
 };
 
 export default function useConnectionDetails() {
@@ -17,9 +17,10 @@ export default function useConnectionDetails() {
     setError(null);
     
     try {
-      const response = await fetch('/api/connection-details', {
-        method: 'GET',
+      const response = await fetch('/api/livekit-token', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
       });
       
       if (!response.ok) {
@@ -28,10 +29,10 @@ export default function useConnectionDetails() {
       
       const details = await response.json();
       setConnectionDetails({
-        url: details.url,
-        token: details.token,
+        serverUrl: details.serverUrl,
+        participantToken: details.participantToken,
         roomName: details.roomName,
-        participantIdentity: details.participantIdentity,
+        participantName: details.participantName,
       });
     } catch (error) {
       console.error('Error fetching connection details:', error);

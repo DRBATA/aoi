@@ -178,8 +178,8 @@ export default function LiveKitChat({ connectionDetails, onCloseAction }: LiveKi
 
   return (
     <LiveKitRoom
-      serverUrl={connectionDetails.url}
-      token={connectionDetails.token}
+      serverUrl={connectionDetails.serverUrl}
+      token={connectionDetails.participantToken}
       room={room}
       connect={true}
       audio={true}
