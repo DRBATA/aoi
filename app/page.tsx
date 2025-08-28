@@ -504,7 +504,7 @@ export default function LandingPage() {
         body: JSON.stringify({ identity: guestName || 'anonymous' })
       })
       
-      const { token, url } = await response.json()
+      const { participantToken, serverUrl } = await response.json()
       const newRoom = new Room()
       
       // Handle agent responses
@@ -543,7 +543,7 @@ export default function LandingPage() {
         }
       })
 
-      await newRoom.connect(url, token)
+      await newRoom.connect(serverUrl, participantToken)
       setRoom(newRoom)
       
     } catch (error) {
