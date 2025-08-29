@@ -7,13 +7,13 @@ import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import { createClient } from '@/lib/supabase/client'
-import { Room, RoomEvent } from 'livekit-client'
-import useConnectionDetails from '@/hooks/useConnectionDetails'
-import LiveKitChat from '@/components/LiveKitChat'
+// LiveKit imports removed
 
-// AI Journey Chat Modal Component
+// AI Journey Chat Modal Component - LiveKit functionality removed
 function AIJourneyChatModal({ onClose }: { onClose: () => void }) {
-  const { connectionDetails, isLoading, error } = useConnectionDetails();
+  // LiveKit connection details removed
+  const isLoading = false;
+  const error = null;
 
   if (isLoading) {
     return (
@@ -56,10 +56,7 @@ function AIJourneyChatModal({ onClose }: { onClose: () => void }) {
     );
   }
 
-  if (!connectionDetails) {
-    return null;
-  }
-
+  // LiveKit chat functionality removed - return simple placeholder
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
       <motion.div
@@ -76,8 +73,8 @@ function AIJourneyChatModal({ onClose }: { onClose: () => void }) {
             <X className="w-6 h-6" />
           </button>
         </div>
-        <div className="flex-1 overflow-hidden">
-          <LiveKitChat connectionDetails={connectionDetails} onCloseAction={onClose} />
+        <div className="flex-1 overflow-hidden p-6 flex items-center justify-center">
+          <p className="text-white/70 text-center">AI Chat functionality temporarily unavailable</p>
         </div>
       </motion.div>
     </div>
@@ -104,7 +101,7 @@ export default function LandingPage() {
   const [activeBookingMode, setActiveBookingMode] = useState<'quick_order' | 'profile_build'>('quick_order')
   const [userMode, setUserMode] = useState<'anonymous' | 'authenticated'>('anonymous')
   const [showEmailCapture, setShowEmailCapture] = useState(false)
-  const [room, setRoom] = useState<Room | null>(null)
+  // LiveKit room state removed
   const supabase = createClient()
 
   const experiences = [
@@ -294,54 +291,23 @@ export default function LandingPage() {
     }
   }, [bookingDate, selectedBookingExperience, generateAvailableSlots])
 
-  // Handle AI chat interaction via LiveKit agent
+  // AI chat functionality removed - LiveKit integration disabled
   const handleAiChat = async () => {
     if (!userInput.trim() || isAiThinking) return
     
     const newMessage = { role: 'user' as const, content: userInput }
     setAiMessages(prev => [...prev, newMessage])
-    const currentInput = userInput
     setUserInput('')
     setIsAiThinking(true)
     
-    try {
-      // Connect to LiveKit agent if not already connected
-      if (!room) {
-        await initializeLiveKitConnection()
-      }
-      
-      // Send message to agent with context for MCP functions
-      if (room) {
-        await room.localParticipant.publishData(
-          new TextEncoder().encode(JSON.stringify({
-            type: 'aoi_chat_message',
-            content: currentInput,
-            userContext: {
-              name: guestName || savedUsername,
-              email: guestEmail,
-              bookingMode: activeBookingMode,
-              selectedExperience: selectedBookingExperience,
-              bookingDate,
-              bookingTime,
-              userMode,
-              venue: 'AOI'
-            },
-            requestContext: true // Ask agent to get user journey context via MCP
-          })),
-          { reliable: true }
-        )
-      } else {
-        throw new Error('LiveKit connection not available')
-      }
-      
-    } catch (error) {
-      console.error('AI message error:', error)
+    // Simulate AI response for now
+    setTimeout(() => {
       setAiMessages(prev => [...prev, {
         role: 'assistant',
-        content: "I'm having trouble connecting to the AI agent right now. Please try again in a moment."
+        content: "AI chat functionality is temporarily unavailable. Please use the booking form to schedule your session."
       }])
       setIsAiThinking(false)
-    }
+    }, 1000)
   }
 
   // Save username to localStorage
@@ -496,61 +462,7 @@ export default function LandingPage() {
 
 
 
-  const initializeLiveKitConnection = async () => {
-    try {
-      const response = await fetch('/api/livekit-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identity: guestName || 'anonymous' })
-      })
-      
-      const { participantToken, serverUrl } = await response.json()
-      const newRoom = new Room()
-      
-      // Handle agent responses
-      newRoom.on(RoomEvent.DataReceived, (payload, participant) => {
-        if (participant?.isAgent) {
-          try {
-            const data = JSON.parse(new TextDecoder().decode(payload))
-            
-            if (data.type === "aoi_chat_response") {
-              setAiMessages(prev => [...prev, {
-                role: 'assistant',
-                content: data.content
-              }])
-              setIsAiThinking(false)
-              
-              // Handle booking confirmations from agent
-              if (data.bookingCreated) {
-                setAiMessages(prev => [...prev, {
-                  role: 'assistant',
-                  content: `✅ Perfect! I've created your booking. Would you like me to add any complementary drinks or adjust the timing?`
-                }])
-              }
-              
-              // Handle drink recommendations
-              if (data.drinksAdded) {
-                setAiMessages(prev => [...prev, {
-                  role: 'assistant',
-                  content: `🥤 I've also added hydration recommendations based on your experience. Check the staff dashboard - they'll have everything ready for you!`
-                }])
-              }
-            }
-          } catch (e) {
-            console.error('Error parsing agent response:', e)
-            setIsAiThinking(false)
-          }
-        }
-      })
-
-      await newRoom.connect(serverUrl, participantToken)
-      setRoom(newRoom)
-      
-    } catch (error) {
-      console.error('Failed to initialize LiveKit connection:', error)
-      throw error
-    }
-  }
+  // LiveKit connection function removed
 
   return (
     <div className="relative bg-black">
