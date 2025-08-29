@@ -289,7 +289,11 @@ export default function UnifiedDashboard() {
               {currentVenue?.name || "Art of Implosion"}
             </h1>
             <p className="text-white/60 text-sm">
-              {currentVenue?.opening_hours || "Loading hours..."}
+              {typeof currentVenue?.opening_hours === 'string' 
+                ? currentVenue.opening_hours 
+                : typeof currentVenue?.opening_hours === 'object' 
+                  ? "9:00 AM - 10:00 PM" 
+                  : "Loading hours..."}
             </p>
             {currentVenue?.address && (
               <p className="text-white/40 text-xs">{currentVenue.address}</p>
