@@ -7,7 +7,7 @@ import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import { createClient } from '@/lib/supabase/client'
-// LiveKit imports removed
+import VoiceChatWidget from '@/components/VoiceChatWidget'
 
 // AI Journey Chat Modal Component - LiveKit functionality removed
 function AIJourneyChatModal({ onClose }: { onClose: () => void }) {
@@ -73,8 +73,11 @@ function AIJourneyChatModal({ onClose }: { onClose: () => void }) {
             <X className="w-6 h-6" />
           </button>
         </div>
-        <div className="flex-1 overflow-hidden p-6 flex items-center justify-center">
-          <p className="text-white/70 text-center">AI Chat functionality temporarily unavailable</p>
+        <div className="flex-1 overflow-hidden p-6">
+          <VoiceChatWidget
+            livekitUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL!}
+            tokenEndpoint="/api/livekit-token?room=waterbar-aoi&source=aoi-chat"
+          />
         </div>
       </motion.div>
     </div>
