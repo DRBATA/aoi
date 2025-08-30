@@ -60,7 +60,7 @@ function VoiceControls() {
 
   useEffect(() => {
     if (room.state === 'connected') {
-      const ac = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ac = new AudioContext();
       ac.resume().catch(() => setNeedsUnlock(true));
     }
   }, [room.state]);
@@ -81,7 +81,7 @@ function VoiceControls() {
 
   const startAudio = async () => {
     try {
-      const ac = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ac = new AudioContext();
       await ac.resume();
       setNeedsUnlock(false);
     } catch (e) {
