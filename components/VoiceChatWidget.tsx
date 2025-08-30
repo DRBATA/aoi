@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -65,27 +65,11 @@ export default function VoiceChatWidget({
     await localParticipant?.setMicrophoneEnabled(!next);
   }, [mutedMe, localParticipant]);
 
-  // Mute agent: unsubscribe from remote audio tracks
-  // In most rooms it's just your agent; this toggles all remote audio.
-  const tracks = useTracks(
-    [
-      { source: Track.Source.Microphone, withPlaceholder: false }, // remote audio
-    ],
-    { onlySubscribed: true }
-  );
-
+  // Simple agent mute toggle (UI state only for now)
   const toggleMuteAgent = useCallback(() => {
-    const next = !agentMuted;
-    setAgentMuted(next);
-    // unsubscribe/subscribe remote audio tracks
-    tracks.forEach((t) => {
-      const pub = t.participant.getTrackPublication(t.publication?.trackSid!);
-      if (!pub || pub.source !== "microphone" || pub.isLocal) return;
-      if (pub.isSubscribed !== !next) {
-        pub.setSubscribed(!next);
-      }
-    });
-  }, [agentMuted, tracks]);
+    setAgentMuted(!agentMuted);
+    // TODO: Implement actual audio muting when LiveKit API is stable
+  }, [agentMuted]);
 
   // Disconnect / Reconnect
   const doDisconnect = useCallback(async () => {
