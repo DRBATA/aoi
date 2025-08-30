@@ -6,9 +6,7 @@ import {
   RoomAudioRenderer,
   useLocalParticipant,
   useRoomContext,
-  useTracks,
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
 import "@livekit/components-styles";
 
 type Props = {
