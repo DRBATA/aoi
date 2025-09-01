@@ -19,11 +19,18 @@ export default function VoiceChatWidget({ livekitUrl, tokenEndpoint }: Props) {
 
   useEffect(() => {
     if (!tokenEndpoint) return;
+    console.log('🔗 Fetching token from:', tokenEndpoint);
+    console.log('🌐 LiveKit URL:', livekitUrl);
     fetch(tokenEndpoint)
       .then(r => r.json())
-      .then(data => setToken(data.token))
-      .catch(console.error);
-  }, [tokenEndpoint]);
+      .then(data => {
+        console.log('🎫 Token received:', data.token ? 'Yes' : 'No');
+        setToken(data.token);
+      })
+      .catch(err => {
+        console.error('❌ Token fetch error:', err);
+      });
+  }, [tokenEndpoint, livekitUrl]);
 
   if (!token) {
     return (
