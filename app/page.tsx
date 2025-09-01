@@ -98,6 +98,7 @@ export default function LandingPage() {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [showAIChat, setShowAIChat] = useState(false)
+  const [showVoiceAgent, setShowVoiceAgent] = useState(false)
   const [aiMessages, setAiMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
   const [userInput, setUserInput] = useState("")
   const [isAiThinking, setIsAiThinking] = useState(false)
@@ -962,11 +963,11 @@ export default function LandingPage() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-light text-white">Reserve Your Transformation</h3>
               <button
-                onClick={() => setShowAIChat(true)}
+                onClick={() => setShowVoiceAgent(!showVoiceAgent)}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white text-sm hover:scale-105 transition-transform"
               >
                 <Brain className="w-4 h-4" />
-                AI Journey Planner
+                {showVoiceAgent ? 'Close' : 'AI Journey Planner'}
               </button>
             </div>
             
@@ -1204,9 +1205,33 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* AI Journey Chat Modal with LiveKit */}
-      {showAIChat && (
-        <AIJourneyChatModal onClose={() => setShowAIChat(false)} />
+      {/* Embedded Voice Agent - No Modal */}
+      {showVoiceAgent && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          className="fixed bottom-6 right-6 z-50 w-80 h-64 bg-gradient-to-b from-purple-950/95 to-black/95 backdrop-blur-xl border border-purple-500/30 rounded-2xl shadow-2xl overflow-hidden"
+        >
+          <div className="flex items-center justify-between p-4 border-b border-white/10">
+            <h3 className="text-white font-semibold flex items-center gap-2">
+              <Brain className="w-4 h-4" />
+              AI Guide
+            </h3>
+            <button 
+              onClick={() => setShowVoiceAgent(false)}
+              className="text-white/60 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-4 h-full">
+            <VoiceChatWidget
+              livekitUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL!}
+              tokenEndpoint="/api/livekit-token?room=waterbar-aoi&source=aoi-embedded"
+            />
+          </div>
+        </motion.div>
       )}
 
       {/* Footer */}
