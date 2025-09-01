@@ -226,3 +226,19 @@
 .goal-focus {
   @apply bg-blue-50 border-blue-200;
 }
+
+/* Purple pulse animation for "no thanks" scroll effect */
+@keyframes purple-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.7);
+    border-color: rgba(147, 51, 234, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 20px rgba(147, 51, 234, 0.2);
+    border-color: rgba(147, 51, 234, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(147, 51, 234, 0);
+    border-color: rgba(147, 51, 234, 0.3);
+  }
+}

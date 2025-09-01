@@ -9,80 +9,6 @@ import FloatingPaths from "@/components/kokonutui/floating-paths"
 import { createClient } from '@/lib/supabase/client'
 import VoiceChatWidget from '@/components/VoiceChatWidget'
 
-// AI Journey Chat Modal Component - LiveKit functionality removed
-function AIJourneyChatModal({ onClose }: { onClose: () => void }) {
-  // LiveKit connection details removed
-  const isLoading = false;
-  const error = null;
-
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-gradient-to-b from-purple-950/90 to-black/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-8"
-        >
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-white/80">Connecting to AI Journey Guide...</p>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-gradient-to-b from-purple-950/90 to-black/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-8 max-w-md"
-        >
-          <div className="flex flex-col items-center gap-4">
-            <X className="w-12 h-12 text-red-400" />
-            <p className="text-white/80 text-center">Unable to connect to AI agent</p>
-            <p className="text-white/60 text-sm text-center">{error}</p>
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-white rounded-lg transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
-  // LiveKit chat functionality removed - return simple placeholder
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-gradient-to-b from-purple-950/90 to-black/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl w-full max-w-2xl h-[600px] flex flex-col overflow-hidden"
-      >
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h3 className="text-xl font-light text-white">AI Journey Guide</h3>
-          <button
-            onClick={onClose}
-            className="text-white/70 hover:text-white transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-hidden p-6">
-          <VoiceChatWidget
-            livekitUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL!}
-            tokenEndpoint="/api/livekit-token?room=waterbar-aoi&source=aoi-chat"
-          />
-        </div>
-      </motion.div>
-    </div>
-  );
-}
 
 export default function LandingPage() {
   const [selectedVenue, setSelectedVenue] = useState("dubai")
@@ -97,8 +23,9 @@ export default function LandingPage() {
   const [guestEmail, setGuestEmail] = useState("")
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   const [loadingSlots, setLoadingSlots] = useState(false)
-  const [showAIChat, setShowAIChat] = useState(false)
   const [showVoiceAgent, setShowVoiceAgent] = useState(false)
+  const [hasAutoWelcomed, setHasAutoWelcomed] = useState(false)
+  const [showNoThanks, setShowNoThanks] = useState(false)
   const [aiMessages, setAiMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
   const [userInput, setUserInput] = useState("")
   const [isAiThinking, setIsAiThinking] = useState(false)
@@ -107,6 +34,38 @@ export default function LandingPage() {
   const [showEmailCapture, setShowEmailCapture] = useState(false)
   // LiveKit room state removed
   const supabase = createClient()
+
+  // Auto-welcome agent on page load
+  useEffect(() => {
+    if (!hasAutoWelcomed) {
+      const timer = setTimeout(() => {
+        setShowVoiceAgent(true)
+        setHasAutoWelcomed(true)
+        // Show "no thanks" option after 3 seconds
+        setTimeout(() => setShowNoThanks(true), 3000)
+      }, 2000) // 2 second delay after page load
+      
+      return () => clearTimeout(timer)
+    }
+  }, [hasAutoWelcomed])
+
+  // Handle "no thanks" - scroll down with purple pulse fade
+  const handleNoThanks = () => {
+    setShowVoiceAgent(false)
+    setShowNoThanks(false)
+    
+    // Smooth scroll to experiences section with purple pulse
+    const experiencesSection = document.getElementById('experiences')
+    if (experiencesSection) {
+      experiencesSection.scrollIntoView({ behavior: 'smooth' })
+      
+      // Add purple pulse effect
+      experiencesSection.style.animation = 'purple-pulse 2s ease-in-out'
+      setTimeout(() => {
+        experiencesSection.style.animation = ''
+      }, 2000)
+    }
+  }
 
   const experiences = [
     {
@@ -1230,6 +1189,16 @@ export default function LandingPage() {
               livekitUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL!}
               tokenEndpoint="/api/livekit-token?room=waterbar-aoi&source=aoi-embedded"
             />
+            {showNoThanks && (
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={handleNoThanks}
+                className="absolute bottom-4 left-4 right-4 px-3 py-2 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs rounded-lg transition-all border border-white/20"
+              >
+                No thanks, show me experiences
+              </motion.button>
+            )}
           </div>
         </motion.div>
       )}
