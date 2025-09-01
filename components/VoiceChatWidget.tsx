@@ -68,6 +68,9 @@ function VoiceControls() {
   useEffect(() => {
     if (room.state === 'connected') {
       const ac = new AudioContext();
+      if (ac.state === 'suspended') {
+        setNeedsUnlock(true);
+      }
       ac.resume().catch(() => setNeedsUnlock(true));
     }
   }, [room.state]);
@@ -104,22 +107,35 @@ function VoiceControls() {
           {room?.state === "connected" ? "Connected to room" : "Connecting..."}
         </div>
         
-        <div style={controlsStyle}>
-          {needsUnlock && (
-            <button onClick={startAudio} style={btn}>
-              Hello
+        {needsUnlock ? (
+          <div style={{ textAlign: 'center', padding: '12px' }}>
+            <button onClick={startAudio} style={{
+              ...btn,
+              background: "rgba(139, 92, 246, 0.3)",
+              border: "1px solid rgba(139, 92, 246, 0.5)",
+              padding: "12px 24px",
+              fontSize: "14px",
+              fontWeight: "600"
+            }}>
+              🎤 Start Voice Chat
             </button>
-          )}
-          <button onClick={toggleMuteMe} style={btn}>
-            {mutedMe ? "Mute me" : "Mute me"}
-          </button>
-          <button onClick={toggleMuteAgent} style={btn}>
-            {agentMuted ? "Mute agent" : "Mute agent"}
-          </button>
-          <button onClick={doDisconnect} style={btn}>
-            Disconnect
-          </button>
-        </div>
+            <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '8px' }}>
+              Click to enable audio
+            </div>
+          </div>
+        ) : (
+          <div style={controlsStyle}>
+            <button onClick={toggleMuteMe} style={btn}>
+              {mutedMe ? "Unmute me" : "Mute me"}
+            </button>
+            <button onClick={toggleMuteAgent} style={btn}>
+              {agentMuted ? "Unmute agent" : "Mute agent"}
+            </button>
+            <button onClick={doDisconnect} style={btn}>
+              Disconnect
+            </button>
+          </div>
+        )}
       </div>
     </>
   );
