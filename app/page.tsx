@@ -1184,17 +1184,19 @@ export default function LandingPage() {
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="p-4 h-full">
-            <VoiceChatWidget
-              livekitUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL!}
-              tokenEndpoint="/api/livekit-token?room=waterbar-aoi&source=aoi-embedded"
-            />
+          <div className="p-4 h-full flex flex-col">
+            <div className="flex-1">
+              <VoiceChatWidget
+                livekitUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL!}
+                tokenEndpoint="/api/livekit-token?room=waterbar-aoi&source=aoi-embedded"
+              />
+            </div>
             {showNoThanks && (
               <motion.button
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 onClick={handleNoThanks}
-                className="absolute bottom-4 left-4 right-4 px-3 py-2 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs rounded-lg transition-all border border-white/20"
+                className="mt-3 px-3 py-2 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs rounded-lg transition-all border border-white/20"
               >
                 No thanks, show me experiences
               </motion.button>
