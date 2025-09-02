@@ -1,30 +1,36 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { LiveKitRoom, useRoomContext, useLocalParticipant } from "@livekit/components-react";
-import { resumeAudioContext } from "../lib/audio-context";
+import { useState, useCallback, useEffect } from "react";
+import {
+  LiveKitRoom,
+  RoomAudioRenderer,
+  useLocalParticipant,
+  useRoomContext,
+} from "@livekit/components-react";
+import "@livekit/components-styles";
 
-interface VoiceChatWidgetProps {
-  tokenEndpoint: string;
+type Props = {
   livekitUrl: string;
-}
+  tokenEndpoint: string;
+};
 
-export default function VoiceChatWidget({ tokenEndpoint, livekitUrl }: VoiceChatWidgetProps) {
-  const [token, setToken] = useState<string>();
-  const [tokenNonce, setTokenNonce] = useState(0);
+export default function VoiceChatWidget({ livekitUrl, tokenEndpoint }: Props) {
+  const [token, setToken] = useState<string | undefined>();
+  const [tokenNonce, setTokenNonce] = useState(0); // force remount
   const [isReconnecting, setIsReconnecting] = useState(false);
 
   const fetchToken = useCallback(async () => {
+    if (!tokenEndpoint) return;
+    console.log('🔗 Fetching token from:', tokenEndpoint);
+    console.log('🌐 LiveKit URL:', livekitUrl);
+    
     try {
-      console.log('🔄 Fetching fresh token from:', tokenEndpoint);
-      const response = await fetch(tokenEndpoint);
-      if (!response.ok) {
-        throw new Error(`Token fetch failed: ${response.status}`);
-      }
+      const response = await fetch(tokenEndpoint, { cache: 'no-store' }); // avoid cached responses
       const data = await response.json();
-      console.log('✅ Fresh token received');
-      setToken(data.accessToken);
-      setTokenNonce(n => n + 1); // Force remount of LiveKitRoom
+      if (!data?.token) throw new Error('No token returned');
+      console.log('🎫 Token received:', data.token ? 'Yes' : 'No');
+      setToken(data.token);
+      setTokenNonce(n => n + 1); // force remount of LiveKitRoom
       setIsReconnecting(false);
     } catch (err) {
       console.error('❌ Token fetch error:', err);
@@ -34,8 +40,8 @@ export default function VoiceChatWidget({ tokenEndpoint, livekitUrl }: VoiceChat
 
   const handleReconnect = useCallback(() => {
     setIsReconnecting(true);
-    setToken(undefined); // Unmount room
-    fetchToken(); // Get fresh token
+    setToken(undefined);
+    fetchToken();
   }, [fetchToken]);
 
   useEffect(() => {
@@ -55,7 +61,7 @@ export default function VoiceChatWidget({ tokenEndpoint, livekitUrl }: VoiceChat
     <div style={shell}>
       <div style={header}>Voice Assistant</div>
       <LiveKitRoom
-        key={tokenNonce} // Force clean mount on new token
+        key={tokenNonce}
         token={token}
         serverUrl={livekitUrl}
         connect={true}
@@ -74,9 +80,9 @@ export default function VoiceChatWidget({ tokenEndpoint, livekitUrl }: VoiceChat
           },
         }}
         onDisconnected={(reason) => {
-          console.log('🔌 Disconnected:', reason);
+          console.log('🔌 disconnected:', reason);
         }}
-        onError={(e) => console.error('LiveKit error:', e)}
+        onError={(e) => console.error('LiveKit error', e)}
       >
         <VoiceControls onReconnect={handleReconnect} isReconnecting={isReconnecting} />
       </LiveKitRoom>
@@ -84,106 +90,42 @@ export default function VoiceChatWidget({ tokenEndpoint, livekitUrl }: VoiceChat
   );
 }
 
-// Module-level guard to prevent multiple widget instances
-let voiceWidgetMounted = false;
-
 function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => void; isReconnecting: boolean }) {
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const [mutedMe, setMutedMe] = useState(false);
-  const [, setAgentMuted] = useState(false);
+  const [agentMuted, setAgentMuted] = useState(false);
   const [needsUnlock, setNeedsUnlock] = useState(false);
   const [connectionState, setConnectionState] = useState<string>('connecting');
 
-  // Prevent multiple widget instances
+  // Force disconnect on unmount to prevent dangling room state
   useEffect(() => {
-    if (voiceWidgetMounted) {
-      console.warn('Voice widget already mounted - preventing duplicate');
-      return () => {};
-    }
-    voiceWidgetMounted = true;
     return () => {
-      voiceWidgetMounted = false;
-    };
-  }, []);
-
-  // Force disconnect on unmount and tab close
-  useEffect(() => {
-    const cleanup = () => {
       try {
-        room?.disconnect(true); // Force close with stop all tracks
-      } catch (error) {
-        console.error('Cleanup disconnect error:', error);
-      }
-    };
-
-    // Cleanup on unmount
-    return cleanup;
-  }, [room]);
-
-  // Handle tab close and visibility changes
-  useEffect(() => {
-    const onVisibilityChange = () => {
-      if (document.hidden && room) {
-        try {
-          room.disconnect(true);
-        } catch (error) {
-          console.error('Visibility disconnect error:', error);
-        }
-      }
-    };
-
-    const onBeforeUnload = () => {
-      try {
-        room?.disconnect(true);
-      } catch (error) {
-        console.error('Unload disconnect error:', error);
-      }
-    };
-
-    // Short join watchdog - prevent half-open connects
-    const watchdog = setTimeout(() => {
-      if (room?.state === 'connecting') {
-        console.warn('Connection timeout - forcing disconnect');
-        room.disconnect(true);
-      }
-    }, 10000);
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('beforeunload', onBeforeUnload);
-
-    return () => {
-      clearTimeout(watchdog);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('beforeunload', onBeforeUnload);
+        room?.disconnect(true); // true = stop all tracks & close transports
+      } catch {}
     };
   }, [room]);
 
   // Track connection state changes
   useEffect(() => {
-    if (!room) return;
+    setConnectionState(room.state);
     
-    const handler = () => setConnectionState(room.state);
-    handler(); // Set initial state
-    room.on('connectionStateChanged', handler);
-    
-    return () => {
-      room.off('connectionStateChanged', handler);
-    };
-  }, [room]);
-
-  // Initialize audio context on connection
-  useEffect(() => {
-    if (connectionState === 'connected') {
+    if (room.state === 'connected') {
       const initializeAudio = async () => {
         try {
-          await resumeAudioContext();
-          // Ensure microphone is enabled when connected
-          if (localParticipant) {
-            await localParticipant.setMicrophoneEnabled(true);
-            console.log('🎤 Microphone auto-enabled on connection');
+          const ac = new AudioContext();
+          if (ac.state === 'suspended') {
+            setNeedsUnlock(true);
+          } else {
+            await ac.resume();
+            // Ensure microphone is enabled when connected
+            if (localParticipant) {
+              await localParticipant.setMicrophoneEnabled(true);
+              console.log('🎤 Microphone auto-enabled on connection');
+            }
+            setNeedsUnlock(false);
           }
-          setNeedsUnlock(false);
         } catch (error) {
           console.error('Audio initialization failed:', error);
           setNeedsUnlock(true);
@@ -192,15 +134,22 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
       
       initializeAudio();
     }
-  }, [connectionState, localParticipant]);
+  }, [room.state, localParticipant]);
 
-  // Auto-start audio when component mounts
+  // Auto-start audio when component mounts (if user has already granted permission)
   useEffect(() => {
     const tryAutoStart = async () => {
       try {
-        await resumeAudioContext();
-        setNeedsUnlock(false);
-        console.log('Audio unlocked automatically');
+        const ac = new AudioContext();
+        console.log('AudioContext state:', ac.state);
+        if (ac.state !== 'suspended') {
+          await ac.resume();
+          setNeedsUnlock(false);
+          console.log('Audio unlocked automatically');
+        } else {
+          console.log('Audio is suspended, need user gesture');
+          setNeedsUnlock(true);
+        }
       } catch (e) {
         console.log('Audio blocked, need user gesture:', e);
         setNeedsUnlock(true);
@@ -221,199 +170,275 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
     }
   }, [mutedMe, localParticipant]);
 
-  // Agent muting handled via track events
+  const toggleMuteAgent = useCallback(() => {
+    try {
+      setAgentMuted(!agentMuted);
+      // TODO: Implement actual agent muting via room audio controls
+    } catch (error) {
+      console.error('Failed to toggle agent mute:', error);
+    }
+  }, [agentMuted]);
 
   const doDisconnect = useCallback(() => {
     try {
-      room?.disconnect(true);
+      room?.disconnect();
     } catch (error) {
-      console.error('Disconnect error:', error);
+      console.error('Failed to disconnect:', error);
     }
   }, [room]);
 
-  const handleReconnectClick = useCallback(() => {
-    onReconnect();
-  }, [onReconnect]);
+  const handleReconnect = useCallback(() => {
+    try {
+      doDisconnect();
+      onReconnect();
+    } catch (error) {
+      console.error('Failed to reconnect:', error);
+    }
+  }, [doDisconnect, onReconnect]);
 
-  // Register RPC handlers for UI control
+  // iOS Safari optimization: Gate microphone during agent speech to prevent echo
   useEffect(() => {
     if (!room || !localParticipant) return;
 
-    localParticipant.registerRpcMethod(
-      "client.ui_control",
-      async (data) => {
-        const payload = JSON.parse(data.payload);
-        console.log('UI control RPC:', payload);
-        
-        if (payload.action === 'close_widget') {
-          // Dispatch event to close widget
-          window.dispatchEvent(new CustomEvent('close-voice-widget'));
-        }
-        
-        return "ok"; // RPC methods must return a string
-      }
-    );
-  }, [room, localParticipant]);
-
-  // Handle audio track events with cleanup
-  useEffect(() => {
-    if (!room) return;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleTrackSubscribed = (track: any, publication: any, participant: any) => {
-      if (track.kind === 'audio' && participant.identity !== localParticipant?.identity) {
-        console.log('🔊 Agent audio track subscribed');
-        
-        const handleMuteChanged = () => {
-          setAgentMuted(track.isMuted);
-        };
-        
-        // Use 'on' method for LiveKit tracks
-        track.on('muted', handleMuteChanged);
-        track.on('unmuted', handleMuteChanged);
-        
-        // Store cleanup function
-        track._cleanup = () => {
-          track.off('muted', handleMuteChanged);
-          track.off('unmuted', handleMuteChanged);
-        };
-      }
+    const handleRemoteAudioStart = () => {
+      console.log('🔇 Agent speaking - muting microphone to prevent echo (iOS Safari fix)');
+      localParticipant.setMicrophoneEnabled(false);
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleTrackUnsubscribed = (track: any) => {
+    const handleRemoteAudioEnd = () => {
+      console.log('🎤 Agent finished - re-enabling microphone after 400ms delay (iOS Safari fix)');
+      // Delay to let iOS Safari AEC settle
+      setTimeout(() => {
+        if (!mutedMe) { // Only re-enable if user hasn't manually muted
+          localParticipant.setMicrophoneEnabled(true);
+        }
+      }, 400);
+    };
+
+    // Listen for remote audio track events
+    room.remoteParticipants.forEach(participant => {
+      participant.audioTrackPublications.forEach(publication => {
+        if (publication.track) {
+          const audioElement = publication.track.attach();
+          audioElement.addEventListener('play', handleRemoteAudioStart);
+          audioElement.addEventListener('ended', handleRemoteAudioEnd);
+          audioElement.addEventListener('pause', handleRemoteAudioEnd);
+        }
+      });
+    });
+
+    // Listen for new remote participants
+    const onTrackSubscribed = (track: { kind: string; attach: () => HTMLAudioElement }) => {
       if (track.kind === 'audio') {
-        console.log('🔇 Agent audio track unsubscribed');
-        
-        // Clean up listeners
-        if (track._cleanup) {
-          track._cleanup();
-          delete track._cleanup;
-        }
+        const audioElement = track.attach();
+        audioElement.addEventListener('play', handleRemoteAudioStart);
+        audioElement.addEventListener('ended', handleRemoteAudioEnd);
+        audioElement.addEventListener('pause', handleRemoteAudioEnd);
       }
     };
 
-    room.on('trackSubscribed', handleTrackSubscribed);
-    room.on('trackUnsubscribed', handleTrackUnsubscribed);
+    room.on('trackSubscribed', onTrackSubscribed);
 
     return () => {
-      room.off('trackSubscribed', handleTrackSubscribed);
-      room.off('trackUnsubscribed', handleTrackUnsubscribed);
+      room.off('trackSubscribed', onTrackSubscribed);
     };
-  }, [room, localParticipant]);
+  }, [room, localParticipant, mutedMe]);
 
-  const unlockAudio = useCallback(async () => {
-    try {
-      await resumeAudioContext();
-      if (localParticipant) {
-        await localParticipant.setMicrophoneEnabled(!mutedMe);
+  // Handle RPC messages from agent for UI control
+  useEffect(() => {
+    if (!room) return;
+    
+    const handleDataReceived = (payload: Uint8Array) => {
+      try {
+        const message = JSON.parse(new TextDecoder().decode(payload));
+        
+        if (message.type === 'navigate_and_highlight') {
+          // Scroll to experiences section
+          const experiencesSection = document.getElementById('experiences');
+          if (experiencesSection) {
+            experiencesSection.scrollIntoView({ behavior: 'smooth' });
+          }
+          
+          // Highlight AOI FLOAT card after scroll
+          setTimeout(() => {
+            const floatCard = document.querySelector('[data-experience="aoi-float"]') as HTMLElement;
+            if (floatCard) {
+              floatCard.style.boxShadow = '0 0 20px rgba(139, 92, 246, 0.8)';
+              floatCard.style.transform = 'scale(1.05)';
+              floatCard.style.transition = 'all 0.3s ease';
+              floatCard.style.border = '2px solid rgba(139, 92, 246, 0.6)';
+              
+              // Remove highlight after 5 seconds
+              setTimeout(() => {
+                floatCard.style.boxShadow = '';
+                floatCard.style.transform = '';
+                floatCard.style.border = '';
+              }, 5000);
+            }
+          }, 1000);
+        }
+      } catch {
+        // Ignore non-JSON messages
       }
+    };
+
+    room.on('dataReceived', handleDataReceived);
+    
+    return () => {
+      room.off('dataReceived', handleDataReceived);
+    };
+  }, [room]);
+
+  const startAudio = async () => {
+    try {
+      // Detect iOS devices
+      const isIOS = typeof navigator !== 'undefined' && /iP(hone|ad|od)/.test(navigator.userAgent);
+      
+      // Request microphone permission first with iOS Safari optimizations
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          ...(isIOS ? { voiceIsolation: true } : {}) // iOS Safari enhancement
+        }
+      });
+      
+      // Test that we can actually get audio
+      console.log('🎤 Microphone stream acquired:', stream.getAudioTracks()[0]?.label);
+      
+      const ac = new AudioContext();
+      await ac.resume();
+      
+      // Explicitly enable microphone after audio context is ready
+      if (localParticipant) {
+        await localParticipant.setMicrophoneEnabled(true);
+        console.log('✅ Microphone enabled after audio unlock');
+      }
+      
+      // Stop the test stream since LiveKit will create its own
+      stream.getTracks().forEach(track => track.stop());
+      
       setNeedsUnlock(false);
-    } catch (error) {
-      console.error('Failed to unlock audio:', error);
+    } catch (e) {
+      console.error('Failed to start audio:', e);
+      alert('Microphone access denied. Please allow microphone access and try again.');
     }
-  }, [localParticipant, mutedMe]);
+  };
 
   return (
-    <div style={{
-      padding: '8px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-      fontSize: '12px'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span>Status: {connectionState}</span>
-        {isReconnecting && <span>Reconnecting...</span>}
-      </div>
-      
-      {needsUnlock && (
-        <button 
-          onClick={unlockAudio}
-          style={{
-            padding: '8px 12px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          🔓 Enable Audio
-        </button>
-      )}
-      
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button 
-          onClick={toggleMuteMe}
-          disabled={needsUnlock}
-          style={{
-            padding: '6px 10px',
-            backgroundColor: mutedMe ? '#dc3545' : '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: needsUnlock ? 'not-allowed' : 'pointer',
-            opacity: needsUnlock ? 0.5 : 1
-          }}
-        >
-          {mutedMe ? '🔇 Muted' : '🎤 Live'}
-        </button>
+    <>
+      <RoomAudioRenderer />
+      <div style={body}>
+        <div style={status}>
+          {isReconnecting ? "Reconnecting..." : 
+           connectionState === "connected" ? "Connected" : 
+           connectionState === "disconnected" ? "Disconnected" : "Connecting..."}
+        </div>
         
-        <button 
-          onClick={handleReconnectClick}
-          disabled={isReconnecting}
-          style={{
-            padding: '6px 10px',
-            backgroundColor: '#6c757d',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: isReconnecting ? 'not-allowed' : 'pointer',
-            opacity: isReconnecting ? 0.5 : 1
-          }}
-        >
-          🔄 Reconnect
-        </button>
-        
-        <button 
-          onClick={doDisconnect}
-          style={{
-            padding: '6px 10px',
-            backgroundColor: '#dc3545',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          ❌ Disconnect
-        </button>
+        {needsUnlock ? (
+          <div style={{ textAlign: 'center', padding: '12px' }}>
+            <button onClick={startAudio} style={{
+              ...btn,
+              background: "rgba(139, 92, 246, 0.3)",
+              border: "1px solid rgba(139, 92, 246, 0.5)",
+              padding: "12px 24px",
+              fontSize: "14px",
+              fontWeight: "600"
+            }}>
+              🎤 Start Voice Chat
+            </button>
+            <div style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', marginTop: '8px' }}>
+              Click to enable audio
+            </div>
+          </div>
+        ) : (
+          <div style={enhancedControlsStyle}>
+            <button 
+              onClick={toggleMuteMe} 
+              style={{
+                ...btn,
+                background: mutedMe ? "rgba(239, 68, 68, 0.2)" : "rgba(34, 197, 94, 0.2)",
+                border: mutedMe ? "1px solid rgba(239, 68, 68, 0.4)" : "1px solid rgba(34, 197, 94, 0.4)"
+              }}
+              disabled={connectionState !== 'connected'}
+            >
+              {mutedMe ? "🔇 Unmute me" : "🎤 Mute me"}
+            </button>
+            <button 
+              onClick={toggleMuteAgent} 
+              style={{
+                ...btn,
+                background: agentMuted ? "rgba(239, 68, 68, 0.2)" : "rgba(34, 197, 94, 0.2)",
+                border: agentMuted ? "1px solid rgba(239, 68, 68, 0.4)" : "1px solid rgba(34, 197, 94, 0.4)"
+              }}
+              disabled={connectionState !== 'connected'}
+            >
+              {agentMuted ? "🔊 Unmute agent" : "🔇 Mute agent"}
+            </button>
+            <button 
+              onClick={doDisconnect} 
+              style={{
+                ...btn,
+                background: "rgba(239, 68, 68, 0.2)",
+                border: "1px solid rgba(239, 68, 68, 0.4)"
+              }}
+              disabled={connectionState === 'disconnected'}
+            >
+              ❌ Disconnect
+            </button>
+            <button 
+              onClick={handleReconnect} 
+              style={{
+                ...btn,
+                background: "rgba(59, 130, 246, 0.2)",
+                border: "1px solid rgba(59, 130, 246, 0.4)"
+              }}
+              disabled={isReconnecting || connectionState === 'connecting'}
+            >
+              {isReconnecting ? "🔄 Reconnecting..." : "🔄 Reconnect"}
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 
-// CSS styles
-const shell = {
-  backgroundColor: "rgba(0, 0, 0, 0.8)",
+const shell: React.CSSProperties = {
+  display: "grid",
+  gap: 12,
+  height: "100%",
+};
+const header: React.CSSProperties = { 
+  fontWeight: 600, 
+  fontSize: 14,
+  color: "white"
+};
+const body: React.CSSProperties = { 
+  display: "grid", 
+  gap: 12,
+  flex: 1
+};
+const status: React.CSSProperties = { 
+  fontSize: 12, 
+  color: "rgba(255, 255, 255, 0.7)",
+  textAlign: "center"
+};
+const enhancedControlsStyle: React.CSSProperties = { 
+  display: "grid", 
+  gridTemplateColumns: "1fr 1fr",
+  gap: 8
+};
+const btn: React.CSSProperties = {
+  padding: "8px 12px",
   border: "1px solid rgba(255, 255, 255, 0.2)",
-  borderRadius: "8px",
+  borderRadius: 8,
+  background: "rgba(255, 255, 255, 0.1)",
   color: "white",
-  fontFamily: "system-ui, sans-serif",
-  fontSize: "14px",
-  width: "300px",
-  maxHeight: "400px",
-  overflow: "hidden"
-};
-
-const header = {
-  padding: "12px 16px",
-  borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-  fontWeight: "600",
-  textAlign: "center" as const
-};
-
-const body = {
-  padding: "16px"
+  cursor: "pointer",
+  fontSize: 12,
+  transition: "all 0.2s",
+  backdropFilter: "blur(10px)",
 };

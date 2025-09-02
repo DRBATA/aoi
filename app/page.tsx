@@ -41,13 +41,15 @@ export default function LandingPage() {
       const timer = setTimeout(() => {
         setShowVoiceAgent(true)
         setHasAutoWelcomed(true)
+        // Show "no thanks" option after 3 seconds
+        setTimeout(() => setShowNoThanks(true), 3000)
       }, 2000) // 2 second delay after page load
       
       return () => clearTimeout(timer)
     }
   }, [hasAutoWelcomed])
 
-  // Handle "no thanks" - close agent and scroll down with purple pulse fade
+  // Handle "no thanks" - scroll down with purple pulse fade
   const handleNoThanks = () => {
     setShowVoiceAgent(false)
     setShowNoThanks(false)
@@ -282,18 +284,6 @@ export default function LandingPage() {
       localStorage.setItem('aoi-username', savedUsername)
     }
   }, [savedUsername])
-
-  // Listen for voice widget close events
-  useEffect(() => {
-    const handleCloseWidget = () => {
-      setShowVoiceAgent(false);
-    };
-
-    window.addEventListener('close-voice-widget', handleCloseWidget);
-    return () => {
-      window.removeEventListener('close-voice-widget', handleCloseWidget);
-    };
-  }, []);
 
   // Handle booking form submission
   const handleBookingSubmit = async (e: React.FormEvent) => {
@@ -1175,29 +1165,26 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Embedded Voice Agent - Simple Open/Close */}
+      {/* Embedded Voice Agent - No Modal */}
       {showVoiceAgent && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          transition={{ duration: 0.3 }}
-          className="fixed bottom-6 right-6 z-50 w-80 h-80 bg-gradient-to-b from-purple-950/95 to-black/95 backdrop-blur-xl border border-purple-500/30 rounded-2xl shadow-2xl overflow-hidden"
+          className="fixed bottom-6 right-6 z-50 w-80 h-64 bg-gradient-to-b from-purple-950/95 to-black/95 backdrop-blur-xl border border-purple-500/30 rounded-2xl shadow-2xl overflow-hidden"
         >
           <div className="flex items-center justify-between p-4 border-b border-white/10">
             <h3 className="text-white font-semibold flex items-center gap-2">
               <Brain className="w-4 h-4" />
-              AI Journey Planner
+              AI Guide
             </h3>
             <button 
               onClick={() => setShowVoiceAgent(false)}
-              className="text-white/60 hover:text-red-400 transition-colors"
-              title="Close"
+              className="text-white/60 hover:text-white transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-          
           <div className="p-4 h-full flex flex-col">
             <div className="flex-1">
               <VoiceChatWidget
