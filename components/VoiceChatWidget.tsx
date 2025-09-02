@@ -6,6 +6,10 @@ import {
   RoomAudioRenderer,
   useLocalParticipant,
   useRoomContext,
+  Track,
+  TrackPublication,
+  RemoteParticipant,
+  AudioTrack
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 
@@ -91,7 +95,6 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
   const [agentMuted, setAgentMuted] = useState(false);
   const [needsUnlock, setNeedsUnlock] = useState(false);
   const [connectionState, setConnectionState] = useState<string>('connecting');
-  const [agentSpeaking, setAgentSpeaking] = useState(false);
 
   // Track connection state changes
   useEffect(() => {
@@ -188,13 +191,11 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
 
     const handleRemoteAudioStart = () => {
       console.log('🔇 Agent speaking - muting microphone to prevent echo (iOS Safari fix)');
-      setAgentSpeaking(true);
       localParticipant.setMicrophoneEnabled(false);
     };
 
     const handleRemoteAudioEnd = () => {
       console.log('🎤 Agent finished - re-enabling microphone after 400ms delay (iOS Safari fix)');
-      setAgentSpeaking(false);
       // Delay to let iOS Safari AEC settle
       setTimeout(() => {
         if (!mutedMe) { // Only re-enable if user hasn't manually muted
@@ -216,7 +217,7 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
     });
 
     // Listen for new remote participants
-    const onTrackSubscribed = (track: any, publication: any, participant: any) => {
+    const onTrackSubscribed = (track: AudioTrack) => {
       if (track.kind === 'audio') {
         const audioElement = track.attach();
         audioElement.addEventListener('play', handleRemoteAudioStart);
