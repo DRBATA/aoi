@@ -35,6 +35,12 @@ export default function VoiceChatWidget({ livekitUrl, tokenEndpoint }: Props) {
     }
   }, [tokenEndpoint, livekitUrl]);
 
+  const handleReconnect = useCallback(() => {
+    setIsReconnecting(true);
+    setToken(undefined);
+    fetchToken();
+  }, [fetchToken]);
+
   useEffect(() => {
     fetchToken();
   }, [fetchToken]);
@@ -47,12 +53,6 @@ export default function VoiceChatWidget({ livekitUrl, tokenEndpoint }: Props) {
       </div>
     );
   }
-
-  const handleReconnect = useCallback(() => {
-    setIsReconnecting(true);
-    setToken(undefined);
-    fetchToken();
-  }, [fetchToken]);
 
   return (
     <div style={shell}>
@@ -307,11 +307,6 @@ const status: React.CSSProperties = {
   fontSize: 12, 
   color: "rgba(255, 255, 255, 0.7)",
   textAlign: "center"
-};
-const controlsStyle: React.CSSProperties = { 
-  display: "grid", 
-  gridTemplateColumns: "1fr 1fr",
-  gap: 8
 };
 const enhancedControlsStyle: React.CSSProperties = { 
   display: "grid", 
