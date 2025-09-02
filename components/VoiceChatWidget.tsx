@@ -117,7 +117,7 @@ function VoiceControls() {
   useEffect(() => {
     if (!room) return;
     
-    const handleDataReceived = (payload: Uint8Array, participant?: any) => {
+    const handleDataReceived = (payload: Uint8Array) => {
       try {
         const message = JSON.parse(new TextDecoder().decode(payload));
         
@@ -146,7 +146,7 @@ function VoiceControls() {
             }
           }, 1000);
         }
-      } catch (e) {
+      } catch {
         // Ignore non-JSON messages
       }
     };
