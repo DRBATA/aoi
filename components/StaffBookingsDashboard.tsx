@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,52 +31,26 @@ export default function StaffBookingsDashboard() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchBookings();
-    fetchExperiences();
-  }, [selectedDate, selectedExperience]);
+  const fetchBookingsCallback = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          slot_time,
+          duration_minutes,
+          customer_email,
+          customer_name,
+          booking_status,
+          venue:venue_id (name),
+          experiences:experience_id (name),
+          venue_experiences!inner (venue_price, venue_name, experience_name)
+        `)
+        .gte('slot_time', `${selectedDate}T00:00:00`)
+        .lt('slot_time', `${selectedDate}T23:59:59`)
+        .order('slot_time');
 
-  const fetchExperiences = async () => {
-    const { data } = await supabase
-      .from('venue_experiences')
-      .select('experience_name')
-      .order('experience_name');
-    
-    if (data) {
-      const uniqueExperiences = [...new Set(data.map(item => item.experience_name))];
-      setExperiences(uniqueExperiences);
-    }
-  };
-
-  const fetchBookings = async () => {
-    setLoading(true);
-    
-    let query = supabase
-      .from('bookings')
-      .select(`
-        id,
-        slot_time,
-        duration_minutes,
-        customer_email,
-        customer_name,
-        booking_status,
-        venue:venue_id (name),
-        experiences:experience_id (name),
-        venue_experiences!inner (venue_price, venue_name, experience_name)
-      `)
-      .gte('slot_time', `${selectedDate}T00:00:00`)
-      .lt('slot_time', `${selectedDate}T23:59:59`)
-      .order('slot_time');
-
-    if (selectedExperience !== 'all') {
-      query = query.eq('venue_experiences.experience_name', selectedExperience);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching bookings:', error);
-    } else {
+      if (error) throw error
       const formattedBookings = data?.map((booking: any) => ({
         id: booking.id,
         venue_name: booking.venue_experiences[0]?.venue_name || 'Unknown Venue',
@@ -88,12 +62,31 @@ export default function StaffBookingsDashboard() {
         booking_status: booking.booking_status,
         venue_price: parseFloat(booking.venue_experiences[0]?.venue_price || '0')
       })) || [];
-      
       setBookings(formattedBookings);
+    } catch (err) {
+      console.error('Error fetching bookings:', err)
     }
-    
-    setLoading(false);
-  };
+  }, [selectedDate]);
+
+  const fetchExperiencesCallback = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('venue_experiences')
+        .select('experience_name')
+        .order('experience_name');
+      
+      if (error) throw error
+      const uniqueExperiences = [...new Set(data.map(item => item.experience_name))];
+      setExperiences(uniqueExperiences);
+    } catch (err) {
+      console.error('Error fetching experiences:', err)
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBookingsCallback();
+    fetchExperiencesCallback();
+  }, [fetchBookingsCallback, fetchExperiencesCallback, selectedDate, selectedExperience]);
 
   const addToCart = async (booking: Booking) => {
     try {
@@ -113,12 +106,12 @@ export default function StaffBookingsDashboard() {
       if (response.ok) {
         alert(`✓ ${booking.experience_name} added to cart for ${booking.customer_email}\nCart ID: ${result.cartId}`);
         // Refresh bookings to show updated status
-        fetchBookings();
+        fetchBookingsCallback();
       } else {
         alert(`Error: ${result.error}`);
       }
-    } catch (error) {
-      alert('Failed to add booking to cart. Please try again.');
+    } catch (err: unknown) {
+      console.error('Error adding booking to cart:', err);
     }
   };
 

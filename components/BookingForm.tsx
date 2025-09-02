@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
 
 interface Venue {
   id: string;
@@ -32,33 +31,112 @@ export default function BookingForm() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchVenues();
-  }, []);
+  const fetchVenuesCallback = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('venues')
+        .select('*')
+        .eq('is_active', true)
+      
+      if (error) throw error
+      setVenues(data || [])
+    } catch (err) {
+      console.error('Error fetching venues:', err)
+    }
+  }, [])
 
   useEffect(() => {
-    if (selectedVenue) {
-      fetchExperiences();
+    fetchVenuesCallback()
+  }, [fetchVenuesCallback]);
+
+  const fetchExperiencesCallback = useCallback(async () => {
+    if (!selectedVenue) return;
+    
+    const { data } = await supabase
+      .from('venue_experiences')
+      .select(`
+        experience_id,
+        experience_name,
+        duration_minutes,
+        venue_price
+      `)
+      .eq('venue_id', selectedVenue);
+
+    if (data) {
+      const formattedExperiences = data.map(item => ({
+        id: item.experience_id,
+        name: item.experience_name,
+        duration_minutes: item.duration_minutes,
+        venue_price: parseFloat(item.venue_price)
+      }));
+      setExperiences(formattedExperiences);
     }
   }, [selectedVenue]);
 
+  useEffect(() => {
+    fetchExperiencesCallback();
+  }, [fetchExperiencesCallback]);
+
   // Generate available time slots when date and experience change
+  const generateAvailableSlotsCallback = useCallback(async (date: string, experience: Experience) => {
+    setLoadingSlots(true)
+    try {
+      const { data: existingBookings, error } = await supabase
+        .from('bookings')
+        .select('slot_time, duration_minutes')
+        .eq('venue_id', selectedVenue)
+        .gte('slot_time', `${date}T00:00:00`)
+        .lt('slot_time', `${date}T23:59:59`)
+        .eq('booking_status', 'booked')
+      
+      if (error) throw error
+
+      const slots: string[] = []
+      const startHour = 9
+      const endHour = 21
+      const slotInterval = 10
+      const experienceDuration = experience.duration_minutes || 60
+      const bufferTime = 10
+
+      for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += slotInterval) {
+          const slotTime = new Date(`${date}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`)
+          const slotEndTime = new Date(slotTime.getTime() + experienceDuration * 60000)
+          
+          if (slotEndTime.getHours() > endHour) continue
+          
+          const hasConflict = existingBookings?.some(booking => {
+            const bookingStart = new Date(booking.slot_time)
+            const bookingEnd = new Date(bookingStart.getTime() + (booking.duration_minutes + bufferTime) * 60000)
+            const newSlotStart = slotTime
+            const newSlotEnd = new Date(slotTime.getTime() + (experienceDuration + bufferTime) * 60000)
+            
+            return (newSlotStart < bookingEnd && newSlotEnd > bookingStart)
+          })
+          
+          if (!hasConflict) {
+            slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`)
+          }
+        }
+      }
+      
+      setAvailableTimeSlots(slots)
+    } catch (err) {
+      console.error('Error generating slots:', err)
+      setAvailableTimeSlots([])
+    } finally {
+      setLoadingSlots(false)
+    }
+  }, [selectedVenue])
+
   useEffect(() => {
     if (selectedDate && selectedExperience) {
-      generateAvailableSlots(selectedDate, selectedExperience);
-    } else {
-      setAvailableTimeSlots([]);
+      const experience = experiences.find(exp => exp.id === selectedExperience)
+      if (experience) {
+        generateAvailableSlotsCallback(selectedDate, experience)
+      }
     }
-  }, [selectedDate, selectedExperience]);
-
-  const fetchVenues = async () => {
-    const { data } = await supabase
-      .from('venue')
-      .select('id, name')
-      .order('name');
-    
-    if (data) setVenues(data);
-  };
+  }, [selectedDate, selectedExperience, generateAvailableSlotsCallback, experiences])
 
   const fetchExperiences = async () => {
     const { data } = await supabase
@@ -82,67 +160,6 @@ export default function BookingForm() {
       setExperiences(formattedExperiences);
     }
   };
-
-  // Generate available time slots based on existing bookings
-  const generateAvailableSlots = useCallback(async (date: string, experienceId: string) => {
-    if (!date || !experienceId) return [];
-    
-    setLoadingSlots(true);
-    
-    try {
-      // Get selected experience duration
-      const selectedExp = experiences.find(exp => exp.id === experienceId);
-      const duration = selectedExp?.duration_minutes || 30;
-      
-      // Fetch existing bookings for the date and experience
-      const { data: existingBookings } = await supabase
-        .from('bookings')
-        .select('slot_time, duration_minutes')
-        .eq('experience_id', experienceId)
-        .gte('slot_time', `${date}T00:00:00`)
-        .lt('slot_time', `${date}T23:59:59`)
-        .in('booking_status', ['active', 'booked', 'ordered']);
-      
-      // Extract booked time slots
-      const bookedSlots = existingBookings?.map(booking => ({
-        time: new Date(booking.slot_time).toTimeString().slice(0, 5),
-        duration: booking.duration_minutes || 30
-      })) || [];
-      
-      // Generate all possible 10-minute slots from 9 AM to 9 PM
-      const allSlots: string[] = [];
-      for (let hour = 9; hour < 21; hour++) {
-        for (let minute = 0; minute < 60; minute += 10) {
-          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          allSlots.push(timeString);
-        }
-      }
-      
-      // Filter out unavailable slots based on experience duration with 10-minute separation
-      const availableSlots = allSlots.filter(slot => {
-        const [slotHour, slotMinute] = slot.split(':').map(Number);
-        const slotStart = slotHour * 60 + slotMinute;
-        const slotEnd = slotStart + duration;
-        
-        return !bookedSlots.some(booked => {
-          const [bookedHour, bookedMinute] = booked.time.split(':').map(Number);
-          const bookedStart = bookedHour * 60 + bookedMinute - 10; // 10-min separation before
-          const bookedEnd = bookedStart + booked.duration + 20; // 10-min separation after
-          
-          // Check if slot overlaps with booked time (including 10-min separation)
-          return (slotStart < bookedEnd && slotEnd > bookedStart);
-        });
-      });
-      
-      setAvailableTimeSlots(availableSlots);
-      return availableSlots;
-    } catch (error) {
-      console.error('Error generating time slots:', error);
-      return [];
-    } finally {
-      setLoadingSlots(false);
-    }
-  }, [supabase, experiences]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

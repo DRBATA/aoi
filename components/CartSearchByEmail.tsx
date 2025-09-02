@@ -26,34 +26,35 @@ export default function CartSearchByEmail() {
     
     setLoading(true);
     
-    const { data, error } = await supabase
-      .from('cart_headers')
-      .select(`
-        id,
-        customer_email,
-        customer_name,
-        created_at,
-        booking_id,
-        venue:venue_id (name),
-        cart_items (count)
-      `)
-      .eq('customer_email', email)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('cart_headers')
+        .select(`
+          id,
+          customer_email,
+          customer_name,
+          created_at,
+          booking_id
+        `)
+        .eq('customer_email', email);
 
-    if (error) {
-      console.error('Error searching carts:', error);
-    } else {
-      const formattedCarts = data?.map((cart: any) => ({
-        id: cart.id,
-        customer_email: cart.customer_email,
-        customer_name: cart.customer_name,
-        created_at: cart.created_at,
-        booking_id: cart.booking_id,
-        venue_name: cart.venue?.name || 'No venue',
-        items_count: cart.cart_items?.length || 0
-      })) || [];
-      
-      setCarts(formattedCarts);
+      if (error) {
+        console.error('Error searching carts:', error instanceof Error ? error.message : 'Unknown error');
+      } else {
+        const formattedCarts = data?.map((cart) => ({
+          id: cart.id,
+          customer_email: cart.customer_email,
+          customer_name: cart.customer_name,
+          created_at: cart.created_at,
+          booking_id: cart.booking_id,
+          venue_name: 'No venue',
+          items_count: 0
+        })) || [];
+        
+        setCarts(formattedCarts);
+      }
+    } catch (error: unknown) {
+      console.error('Error searching carts:', error instanceof Error ? error.message : 'Unknown error');
     }
     
     setLoading(false);

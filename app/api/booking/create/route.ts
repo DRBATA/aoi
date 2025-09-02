@@ -91,11 +91,11 @@ export async function POST(req: Request) {
             }
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to create booking:', error);
         return NextResponse.json({ 
             error: "Failed to create booking", 
-            details: error.message 
+            details: error instanceof Error ? error.message : 'Unknown error'
         }, { status: 500 });
     }
 }

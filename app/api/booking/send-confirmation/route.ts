@@ -62,8 +62,8 @@ export async function POST(req: Request) {
         console.log(`Booking confirmation email sent successfully to ${bookingData.customer_email} for booking ${bookingId}`);
         return NextResponse.json({ success: true, message: "Booking confirmation email sent successfully." });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error(`Failed to send booking confirmation email for booking ${bookingId}:`, error);
-        return NextResponse.json({ error: "Failed to send email.", details: error.message }, { status: 500 });
+        return NextResponse.json({ error: "Failed to send email.", details: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
     }
 }

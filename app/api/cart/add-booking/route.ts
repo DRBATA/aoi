@@ -100,11 +100,11 @@ export async function POST(req: Request) {
             bookingId: bookingId
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Failed to add booking to cart:', error);
         return NextResponse.json({ 
             error: "Failed to add booking to cart", 
-            details: error.message 
+            details: error instanceof Error ? error.message : 'Unknown error' 
         }, { status: 500 });
     }
 }
