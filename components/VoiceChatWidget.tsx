@@ -16,21 +16,28 @@ type Props = {
 
 export default function VoiceChatWidget({ livekitUrl, tokenEndpoint }: Props) {
   const [token, setToken] = useState<string | undefined>();
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
-  useEffect(() => {
+  const fetchToken = useCallback(async () => {
     if (!tokenEndpoint) return;
     console.log('🔗 Fetching token from:', tokenEndpoint);
     console.log('🌐 LiveKit URL:', livekitUrl);
-    fetch(tokenEndpoint)
-      .then(r => r.json())
-      .then(data => {
-        console.log('🎫 Token received:', data.token ? 'Yes' : 'No');
-        setToken(data.token);
-      })
-      .catch(err => {
-        console.error('❌ Token fetch error:', err);
-      });
+    
+    try {
+      const response = await fetch(tokenEndpoint);
+      const data = await response.json();
+      console.log('🎫 Token received:', data.token ? 'Yes' : 'No');
+      setToken(data.token);
+      setIsReconnecting(false);
+    } catch (err) {
+      console.error('❌ Token fetch error:', err);
+      setIsReconnecting(false);
+    }
   }, [tokenEndpoint, livekitUrl]);
+
+  useEffect(() => {
+    fetchToken();
+  }, [fetchToken]);
 
   if (!token) {
     return (
@@ -40,6 +47,12 @@ export default function VoiceChatWidget({ livekitUrl, tokenEndpoint }: Props) {
       </div>
     );
   }
+
+  const handleReconnect = useCallback(() => {
+    setIsReconnecting(true);
+    setToken(undefined);
+    fetchToken();
+  }, [fetchToken]);
 
   return (
     <div style={shell}>
@@ -52,20 +65,24 @@ export default function VoiceChatWidget({ livekitUrl, tokenEndpoint }: Props) {
         video={false}
         style={{ display: "contents" }}
       >
-        <VoiceControls />
+        <VoiceControls onReconnect={handleReconnect} isReconnecting={isReconnecting} />
       </LiveKitRoom>
     </div>
   );
 }
 
-function VoiceControls() {
+function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => void; isReconnecting: boolean }) {
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const [mutedMe, setMutedMe] = useState(false);
   const [agentMuted, setAgentMuted] = useState(false);
   const [needsUnlock, setNeedsUnlock] = useState(false);
+  const [connectionState, setConnectionState] = useState<string>('connecting');
 
+  // Track connection state changes
   useEffect(() => {
+    setConnectionState(room.state);
+    
     if (room.state === 'connected') {
       const ac = new AudioContext();
       if (ac.state === 'suspended') {
@@ -100,18 +117,42 @@ function VoiceControls() {
   }, []);
 
   const toggleMuteMe = useCallback(async () => {
-    const next = !mutedMe;
-    setMutedMe(next);
-    await localParticipant?.setMicrophoneEnabled(!next);
+    try {
+      const next = !mutedMe;
+      setMutedMe(next);
+      await localParticipant?.setMicrophoneEnabled(!next);
+    } catch (error) {
+      console.error('Failed to toggle microphone:', error);
+      // Reset state if operation failed
+      setMutedMe(prev => !prev);
+    }
   }, [mutedMe, localParticipant]);
 
   const toggleMuteAgent = useCallback(() => {
-    setAgentMuted(!agentMuted);
+    try {
+      setAgentMuted(!agentMuted);
+      // TODO: Implement actual agent muting via room audio controls
+    } catch (error) {
+      console.error('Failed to toggle agent mute:', error);
+    }
   }, [agentMuted]);
 
   const doDisconnect = useCallback(() => {
-    room?.disconnect();
+    try {
+      room?.disconnect();
+    } catch (error) {
+      console.error('Failed to disconnect:', error);
+    }
   }, [room]);
+
+  const handleReconnect = useCallback(() => {
+    try {
+      doDisconnect();
+      onReconnect();
+    } catch (error) {
+      console.error('Failed to reconnect:', error);
+    }
+  }, [doDisconnect, onReconnect]);
 
   // Handle RPC messages from agent for UI control
   useEffect(() => {
@@ -173,7 +214,9 @@ function VoiceControls() {
       <RoomAudioRenderer />
       <div style={body}>
         <div style={status}>
-          {room?.state === "connected" ? "Connected" : "Connecting..."}
+          {isReconnecting ? "Reconnecting..." : 
+           connectionState === "connected" ? "Connected" : 
+           connectionState === "disconnected" ? "Disconnected" : "Connecting..."}
         </div>
         
         {needsUnlock ? (
@@ -193,15 +236,50 @@ function VoiceControls() {
             </div>
           </div>
         ) : (
-          <div style={controlsStyle}>
-            <button onClick={toggleMuteMe} style={btn}>
-              {mutedMe ? "Unmute me" : "Mute me"}
+          <div style={enhancedControlsStyle}>
+            <button 
+              onClick={toggleMuteMe} 
+              style={{
+                ...btn,
+                background: mutedMe ? "rgba(239, 68, 68, 0.2)" : "rgba(34, 197, 94, 0.2)",
+                border: mutedMe ? "1px solid rgba(239, 68, 68, 0.4)" : "1px solid rgba(34, 197, 94, 0.4)"
+              }}
+              disabled={connectionState !== 'connected'}
+            >
+              {mutedMe ? "🔇 Unmute me" : "🎤 Mute me"}
             </button>
-            <button onClick={toggleMuteAgent} style={btn}>
-              {agentMuted ? "Unmute agent" : "Mute agent"}
+            <button 
+              onClick={toggleMuteAgent} 
+              style={{
+                ...btn,
+                background: agentMuted ? "rgba(239, 68, 68, 0.2)" : "rgba(34, 197, 94, 0.2)",
+                border: agentMuted ? "1px solid rgba(239, 68, 68, 0.4)" : "1px solid rgba(34, 197, 94, 0.4)"
+              }}
+              disabled={connectionState !== 'connected'}
+            >
+              {agentMuted ? "🔊 Unmute agent" : "🔇 Mute agent"}
             </button>
-            <button onClick={doDisconnect} style={btn}>
-              Disconnect
+            <button 
+              onClick={doDisconnect} 
+              style={{
+                ...btn,
+                background: "rgba(239, 68, 68, 0.2)",
+                border: "1px solid rgba(239, 68, 68, 0.4)"
+              }}
+              disabled={connectionState === 'disconnected'}
+            >
+              ❌ Disconnect
+            </button>
+            <button 
+              onClick={handleReconnect} 
+              style={{
+                ...btn,
+                background: "rgba(59, 130, 246, 0.2)",
+                border: "1px solid rgba(59, 130, 246, 0.4)"
+              }}
+              disabled={isReconnecting || connectionState === 'connecting'}
+            >
+              {isReconnecting ? "🔄 Reconnecting..." : "🔄 Reconnect"}
             </button>
           </div>
         )}
@@ -231,6 +309,11 @@ const status: React.CSSProperties = {
   textAlign: "center"
 };
 const controlsStyle: React.CSSProperties = { 
+  display: "grid", 
+  gridTemplateColumns: "1fr 1fr",
+  gap: 8
+};
+const enhancedControlsStyle: React.CSSProperties = { 
   display: "grid", 
   gridTemplateColumns: "1fr 1fr",
   gap: 8
