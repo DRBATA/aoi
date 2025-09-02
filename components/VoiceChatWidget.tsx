@@ -61,9 +61,22 @@ export default function VoiceChatWidget({ livekitUrl, tokenEndpoint }: Props) {
         token={token}
         serverUrl={livekitUrl}
         connect={true}
-        audio
+        audio={{
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          voiceIsolation: true, // iOS Safari enhancement
+          sampleRate: 48000
+        }}
         video={false}
         style={{ display: "contents" }}
+        options={{
+          publishDefaults: {
+            audioPreset: {
+              maxBitrate: 20_000,
+            },
+          },
+        }}
       >
         <VoiceControls onReconnect={handleReconnect} isReconnecting={isReconnecting} />
       </LiveKitRoom>
@@ -78,6 +91,7 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
   const [agentMuted, setAgentMuted] = useState(false);
   const [needsUnlock, setNeedsUnlock] = useState(false);
   const [connectionState, setConnectionState] = useState<string>('connecting');
+  const [agentSpeaking, setAgentSpeaking] = useState(false);
 
   // Track connection state changes
   useEffect(() => {
@@ -168,6 +182,56 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
     }
   }, [doDisconnect, onReconnect]);
 
+  // iOS Safari optimization: Gate microphone during agent speech to prevent echo
+  useEffect(() => {
+    if (!room || !localParticipant) return;
+
+    const handleRemoteAudioStart = () => {
+      console.log('🔇 Agent speaking - muting microphone to prevent echo (iOS Safari fix)');
+      setAgentSpeaking(true);
+      localParticipant.setMicrophoneEnabled(false);
+    };
+
+    const handleRemoteAudioEnd = () => {
+      console.log('🎤 Agent finished - re-enabling microphone after 400ms delay (iOS Safari fix)');
+      setAgentSpeaking(false);
+      // Delay to let iOS Safari AEC settle
+      setTimeout(() => {
+        if (!mutedMe) { // Only re-enable if user hasn't manually muted
+          localParticipant.setMicrophoneEnabled(true);
+        }
+      }, 400);
+    };
+
+    // Listen for remote audio track events
+    room.remoteParticipants.forEach(participant => {
+      participant.audioTrackPublications.forEach(publication => {
+        if (publication.track) {
+          const audioElement = publication.track.attach();
+          audioElement.addEventListener('play', handleRemoteAudioStart);
+          audioElement.addEventListener('ended', handleRemoteAudioEnd);
+          audioElement.addEventListener('pause', handleRemoteAudioEnd);
+        }
+      });
+    });
+
+    // Listen for new remote participants
+    const onTrackSubscribed = (track: any, publication: any, participant: any) => {
+      if (track.kind === 'audio') {
+        const audioElement = track.attach();
+        audioElement.addEventListener('play', handleRemoteAudioStart);
+        audioElement.addEventListener('ended', handleRemoteAudioEnd);
+        audioElement.addEventListener('pause', handleRemoteAudioEnd);
+      }
+    };
+
+    room.on('trackSubscribed', onTrackSubscribed);
+
+    return () => {
+      room.off('trackSubscribed', onTrackSubscribed);
+    };
+  }, [room, localParticipant, mutedMe]);
+
   // Handle RPC messages from agent for UI control
   useEffect(() => {
     if (!room) return;
@@ -215,6 +279,20 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
 
   const startAudio = async () => {
     try {
+      // Request microphone permission first with iOS Safari optimizations
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          voiceIsolation: true, // iOS Safari enhancement
+          sampleRate: 48000
+        } 
+      });
+      
+      // Test that we can actually get audio
+      console.log('🎤 Microphone stream acquired:', stream.getAudioTracks()[0]?.label);
+      
       const ac = new AudioContext();
       await ac.resume();
       
@@ -224,9 +302,13 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
         console.log('✅ Microphone enabled after audio unlock');
       }
       
+      // Stop the test stream since LiveKit will create its own
+      stream.getTracks().forEach(track => track.stop());
+      
       setNeedsUnlock(false);
     } catch (e) {
       console.error('Failed to start audio:', e);
+      alert('Microphone access denied. Please allow microphone access and try again.');
     }
   };
 
