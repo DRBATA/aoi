@@ -3,10 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-interface Venue {
-  id: string;
-  name: string;
-}
 
 interface Experience {
   id: string;
@@ -16,9 +12,8 @@ interface Experience {
 }
 
 export default function BookingForm() {
-  const [venues, setVenues] = useState<Venue[]>([]);
+  const AOI_VENUE_ID = '20c2f440-9133-42ec-a8d6-6336e649ec4b'; // Art of Implosion x Johny Dar Experience
   const [experiences, setExperiences] = useState<Experience[]>([]);
-  const [selectedVenue, setSelectedVenue] = useState('');
   const [selectedExperience, setSelectedExperience] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -31,27 +26,7 @@ export default function BookingForm() {
 
   const supabase = createClient();
 
-  const fetchVenuesCallback = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('venues')
-        .select('*')
-        .eq('is_active', true)
-      
-      if (error) throw error
-      setVenues(data || [])
-    } catch (err) {
-      console.error('Error fetching venues:', err)
-    }
-  }, [supabase])
-
-  useEffect(() => {
-    fetchVenuesCallback()
-  }, [fetchVenuesCallback]);
-
   const fetchExperiencesCallback = useCallback(async () => {
-    if (!selectedVenue) return;
-    
     const { data } = await supabase
       .from('venue_experiences')
       .select(`
@@ -60,7 +35,7 @@ export default function BookingForm() {
         duration_minutes,
         venue_price
       `)
-      .eq('venue_id', selectedVenue);
+      .eq('venue_id', AOI_VENUE_ID);
 
     if (data) {
       const formattedExperiences = data.map(item => ({
@@ -71,20 +46,19 @@ export default function BookingForm() {
       }));
       setExperiences(formattedExperiences);
     }
-  }, [selectedVenue, supabase]);
+  }, [supabase]);
 
   useEffect(() => {
     fetchExperiencesCallback();
   }, [fetchExperiencesCallback]);
 
-  // Generate available time slots when date and experience change
   const generateAvailableSlotsCallback = useCallback(async (date: string, experience: Experience) => {
     setLoadingSlots(true)
     try {
       const { data: existingBookings, error } = await supabase
         .from('bookings')
         .select('slot_time, duration_minutes')
-        .eq('venue_id', selectedVenue)
+        .eq('venue_id', AOI_VENUE_ID)
         .gte('slot_time', `${date}T00:00:00`)
         .lt('slot_time', `${date}T23:59:59`)
         .eq('booking_status', 'booked')
@@ -129,7 +103,7 @@ export default function BookingForm() {
     } finally {
       setLoadingSlots(false)
     }
-  }, [selectedVenue, supabase])
+  }, [supabase])
 
   useEffect(() => {
     if (selectedDate && selectedExperience) {
@@ -139,7 +113,6 @@ export default function BookingForm() {
       }
     }
   }, [selectedDate, selectedExperience, generateAvailableSlotsCallback, experiences])
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,7 +128,7 @@ export default function BookingForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          venueId: selectedVenue,
+          venue_id: AOI_VENUE_ID,
           experienceId: selectedExperience,
           slotTime: slotDateTime,
           customerEmail,
@@ -168,7 +141,6 @@ export default function BookingForm() {
       if (response.ok) {
         setMessage(`Booking created successfully! Booking ID: ${result.booking.id}`);
         // Reset form
-        setSelectedVenue('');
         setSelectedExperience('');
         setSelectedDate('');
         setSelectedTime('');
@@ -203,28 +175,12 @@ export default function BookingForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Venue</label>
-          <select
-            value={selectedVenue}
-            onChange={(e) => setSelectedVenue(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
-            required
-          >
-            <option value="">Select a venue</option>
-            {venues.map(venue => (
-              <option key={venue.id} value={venue.id}>{venue.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Experience</label>
           <select
             value={selectedExperience}
             onChange={(e) => setSelectedExperience(e.target.value)}
             className="w-full border border-gray-300 rounded-md px-3 py-2"
             required
-            disabled={!selectedVenue}
           >
             <option value="">Select an experience</option>
             {experiences.map(exp => (
