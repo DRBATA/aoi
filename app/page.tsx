@@ -7,7 +7,6 @@ import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import { createClient } from '@/lib/supabase/client'
-import VoiceChatWidget from '@/components/VoiceChatWidget'
 
 
 export default function LandingPage() {
@@ -1187,10 +1186,10 @@ export default function LandingPage() {
           </div>
           <div className="p-4 h-full flex flex-col">
             <div className="flex-1">
-              <VoiceChatWidget
-                livekitUrl="wss://thewaterbar-arq6djc8.livekit.cloud"
-                tokenEndpoint="/api/livekit-token?room=waterbar-demo&source=aoi-embedded"
-              />
+              <div className="text-center text-white/60 py-8">
+                Voice chat functionality has been removed.
+                Please use the booking form below to schedule your session.
+              </div>
             </div>
             {showNoThanks && (
               <motion.button
