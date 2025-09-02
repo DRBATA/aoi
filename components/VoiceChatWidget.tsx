@@ -86,7 +86,7 @@ function VoiceControls() {
           await ac.resume();
           setNeedsUnlock(false);
         }
-      } catch (e) {
+      } catch {
         // Audio blocked, will need user gesture
       }
     };
