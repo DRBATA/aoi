@@ -113,6 +113,51 @@ function VoiceControls() {
     room?.disconnect();
   }, [room]);
 
+  // Handle RPC messages from agent for UI control
+  useEffect(() => {
+    if (!room) return;
+    
+    const handleDataReceived = (payload: Uint8Array, participant?: any) => {
+      try {
+        const message = JSON.parse(new TextDecoder().decode(payload));
+        
+        if (message.type === 'navigate_and_highlight') {
+          // Scroll to experiences section
+          const experiencesSection = document.getElementById('experiences');
+          if (experiencesSection) {
+            experiencesSection.scrollIntoView({ behavior: 'smooth' });
+          }
+          
+          // Highlight AOI FLOAT card after scroll
+          setTimeout(() => {
+            const floatCard = document.querySelector('[data-experience="aoi-float"]') as HTMLElement;
+            if (floatCard) {
+              floatCard.style.boxShadow = '0 0 20px rgba(139, 92, 246, 0.8)';
+              floatCard.style.transform = 'scale(1.05)';
+              floatCard.style.transition = 'all 0.3s ease';
+              floatCard.style.border = '2px solid rgba(139, 92, 246, 0.6)';
+              
+              // Remove highlight after 5 seconds
+              setTimeout(() => {
+                floatCard.style.boxShadow = '';
+                floatCard.style.transform = '';
+                floatCard.style.border = '';
+              }, 5000);
+            }
+          }, 1000);
+        }
+      } catch (e) {
+        // Ignore non-JSON messages
+      }
+    };
+
+    room.on('dataReceived', handleDataReceived);
+    
+    return () => {
+      room.off('dataReceived', handleDataReceived);
+    };
+  }, [room]);
+
   const startAudio = async () => {
     try {
       const ac = new AudioContext();
