@@ -178,7 +178,7 @@ export default function BookingForm() {
       } else {
         setMessage(`Error: ${result.error}`);
       }
-    } catch (err) {
+    } catch {
       setMessage('Failed to create booking. Please try again.');
     } finally {
       setIsLoading(false);
