@@ -1,7 +1,7 @@
 "use client"
 
-import UnifiedDashboard from "@/components/unified-dashboard"
+import StaffBookingsDashboard from "@/components/StaffBookingsDashboard"
 
 export default function UnifiedDashboardPage() {
-  return <UnifiedDashboard />
+  return <StaffBookingsDashboard />
 }
