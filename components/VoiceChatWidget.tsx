@@ -70,10 +70,28 @@ function VoiceControls() {
       const ac = new AudioContext();
       if (ac.state === 'suspended') {
         setNeedsUnlock(true);
+      } else {
+        // Auto-start if audio context is already allowed
+        ac.resume().catch(() => setNeedsUnlock(true));
       }
-      ac.resume().catch(() => setNeedsUnlock(true));
     }
   }, [room.state]);
+
+  // Auto-start audio when component mounts (if user has already granted permission)
+  useEffect(() => {
+    const tryAutoStart = async () => {
+      try {
+        const ac = new AudioContext();
+        if (ac.state !== 'suspended') {
+          await ac.resume();
+          setNeedsUnlock(false);
+        }
+      } catch (e) {
+        // Audio blocked, will need user gesture
+      }
+    };
+    tryAutoStart();
+  }, []);
 
   const toggleMuteMe = useCallback(async () => {
     const next = !mutedMe;
