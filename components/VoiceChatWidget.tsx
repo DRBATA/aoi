@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { LiveKitRoom, useRoomContext, useLocalParticipant, RoomAudioRenderer } from "@livekit/components-react";
+import { LiveKitRoom, useRoomContext, useLocalParticipant } from "@livekit/components-react";
 import { resumeAudioContext } from "../lib/audio-context";
 
 interface VoiceChatWidgetProps {
@@ -30,7 +30,7 @@ export default function VoiceChatWidget({ tokenEndpoint, livekitUrl }: VoiceChat
       console.error('❌ Token fetch error:', err);
       setIsReconnecting(false);
     }
-  }, [tokenEndpoint, livekitUrl]);
+  }, [tokenEndpoint]);
 
   const handleReconnect = useCallback(() => {
     setIsReconnecting(true);
@@ -221,14 +221,7 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
     }
   }, [mutedMe, localParticipant]);
 
-  const toggleMuteAgent = useCallback(() => {
-    try {
-      setAgentMuted(!agentMuted);
-      // TODO: Implement actual agent muting via room audio controls
-    } catch (error) {
-      console.error('Failed to toggle agent mute:', error);
-    }
-  }, [agentMuted]);
+  // Agent muting handled via track events
 
   const doDisconnect = useCallback(() => {
     try {
@@ -270,24 +263,19 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
       if (track.kind === 'audio' && participant.identity !== localParticipant?.identity) {
         console.log('🔊 Agent audio track subscribed');
         
-        // Clean up any existing listeners first
-        const existingListeners = (track as any)._eventListeners || [];
-        existingListeners.forEach((listener: any) => {
-          track.removeEventListener(listener.event, listener.handler);
-        });
-        
         const handleMuteChanged = () => {
           setAgentMuted(track.isMuted);
         };
         
-        track.addEventListener('muted', handleMuteChanged);
-        track.addEventListener('unmuted', handleMuteChanged);
+        // Use 'on' method for LiveKit tracks
+        track.on('muted', handleMuteChanged);
+        track.on('unmuted', handleMuteChanged);
         
-        // Store listeners for cleanup
-        (track as any)._eventListeners = [
-          { event: 'muted', handler: handleMuteChanged },
-          { event: 'unmuted', handler: handleMuteChanged }
-        ];
+        // Store cleanup function
+        (track as any)._cleanup = () => {
+          track.off('muted', handleMuteChanged);
+          track.off('unmuted', handleMuteChanged);
+        };
       }
     };
 
@@ -296,11 +284,10 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
         console.log('🔇 Agent audio track unsubscribed');
         
         // Clean up listeners
-        const listeners = (track as any)._eventListeners || [];
-        listeners.forEach((listener: any) => {
-          track.removeEventListener(listener.event, listener.handler);
-        });
-        delete (track as any)._eventListeners;
+        if ((track as any)._cleanup) {
+          (track as any)._cleanup();
+          delete (track as any)._cleanup;
+        }
       }
     };
 
