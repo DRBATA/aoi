@@ -64,9 +64,7 @@ export default function VoiceChatWidget({ livekitUrl, tokenEndpoint }: Props) {
         audio={{
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true,
-          voiceIsolation: true, // iOS Safari enhancement
-          sampleRate: 48000
+          autoGainControl: true
         }}
         video={false}
         style={{ display: "contents" }}
@@ -276,15 +274,18 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
 
   const startAudio = async () => {
     try {
+      // Detect iOS devices
+      const isIOS = typeof navigator !== 'undefined' && /iP(hone|ad|od)/.test(navigator.userAgent);
+      
       // Request microphone permission first with iOS Safari optimizations
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          voiceIsolation: true, // iOS Safari enhancement
-          sampleRate: 48000
-        } 
+          sampleRate: 48000,
+          ...(isIOS ? { voiceIsolation: true } : {}) // iOS Safari enhancement
+        }
       });
       
       // Test that we can actually get audio
