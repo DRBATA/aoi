@@ -84,15 +84,29 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
     setConnectionState(room.state);
     
     if (room.state === 'connected') {
-      const ac = new AudioContext();
-      if (ac.state === 'suspended') {
-        setNeedsUnlock(true);
-      } else {
-        // Auto-start if audio context is already allowed
-        ac.resume().catch(() => setNeedsUnlock(true));
-      }
+      const initializeAudio = async () => {
+        try {
+          const ac = new AudioContext();
+          if (ac.state === 'suspended') {
+            setNeedsUnlock(true);
+          } else {
+            await ac.resume();
+            // Ensure microphone is enabled when connected
+            if (localParticipant) {
+              await localParticipant.setMicrophoneEnabled(true);
+              console.log('🎤 Microphone auto-enabled on connection');
+            }
+            setNeedsUnlock(false);
+          }
+        } catch (error) {
+          console.error('Audio initialization failed:', error);
+          setNeedsUnlock(true);
+        }
+      };
+      
+      initializeAudio();
     }
-  }, [room.state]);
+  }, [room.state, localParticipant]);
 
   // Auto-start audio when component mounts (if user has already granted permission)
   useEffect(() => {
@@ -203,6 +217,13 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
     try {
       const ac = new AudioContext();
       await ac.resume();
+      
+      // Explicitly enable microphone after audio context is ready
+      if (localParticipant) {
+        await localParticipant.setMicrophoneEnabled(true);
+        console.log('✅ Microphone enabled after audio unlock');
+      }
+      
       setNeedsUnlock(false);
     } catch (e) {
       console.error('Failed to start audio:', e);
