@@ -104,7 +104,7 @@ function VoiceControls() {
       <RoomAudioRenderer />
       <div style={body}>
         <div style={status}>
-          {room?.state === "connected" ? "Connected to room" : "Connecting..."}
+          {room?.state === "connected" ? `Connected to room (${Object.keys(room.remoteParticipants).length} participants)` : "Connecting..."}
         </div>
         
         {needsUnlock ? (
