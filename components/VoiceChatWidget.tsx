@@ -213,7 +213,7 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
     });
 
     // Listen for new remote participants
-    const onTrackSubscribed = (track: any) => {
+    const onTrackSubscribed = (track: { kind: string; attach: () => HTMLAudioElement }) => {
       if (track.kind === 'audio') {
         const audioElement = track.attach();
         audioElement.addEventListener('play', handleRemoteAudioStart);
