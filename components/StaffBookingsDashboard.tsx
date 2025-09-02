@@ -23,7 +23,7 @@ interface Booking {
 
 export default function StaffBookingsDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedExperience, setSelectedExperience] = useState('all');
   const [experiences, setExperiences] = useState<string[]>([]);
@@ -51,7 +51,7 @@ export default function StaffBookingsDashboard() {
         .order('slot_time');
 
       if (error) throw error
-      const formattedBookings = data?.map((booking: any) => ({
+      const formattedBookings = data?.map((booking) => ({
         id: booking.id,
         venue_name: booking.venue_experiences[0]?.venue_name || 'Unknown Venue',
         experience_name: booking.venue_experiences[0]?.experience_name || 'Unknown Experience',
@@ -81,7 +81,7 @@ export default function StaffBookingsDashboard() {
     } catch (err) {
       console.error('Error fetching experiences:', err)
     }
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     fetchBookingsCallback();
@@ -242,7 +242,7 @@ export default function StaffBookingsDashboard() {
                           </div>
                           <div className="text-sm text-white/60 space-y-1">
                             <div>📍 {booking.venue_name}</div>
-                            <div>🕐 {new Date(booking.slot_time).toLocaleTimeString()} ({booking.duration_minutes} min)</div>
+                            <div>⏰ {new Date(booking.slot_time).toLocaleTimeString()} ({booking.duration_minutes} min)</div>
                             <div>👤 {booking.customer_name} ({booking.customer_email})</div>
                             <div>💰 ${booking.venue_price}</div>
                           </div>

@@ -43,7 +43,7 @@ export default function BookingForm() {
     } catch (err) {
       console.error('Error fetching venues:', err)
     }
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     fetchVenuesCallback()
@@ -122,7 +122,9 @@ export default function BookingForm() {
       
       setAvailableTimeSlots(slots)
     } catch (err) {
-      console.error('Error generating slots:', err)
+      console.error('Error creating booking:', err)
+      setMessage('Error creating booking. Please try again.')
+      setIsLoading(false)
       setAvailableTimeSlots([])
     } finally {
       setLoadingSlots(false)
@@ -138,28 +140,6 @@ export default function BookingForm() {
     }
   }, [selectedDate, selectedExperience, generateAvailableSlotsCallback, experiences])
 
-  const fetchExperiences = async () => {
-    const { data } = await supabase
-      .from('venue_experiences')
-      .select(`
-        experience_id,
-        experience_name,
-        duration_minutes,
-        venue_price
-      `)
-      .eq('venue_id', selectedVenue)
-      .eq('is_available', true);
-    
-    if (data) {
-      const formattedExperiences = data.map(item => ({
-        id: item.experience_id,
-        name: item.experience_name,
-        duration_minutes: item.duration_minutes,
-        venue_price: parseFloat(item.venue_price)
-      }));
-      setExperiences(formattedExperiences);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
