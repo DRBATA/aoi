@@ -66,7 +66,7 @@ export default function StaffBookingsDashboard() {
     } catch (err) {
       console.error('Error fetching bookings:', err)
     }
-  }, [selectedDate]);
+  }, [selectedDate, supabase]);
 
   const fetchExperiencesCallback = useCallback(async () => {
     try {

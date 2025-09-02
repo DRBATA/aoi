@@ -71,7 +71,7 @@ export default function BookingForm() {
       }));
       setExperiences(formattedExperiences);
     }
-  }, [selectedVenue]);
+  }, [selectedVenue, supabase]);
 
   useEffect(() => {
     fetchExperiencesCallback();
@@ -129,7 +129,7 @@ export default function BookingForm() {
     } finally {
       setLoadingSlots(false)
     }
-  }, [selectedVenue])
+  }, [selectedVenue, supabase])
 
   useEffect(() => {
     if (selectedDate && selectedExperience) {
@@ -178,7 +178,7 @@ export default function BookingForm() {
       } else {
         setMessage(`Error: ${result.error}`);
       }
-    } catch (error) {
+    } catch (err) {
       setMessage('Failed to create booking. Please try again.');
     } finally {
       setIsLoading(false);
