@@ -145,7 +145,7 @@ export default function StaffBookingsDashboard() {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h1 className="text-2xl font-bold text-white">Today's Bookings</h1>
+              <h1 className="text-2xl font-bold text-white">Today&apos;s Bookings</h1>
               
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
