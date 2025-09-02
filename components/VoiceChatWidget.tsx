@@ -82,12 +82,18 @@ function VoiceControls() {
     const tryAutoStart = async () => {
       try {
         const ac = new AudioContext();
+        console.log('AudioContext state:', ac.state);
         if (ac.state !== 'suspended') {
           await ac.resume();
           setNeedsUnlock(false);
+          console.log('Audio unlocked automatically');
+        } else {
+          console.log('Audio is suspended, need user gesture');
+          setNeedsUnlock(true);
         }
-      } catch {
-        // Audio blocked, will need user gesture
+      } catch (e) {
+        console.log('Audio blocked, need user gesture:', e);
+        setNeedsUnlock(true);
       }
     };
     tryAutoStart();
