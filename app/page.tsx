@@ -1187,7 +1187,7 @@ export default function LandingPage() {
           <div className="p-4 h-full flex flex-col">
             <div className="flex-1">
               <VoiceChatWidget
-                livekitUrl="wss://thewaterbar-qrq6cj8.livekit.cloud"
+                livekitUrl="wss://thewaterbar-arq6djc8.livekit.cloud"
                 tokenEndpoint="/api/livekit-token?room=waterbar-demo&source=aoi-embedded"
               />
             </div>
