@@ -6,9 +6,6 @@ import {
   RoomAudioRenderer,
   useLocalParticipant,
   useRoomContext,
-  Track,
-  TrackPublication,
-  RemoteParticipant,
   AudioTrack
 } from "@livekit/components-react";
 import "@livekit/components-styles";
