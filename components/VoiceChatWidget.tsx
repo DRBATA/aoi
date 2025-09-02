@@ -91,7 +91,7 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const [mutedMe, setMutedMe] = useState(false);
-  const [agentMuted, setAgentMuted] = useState(false);
+  const [, setAgentMuted] = useState(false);
   const [needsUnlock, setNeedsUnlock] = useState(false);
   const [connectionState, setConnectionState] = useState<string>('connecting');
 
@@ -259,6 +259,7 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
   useEffect(() => {
     if (!room) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleTrackSubscribed = (track: any, publication: any, participant: any) => {
       if (track.kind === 'audio' && participant.identity !== localParticipant?.identity) {
         console.log('🔊 Agent audio track subscribed');
@@ -272,21 +273,22 @@ function VoiceControls({ onReconnect, isReconnecting }: { onReconnect: () => voi
         track.on('unmuted', handleMuteChanged);
         
         // Store cleanup function
-        (track as any)._cleanup = () => {
+        track._cleanup = () => {
           track.off('muted', handleMuteChanged);
           track.off('unmuted', handleMuteChanged);
         };
       }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleTrackUnsubscribed = (track: any) => {
       if (track.kind === 'audio') {
         console.log('🔇 Agent audio track unsubscribed');
         
         // Clean up listeners
-        if ((track as any)._cleanup) {
-          (track as any)._cleanup();
-          delete (track as any)._cleanup;
+        if (track._cleanup) {
+          track._cleanup();
+          delete track._cleanup;
         }
       }
     };
