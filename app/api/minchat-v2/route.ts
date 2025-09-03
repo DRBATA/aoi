@@ -25,22 +25,27 @@ async function list_experiences({ q = "", limit = 8 }: { q?: string; limit?: num
 }
 
 async function list_drinks(args: { q?: string; experience_name?: string; limit?: number }) {
-  let query = supa.from("products").select("id, name, description, pairings");
+  const limit = Math.min(args.limit || 6, 6);
   
+  // Use RPC for experience-based search (avoids PostgREST pairings::text filter limitation)
+  if (args.experience_name) {
+    console.log('[list_drinks] Using RPC for:', args.experience_name);
+    const { data, error } = await supa.rpc('search_products_by_trigger', {
+      pattern: args.experience_name,
+      lim: limit
+    });
+    if (error) {
+      console.error('[list_drinks] RPC error:', error);
+      return [];
+    }
+    return data || [];
+  }
+  
+  // Fallback: search by name
+  let query = supa.from("products").select("id, name, description, pairings").limit(limit);
   if (args.q) {
     query = query.ilike("name", `%${args.q}%`);
   }
-  
-  // Search for exact experience name in trigger arrays
-  if (args.experience_name) {
-    // Extract base experience name (remove timing)
-    const baseName = args.experience_name.replace(/\s*\(\d+-min\)$/, '').trim();
-    console.log('[list_drinks] Searching for:', baseName);
-    query = query.filter('pairings::text', 'ilike', `%${baseName}%`);
-  }
-  
-  const limit = Math.min(args.limit || 6, 6);
-  query = query.limit(limit);
   const { data } = await query;
   return data || [];
 }
@@ -81,9 +86,8 @@ async function get_cart_contents({ customer_email }: { customer_email: string })
     .from('cart_items')
     .select(`
       id,
-      quantity,
-      unit_price_aed,
-      products!inner(name, description, tags, category, price_aed)
+      qty,
+      products:item_id(id, name, description, tags, category, price_aed)
     `)
     .eq('cart_id', cart.id);
 
