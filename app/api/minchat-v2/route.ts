@@ -149,14 +149,12 @@ export async function POST(req: Request) {
   // Loop until no more tool calls (max 4 rounds for complex workflows)
   for (let i = 0; i < 4; i++) {
     const response = await client.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-5-2025-08-07",
       messages,
       tools,
       tool_choice: "auto",
-      reasoning_effort: "minimal",  // Fastest mode
-      verbosity: "low",            // Compact outputs
       temperature: 0.2,
-      max_tokens: 1000
+      max_tokens: 10000
     });
 
     const message = response.choices[0]?.message;
@@ -202,7 +200,7 @@ export async function POST(req: Request) {
     // No tool calls = the model is ready to answer.
     // Do ONE more call forcing JSON so the UI can render clickable chips.
     const final = await client.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-5-2025-08-07",
       messages: [
         ...messages,
         {
@@ -225,9 +223,8 @@ export async function POST(req: Request) {
       ],
       // force json so you don't have to parse prose
       response_format: { type: "json_object" },
-      reasoning_effort: "minimal",  // Fastest mode
-      verbosity: "low",            // Compact outputs
       temperature: 0.2,
+      max_tokens: 10000,
       // IMPORTANT: in this final pass we do NOT include tools again
     });
 

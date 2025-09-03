@@ -92,21 +92,26 @@ export default function MinChat({ customerEmail }: MinChatProps) {
         ) : result ? (
           <div className="space-y-3">
             <div className="font-semibold">{result.title}</div>
-            <div className="flex flex-wrap gap-2">
+            <div className="space-y-3">
               {result.choices.map((choice, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    if (choice.kind === "drink") {
-                      addDrink(choice.slug, choice.qty ?? 1, (choice.where ?? "here") as "here" | "to-go");
-                    }
-                    // TODO: Handle experience and bundle clicks
-                  }}
-                  title={choice.reason}
-                  className="rounded-full px-3 py-1 text-xs font-medium ring-1 bg-white/5 ring-white/10 text-white hover:bg-white/10 transition-colors"
-                >
-                  {choice.label}
-                </button>
+                <div key={i} className="space-y-1">
+                  <button
+                    onClick={async () => {
+                      if (choice.kind === "drink") {
+                        await addDrink(choice.slug, choice.qty ?? 1, (choice.where ?? "here") as "here" | "to-go");
+                      }
+                      // TODO: Handle experience and bundle clicks
+                    }}
+                    className="w-full text-left rounded-lg px-3 py-2 text-sm font-medium ring-1 bg-white/5 ring-white/10 text-white hover:bg-white/10 transition-colors active:bg-white/20"
+                  >
+                    {choice.label}
+                  </button>
+                  {choice.reason && (
+                    <div className="text-xs text-white/60 px-3">
+                      {choice.reason}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
