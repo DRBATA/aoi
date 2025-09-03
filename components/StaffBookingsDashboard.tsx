@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Plus, Search } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, Plus, Search } from "lucide-react";
+import MinChat from "./MinChat";
 import BookingForm from './BookingForm';
 import CartSearchByEmail from './CartSearchByEmail';
 
@@ -19,15 +20,18 @@ interface Booking {
   customer_name: string;
   booking_status: string;
   venue_price: number;
+  cart_id: string | null;
 }
 
 export default function StaffBookingsDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string>('');
   const [selectedExperience, setSelectedExperience] = useState('all');
+  const [selectedTimeFilter, setSelectedTimeFilter] = useState('all');
   const [experiences, setExperiences] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'search'>('dashboard');
 
   const supabase = createClient();
 
@@ -42,29 +46,43 @@ export default function StaffBookingsDashboard() {
           customer_email,
           customer_name,
           booking_status,
-          venue:venue_id (name),
-          experiences:experience_id (name),
-          venue_experiences!inner (venue_price, venue_name, experience_name)
+          venue_id,
+          experience_id,
+          cart_id
         `)
         .gte('slot_time', `${selectedDate}T00:00:00`)
         .lt('slot_time', `${selectedDate}T23:59:59`)
         .order('slot_time');
 
       if (error) throw error
-      const formattedBookings = data?.map((booking) => ({
-        id: booking.id,
-        venue_name: booking.venue_experiences[0]?.venue_name || 'Unknown Venue',
-        experience_name: booking.venue_experiences[0]?.experience_name || 'Unknown Experience',
-        slot_time: booking.slot_time,
-        duration_minutes: booking.duration_minutes,
-        customer_email: booking.customer_email,
-        customer_name: booking.customer_name,
-        booking_status: booking.booking_status,
-        venue_price: parseFloat(booking.venue_experiences[0]?.venue_price || '0')
-      })) || [];
+
+      // Fetch experience details for each booking
+      const formattedBookings = await Promise.all(data?.map(async (booking) => {
+        const { data: expData } = await supabase
+          .from('venue_experiences')
+          .select('experience_name, venue_price')
+          .eq('venue_id', booking.venue_id)
+          .eq('experience_id', booking.experience_id)
+          .single();
+
+          return {
+            id: booking.id,
+            venue_name: 'Art of Implosion x Johny Dar Experience',
+            experience_name: expData?.experience_name || 'Unknown Experience',
+            slot_time: booking.slot_time,
+            duration_minutes: booking.duration_minutes,
+            customer_email: booking.customer_email,
+            customer_name: booking.customer_name,
+            booking_status: booking.booking_status,
+            venue_price: parseFloat(expData?.venue_price || '0'),
+            cart_id: booking.cart_id
+          };
+      }) || []);
       setBookings(formattedBookings);
     } catch (err) {
       console.error('Error fetching bookings:', err)
+    } finally {
+      setLoading(false);
     }
   }, [selectedDate, supabase]);
 
@@ -105,7 +123,6 @@ export default function StaffBookingsDashboard() {
 
       if (response.ok) {
         alert(`✓ ${booking.experience_name} added to cart for ${booking.customer_email}\nCart ID: ${result.cartId}`);
-        // Refresh bookings to show updated status
         fetchBookingsCallback();
       } else {
         alert(`Error: ${result.error}`);
@@ -115,50 +132,105 @@ export default function StaffBookingsDashboard() {
     }
   };
 
+  const removeFromCart = async (booking: Booking) => {
+    try {
+      const response = await fetch('/api/cart/remove-booking', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          cartId: booking.cart_id
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(`✓ ${booking.experience_name} removed from cart`);
+        fetchBookingsCallback();
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (err: unknown) {
+      console.error('Error removing booking from cart:', err);
+    }
+  };
+
+  const getDateTitle = (dateString: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    if (dateString === today) return "Today's";
+    if (dateString === tomorrow) return "Tomorrow's";
+    
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { 
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long' 
+    });
+  };
+
+  const getButtonState = (booking: Booking) => {
+    if (!booking.cart_id) {
+      return { text: 'Add to Cart', action: () => addToCart(booking), disabled: false, className: 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' };
+    }
+    
+    // TODO: Check if cart is paid - for now assume unpaid if cart_id exists
+    return { text: 'Remove from Cart', action: () => removeFromCart(booking), disabled: false, className: 'bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600' };
+  };
+
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Tab Navigation - AOI Style */}
-      <div className="flex flex-wrap justify-center gap-2 mb-8 pt-6">
-        {[
-          { id: 'dashboard', label: 'Dashboard', icon: <Calendar className="w-4 h-4" /> },
-          { id: 'create', label: 'Create Booking', icon: <Plus className="w-4 h-4" /> },
-          { id: 'search', label: 'Search Carts', icon: <Search className="w-4 h-4" /> }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
-              activeTab === tab.id
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                : 'bg-white/10 text-white/70 hover:bg-white/20'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-50 to-orange-50 text-gray-800">
+      <div className="container mx-auto px-4 py-8">
+        {/* Tab Navigation - AOI Style */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8 pt-6">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: <Calendar className="w-4 h-4" /> },
+            { id: 'create', label: 'Create Booking', icon: <Plus className="w-4 h-4" /> },
+            { id: 'search', label: 'Search Carts', icon: <Search className="w-4 h-4" /> }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as 'dashboard' | 'create' | 'search')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all border-2 ${
+                activeTab === tab.id
+                  ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-xl border-transparent'
+                  : 'bg-white/90 text-gray-700 hover:bg-gradient-to-r hover:from-orange-100 hover:to-yellow-100 hover:shadow-lg border-orange-200 hover:border-orange-300'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
       {/* Tab Content */}
       <div className="px-6">
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h1 className="text-2xl font-bold text-white">Today&apos;s Bookings</h1>
-              
-              <div className="flex flex-col sm:flex-row gap-3">
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h1 className="text-2xl font-bold text-gray-800">{getDateTitle(selectedDate)} Bookings</h1>
+                
                 <input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-3 py-2 border rounded-lg bg-white/10 border-white/20 text-white"
+                  className="px-4 py-2 border-2 rounded-lg bg-white border-blue-200 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm"
                 />
-                
+              </div>
+
+              {/* Experience Filter */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium text-gray-700">Filter by Experience</h3>
                 <select
                   value={selectedExperience}
                   onChange={(e) => setSelectedExperience(e.target.value)}
-                  className="px-3 py-2 border rounded-lg bg-white/10 border-white/20 text-white"
+                  className="px-4 py-2 border-2 rounded-lg bg-white border-blue-200 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm w-full sm:w-auto min-w-0"
                 >
                   <option value="all">All Experiences</option>
                   {experiences.map(exp => (
@@ -166,80 +238,137 @@ export default function StaffBookingsDashboard() {
                   ))}
                 </select>
               </div>
+
+              {/* Time Filter Radio Buttons */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium text-gray-700">Filter by Time</h3>
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { value: 'all', label: 'All Times' },
+                    { value: 'morning', label: 'Morning (6AM-12PM)' },
+                    { value: 'afternoon', label: 'Afternoon (12PM-6PM)' },
+                    { value: 'evening', label: 'Evening (6PM-12AM)' }
+                  ].map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="timeFilter"
+                        value={option.value}
+                        checked={selectedTimeFilter === option.value}
+                        onChange={(e) => setSelectedTimeFilter(e.target.value)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2"
+                      />
+                      <span className="text-gray-700">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-white/5 border-white/10">
+            <div className="grid grid-cols-3 gap-2 md:gap-4">
+              <Card className="bg-gradient-to-br from-white to-blue-50 border-2 border-blue-200 shadow-lg">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-white/60">Total Bookings</CardTitle>
+                  <CardTitle className="text-sm font-medium text-blue-600">Total Bookings</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">{bookings.length}</div>
+                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{bookings.length}</div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-white/5 border-white/10">
+              <Card className="bg-gradient-to-br from-white to-orange-50 border-2 border-orange-200 shadow-lg">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-white/60">Total Revenue</CardTitle>
+                  <CardTitle className="text-sm font-medium text-orange-600">Active Bookings</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">
-                    ${bookings.reduce((sum, booking) => sum + booking.venue_price, 0).toFixed(2)}
+                  <div className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
+                    {bookings.filter(b => b.booking_status === 'active').length}
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="bg-white/5 border-white/10">
+              <Card className="bg-gradient-to-br from-white to-pink-50 border-2 border-pink-200 shadow-lg">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-white/60">Active Bookings</CardTitle>
+                  <CardTitle className="text-sm font-medium text-pink-600">Completed Bookings</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-white">
-                    {bookings.filter(b => b.booking_status === 'active').length}
+                  <div className="text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+                    {bookings.filter(b => b.booking_status === 'completed').length}
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Bookings List */}
-            <Card className="bg-white/5 border-white/10">
+            <Card className="bg-gradient-to-br from-white to-gray-50 border-2 border-gray-200 shadow-lg">
               <CardHeader>
-                <CardTitle className="text-white">Bookings for {selectedDate}</CardTitle>
+                <CardTitle className="text-gray-800">Bookings for {selectedDate}</CardTitle>
               </CardHeader>
               <CardContent>
                 {loading ? (
-                  <div className="text-center py-4 text-white/60">Loading bookings...</div>
+                  <div className="text-center py-4 text-gray-600">Loading bookings...</div>
                 ) : bookings.length === 0 ? (
-                  <div className="text-center py-4 text-white/60">No bookings found for this date</div>
+                  <div className="text-center py-4 text-gray-600">No bookings found for this date</div>
                 ) : (
                   <div className="space-y-3">
-                    {bookings.map((booking) => (
-                      <div key={booking.id} className="flex items-center justify-between p-4 border border-white/10 rounded-lg hover:bg-white/5">
+                    {bookings
+                      .filter(booking => {
+                        // Experience filter
+                        const experienceMatch = selectedExperience === 'all' || booking.experience_name === selectedExperience;
+                        
+                        // Time filter
+                        if (selectedTimeFilter === 'all') return experienceMatch;
+                        
+                        const bookingHour = new Date(booking.slot_time).getHours();
+                        let timeMatch = false;
+                        
+                        switch (selectedTimeFilter) {
+                          case 'morning':
+                            timeMatch = bookingHour >= 6 && bookingHour < 12;
+                            break;
+                          case 'afternoon':
+                            timeMatch = bookingHour >= 12 && bookingHour < 18;
+                            break;
+                          case 'evening':
+                            timeMatch = bookingHour >= 18 && bookingHour < 24;
+                            break;
+                          default:
+                            timeMatch = true;
+                        }
+                        
+                        return experienceMatch && timeMatch;
+                      })
+                      .map((booking) => (
+                      <div key={booking.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-blue-50 bg-white/80">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-white">{booking.experience_name}</h3>
+                            <h3 className="font-semibold text-gray-800">{booking.experience_name}</h3>
                             <Badge variant={booking.booking_status === 'active' ? 'default' : 'secondary'}>
                               {booking.booking_status}
                             </Badge>
                           </div>
-                          <div className="text-sm text-white/60 space-y-1">
+                          <div className="text-sm text-gray-600 space-y-1">
                             <div>📍 {booking.venue_name}</div>
                             <div>⏰ {new Date(booking.slot_time).toLocaleTimeString()} ({booking.duration_minutes} min)</div>
                             <div>👤 {booking.customer_name} ({booking.customer_email})</div>
-                            <div>💰 ${booking.venue_price}</div>
+                            <div>💰 AED {booking.venue_price}</div>
                           </div>
                         </div>
                         
                         <div className="flex gap-2">
-                          <Button
-                            onClick={() => addToCart(booking)}
-                            disabled={booking.booking_status !== 'active'}
-                            size="sm"
-                            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                          >
-                            Add to Cart
-                          </Button>
+                          {(() => {
+                            const buttonState = getButtonState(booking);
+                            return (
+                              <Button
+                                onClick={buttonState.action}
+                                disabled={buttonState.disabled || booking.booking_status !== 'active'}
+                                size="sm"
+                                className={buttonState.className}
+                              >
+                                {buttonState.text}
+                              </Button>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}
@@ -257,10 +386,24 @@ export default function StaffBookingsDashboard() {
         )}
 
         {activeTab === 'search' && (
-          <div className="max-w-4xl mx-auto">
-            <CartSearchByEmail />
+          <div className="max-w-4xl mx-auto space-y-6">
+            <CartSearchByEmail onEmailChange={setSelectedCustomerEmail} />
+            
+            {/* AI Suggestions */}
+            <div className="bg-white/80 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">🎭 AI Suggestions</h3>
+              {selectedCustomerEmail && (
+                <p className="text-sm text-gray-600 mb-3">
+                  Suggestions for: <span className="font-medium">{selectedCustomerEmail}</span>
+                </p>
+              )}
+              <div className="bg-neutral-900 rounded-2xl p-1">
+                <MinChat customerEmail={selectedCustomerEmail} />
+              </div>
+            </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

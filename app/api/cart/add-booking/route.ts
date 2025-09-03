@@ -80,10 +80,13 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
-        // Update booking status
+        // Update booking with cart_id and status
         const { error: updateBookingError } = await supabase
             .from('bookings')
-            .update({ booking_status: 'booked' })
+            .update({ 
+                cart_id: cartId,
+                booking_status: 'booked' 
+            })
             .eq('id', bookingId);
 
         if (updateBookingError) {

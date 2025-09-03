@@ -128,7 +128,7 @@ export default function BookingForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          venue_id: AOI_VENUE_ID,
+          venueId: AOI_VENUE_ID,
           experienceId: selectedExperience,
           slotTime: slotDateTime,
           customerEmail,
@@ -179,7 +179,7 @@ export default function BookingForm() {
           <select
             value={selectedExperience}
             onChange={(e) => setSelectedExperience(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           >
             <option value="">Select an experience</option>
@@ -197,7 +197,7 @@ export default function BookingForm() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             min={new Date().toISOString().split('T')[0]}
             max={new Date(Date.now() + 42 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
             required
@@ -213,7 +213,7 @@ export default function BookingForm() {
             <select
               value={selectedTime}
               onChange={(e) => setSelectedTime(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
             >
               <option value="">Select available time...</option>
@@ -240,7 +240,7 @@ export default function BookingForm() {
             type="email"
             value={customerEmail}
             onChange={(e) => setCustomerEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             required
           />
         </div>
@@ -251,7 +251,7 @@ export default function BookingForm() {
             type="text"
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
-            className="w-full border border-gray-300 rounded-md px-3 py-2"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             placeholder="Optional"
           />
         </div>
