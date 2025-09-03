@@ -149,13 +149,15 @@ export async function POST(req: Request) {
   // Loop until no more tool calls (max 4 rounds for complex workflows)
   for (let i = 0; i < 4; i++) {
     const response = await client.chat.completions.create({
-      model: "gpt-5-2025-08-07",
+      model: "gpt-5-mini",
       messages,
       tools,
       tool_choice: "auto",
-      temperature: 0.2,
-      max_completion_tokens: 10000
+      max_completion_tokens: 350
     });
+
+    console.log("[minchat-v2] tool round model:", response.model, 
+                "tool_calls:", response.choices[0]?.message?.tool_calls?.length ?? 0);
 
     const message = response.choices[0]?.message;
     if (!message) {
@@ -200,34 +202,21 @@ export async function POST(req: Request) {
     // No tool calls = the model is ready to answer.
     // Do ONE more call forcing JSON so the UI can render clickable chips.
     const final = await client.chat.completions.create({
-      model: "gpt-5-2025-08-07",
+      model: "gpt-5",
       messages: [
         ...messages,
         {
           role: "system",
           content:
-            "Return STRICT JSON with this shape:\n" +
-            "{ \"title\": string,\n" +
-            "  \"choices\": [\n" +
-            "    { \"kind\": \"drink\"|\"experience\"|\"bundle\",\n" +
-            "      \"slug\": string,            // sku or experience slug (bundle id ok)\n" +
-            "      \"label\": string,          // short label for a chip\n" +
-            "      \"qty\": number,            // default 1 if omitted\n" +
-            "      \"where\": \"here\"|\"to-go\"|null, // drinks only\n" +
-            "      \"reason\": string          // 1-line why\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}\n" +
+            "Return STRICT JSON: { \"title\": string, \"choices\": [{ \"kind\": \"drink\"|\"experience\"|\"bundle\", \"slug\": string, \"label\": string, \"qty\": number, \"where\": \"here\"|\"to-go\"|null, \"reason\": string }] }\n" +
             "Rules: max 3 experience choices total; 2–6 drink choices total; use ONLY items returned by tools; no medical claims."
         }
       ],
-      // force json so you don't have to parse prose
       response_format: { type: "json_object" },
-      temperature: 0.2,
-      max_completion_tokens: 10000,
-      // IMPORTANT: in this final pass we do NOT include tools again
+      max_completion_tokens: 400
     });
 
+    console.log("[minchat-v2] final JSON model:", final.model);
     const payload = final.choices[0]?.message?.content || "{\"title\":\"Suggestions\",\"choices\":[]}";
     return new Response(payload, { headers: { "Content-Type": "application/json" } });
   }
