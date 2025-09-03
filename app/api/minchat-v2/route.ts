@@ -148,11 +148,11 @@ export async function POST(req: Request) {
   // Loop until no more tool calls (max 4 rounds for complex workflows)
   for (let i = 0; i < 4; i++) {
     const response = await client.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-5-nano",
       messages,
       tools,
       tool_choice: "auto",
-      max_completion_tokens: 10000
+      max_completion_tokens: 300
     });
 
     console.log("[minchat-v2] tool round model:", response.model, 
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
     // No tool calls = the model is ready to answer.
     // Do ONE more call forcing JSON so the UI can render clickable chips.
     const final = await client.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-5-nano",
       messages: [
         ...messages,
         {
@@ -212,7 +212,7 @@ export async function POST(req: Request) {
         }
       ],
       response_format: { type: "json_object" },
-      max_completion_tokens: 10000
+      max_completion_tokens: 250
     });
 
     console.log("[minchat-v2] final JSON model:", final.model);

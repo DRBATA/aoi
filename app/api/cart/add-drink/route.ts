@@ -15,9 +15,9 @@ export async function POST(req: Request) {
 
         // Get drink details by slug
         const { data: drink, error: drinkError } = await supabase
-            .from('drinks')
+            .from('products')
             .select('*')
-            .eq('slug', slug)
+            .eq('name', slug)
             .single();
 
         if (drinkError || !drink) {
