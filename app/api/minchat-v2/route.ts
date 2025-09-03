@@ -24,29 +24,20 @@ async function list_experiences({ q = "", limit = 8 }: { q?: string; limit?: num
   return data || [];
 }
 
-async function list_drinks(args: { q?: string; tags?: string[]; limit?: number; experience_tags?: string[]; request_keywords?: string[] }) {
-  let query = supa.from("products").select("id, name, tags, pairings");
-  
-  // Smart filtering: combine experience tags + request keywords
-  const allSearchTerms = [
-    ...(args.tags || []),
-    ...(args.experience_tags || []),
-    ...(args.request_keywords || [])
-  ];
+async function list_drinks(args: { q?: string; experience_name?: string; limit?: number }) {
+  let query = supa.from("products").select("id, name, description, pairings");
   
   if (args.q) {
     query = query.ilike("name", `%${args.q}%`);
   }
   
-  // Filter by tags OR pairings containing any search terms
-  if (allSearchTerms.length > 0) {
-    const tagFilters = allSearchTerms.map(term => 
-      `tags.cs.{"${term}"} or pairings.cs.{"${term}"}`
-    ).join(' or ');
-    query = query.or(tagFilters);
+  // Search for exact experience name in trigger arrays
+  if (args.experience_name) {
+    // Extract base experience name (remove timing)
+    const baseName = args.experience_name.replace(/\s*\(\d+-min\)$/, '');
+    query = query.filter('pairings', 'cs', `"${baseName}"`);
   }
   
-  // Limit to max 6 drinks for focused results
   const limit = Math.min(args.limit || 6, 6);
   query = query.limit(limit);
   const { data } = await query;
@@ -107,11 +98,10 @@ export async function POST(req: Request) {
       role: "system",
       content: "You are AOI's personalized concierge. For drink suggestions, you MUST complete this workflow:\n" +
         "1. Call get_cart_contents to see their booking and cart\n" +
-        "2. Extract experience tags from their booking (e.g., ['528hz', 'parasympathetic', 'dome'])\n" +
-        "3. Extract keywords from user request (e.g., ['energy', 'focus', 'calm'])\n" +
-        "4. Call list_drinks with experience_tags and request_keywords for smart filtering\n" +
-        "5. Recommend 2-3 drinks that complement the experience with scientific reasoning\n" +
-        "CRITICAL: Use experience_tags and request_keywords in list_drinks to get targeted results. Match 528Hz/parasympathetic → vasodilation/adaptogen products."
+        "2. If they have a booking, extract the experience name from booking.experiences.name\n" +
+        "3. Call list_drinks with experience_name to find products that pair with this experience\n" +
+        "4. Recommend 2-3 drinks that complement the experience with scientific reasoning\n" +
+        "CRITICAL: Use the exact experience name from the booking in list_drinks. Products have trigger arrays containing experience names."
     },
     {
       role: "user",
@@ -152,14 +142,12 @@ export async function POST(req: Request) {
       type: "function",
       function: {
         name: "list_drinks",
-        description: "Search drinks/products by name, tags, or experience compatibility",
+        description: "Find drinks that pair with a specific experience",
         parameters: {
           type: "object",
           properties: {
             q: { type: "string", description: "Search query for drink name" },
-            tags: { type: "array", items: { type: "string" } },
-            experience_tags: { type: "array", items: { type: "string" }, description: "Tags from selected experience for pairing" },
-            request_keywords: { type: "array", items: { type: "string" }, description: "Keywords from user request" },
+            experience_name: { type: "string", description: "Name of the experience to find drink pairings for" },
             limit: { type: "number" }
           }
         }
