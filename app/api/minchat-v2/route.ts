@@ -35,7 +35,7 @@ async function list_drinks(args: { q?: string; experience_name?: string; limit?:
   if (args.experience_name) {
     // Extract base experience name (remove timing)
     const baseName = args.experience_name.replace(/\s*\(\d+-min\)$/, '');
-    query = query.filter('pairings', 'cs', `"${baseName}"`);
+    query = query.filter('pairings::text', 'ilike', `%${baseName}%`);
   }
   
   const limit = Math.min(args.limit || 6, 6);
