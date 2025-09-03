@@ -24,11 +24,31 @@ async function list_experiences({ q = "", limit = 8 }: { q?: string; limit?: num
   return data || [];
 }
 
-async function list_drinks(args: { q?: string; tags?: string[]; limit?: number }) {
-  let query = supa.from("products").select("id, name, pairings, tags");
-  if (args.q) query = query.ilike("name", `%${args.q}%`);
-  if (args.tags?.length) query = query.contains("tags", args.tags);
-  if (args.limit) query = query.limit(args.limit);
+async function list_drinks(args: { q?: string; tags?: string[]; limit?: number; experience_tags?: string[]; request_keywords?: string[] }) {
+  let query = supa.from("products").select("id, name, tags, pairings");
+  
+  // Smart filtering: combine experience tags + request keywords
+  const allSearchTerms = [
+    ...(args.tags || []),
+    ...(args.experience_tags || []),
+    ...(args.request_keywords || [])
+  ];
+  
+  if (args.q) {
+    query = query.ilike("name", `%${args.q}%`);
+  }
+  
+  // Filter by tags OR pairings containing any search terms
+  if (allSearchTerms.length > 0) {
+    const tagFilters = allSearchTerms.map(term => 
+      `tags.cs.{"${term}"} or pairings.cs.{"${term}"}`
+    ).join(' or ');
+    query = query.or(tagFilters);
+  }
+  
+  // Limit to max 6 drinks for focused results
+  const limit = Math.min(args.limit || 6, 6);
+  query = query.limit(limit);
   const { data } = await query;
   return data || [];
 }
@@ -132,12 +152,14 @@ export async function POST(req: Request) {
       type: "function",
       function: {
         name: "list_drinks",
-        description: "Search AOI drinks/products (live only)",
+        description: "Search drinks/products by name, tags, or experience compatibility",
         parameters: {
           type: "object",
           properties: {
-            q: { type: "string" },
+            q: { type: "string", description: "Search query for drink name" },
             tags: { type: "array", items: { type: "string" } },
+            experience_tags: { type: "array", items: { type: "string" }, description: "Tags from selected experience for pairing" },
+            request_keywords: { type: "array", items: { type: "string" }, description: "Keywords from user request" },
             limit: { type: "number" }
           }
         }
@@ -212,7 +234,7 @@ export async function POST(req: Request) {
         }
       ],
       response_format: { type: "json_object" },
-      max_completion_tokens: 250
+      max_completion_tokens: 800
     });
 
     console.log("[minchat-v2] final JSON model:", final.model);
