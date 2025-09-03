@@ -154,7 +154,7 @@ export async function POST(req: Request) {
       tools,
       tool_choice: "auto",
       temperature: 0.2,
-      max_tokens: 10000
+      max_completion_tokens: 10000
     });
 
     const message = response.choices[0]?.message;
@@ -224,7 +224,7 @@ export async function POST(req: Request) {
       // force json so you don't have to parse prose
       response_format: { type: "json_object" },
       temperature: 0.2,
-      max_tokens: 10000,
+      max_completion_tokens: 10000,
       // IMPORTANT: in this final pass we do NOT include tools again
     });
 
