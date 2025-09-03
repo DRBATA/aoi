@@ -81,17 +81,10 @@ async function get_cart_contents({ customer_email }: { customer_email: string })
     booking = bookingData;
   }
 
-  // Get cart items
-  const { data: items } = await supa
-    .from('cart_items')
-    .select(`
-      id,
-      qty,
-      products:item_id(id, name, description, tags, category, price_aed)
-    `)
-    .eq('cart_id', cart.id);
-
-  return { cart, booking, items: items || [] };
+  // Skip cart items for now - only need booking experience for drink suggestions
+  // TODO: Fix cart items FK relationship later if needed for other features
+  
+  return { cart, booking, items: [] };
 }
 
 export async function POST(req: Request) {
