@@ -24,13 +24,12 @@ async function list_experiences({ q = "", limit = 8 }: { q?: string; limit?: num
   return data || [];
 }
 
-async function list_drinks({ q = "", tags = [], limit = 12 }: { q?: string; tags?: string[]; limit?: number }) {
-  // Search products - no status column in this table
-  let query = supa.from("products").select("id,name,description,tags,category,price_aed").limit(Math.min(limit, 30));
-  if (q) query = query.ilike("name", `%${q}%`);
-  if (tags?.length) query = query.contains("tags", tags);
-  const { data, error } = await query;
-  if (error) throw error;
+async function list_drinks(args: { q?: string; tags?: string[]; limit?: number }) {
+  let query = supa.from("products").select("id, name, pairings, tags");
+  if (args.q) query = query.ilike("name", `%${args.q}%`);
+  if (args.tags?.length) query = query.contains("tags", args.tags);
+  if (args.limit) query = query.limit(args.limit);
+  const { data } = await query;
   return data || [];
 }
 
@@ -149,11 +148,11 @@ export async function POST(req: Request) {
   // Loop until no more tool calls (max 4 rounds for complex workflows)
   for (let i = 0; i < 4; i++) {
     const response = await client.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-5",
       messages,
       tools,
       tool_choice: "auto",
-      max_completion_tokens: 350
+      max_completion_tokens: 10000
     });
 
     console.log("[minchat-v2] tool round model:", response.model, 
@@ -213,7 +212,7 @@ export async function POST(req: Request) {
         }
       ],
       response_format: { type: "json_object" },
-      max_completion_tokens: 400
+      max_completion_tokens: 10000
     });
 
     console.log("[minchat-v2] final JSON model:", final.model);
