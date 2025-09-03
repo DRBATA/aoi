@@ -98,8 +98,8 @@ export async function POST(req: Request) {
         "1. Call get_cart_contents to see their booking and cart\n" +
         "2. If they have a booking, extract the experience name from booking.experiences.name\n" +
         "3. Call list_drinks with experience_name to find products that pair with this experience\n" +
-        "4. Recommend 2-3 drinks that complement the experience with scientific reasoning\n" +
-        "CRITICAL: Use the exact experience name from the booking in list_drinks. Products have trigger arrays containing experience names."
+        "4. Return STRICT JSON: { \"title\": string, \"choices\": [{ \"kind\": \"drink\", \"id\": string, \"label\": string, \"qty\": number, \"reason\": string }] }\n" +
+        "CRITICAL: Use product.id for id, product.name for label. Return 2-3 drink choices. Use ONLY products returned by list_drinks."
     },
     {
       role: "user",

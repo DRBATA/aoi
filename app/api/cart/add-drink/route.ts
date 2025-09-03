@@ -2,22 +2,22 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
 
 export async function POST(req: Request) {
-    const { slug, qty = 1, where = "here", customerEmail } = await req.json();
+    const { id, qty = 1, where = "here", customerEmail } = await req.json();
 
-    if (!slug || !customerEmail) {
+    if (!id || !customerEmail) {
         return NextResponse.json({ 
-            error: "Missing required fields: slug, customerEmail" 
+            error: "Missing required fields: id, customerEmail" 
         }, { status: 400 });
     }
 
     try {
         const supabase = createClient();
 
-        // Get drink details by slug
+        // Get drink details by ID
         const { data: drink, error: drinkError } = await supabase
             .from('products')
             .select('*')
-            .eq('name', slug)
+            .eq('id', id)
             .single();
 
         if (drinkError || !drink) {
