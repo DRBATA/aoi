@@ -148,11 +148,11 @@ export async function POST(req: Request) {
   // Loop until no more tool calls (max 4 rounds for complex workflows)
   for (let i = 0; i < 4; i++) {
     const response = await client.chat.completions.create({
-      model: "gpt-5-nano",
+      model: "gpt-5-mini",
       messages,
       tools,
       tool_choice: "auto",
-      max_completion_tokens: 300
+      max_completion_tokens: 400
     });
 
     console.log("[minchat-v2] tool round model:", response.model, 
