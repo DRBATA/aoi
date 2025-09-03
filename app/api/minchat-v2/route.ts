@@ -196,8 +196,38 @@ export async function POST(req: Request) {
       continue;
     }
 
-    // No tool calls = final answer
-    return Response.json({ text: message.content || "Done." });
+    // No tool calls = the model is ready to answer.
+    // Do ONE more call forcing JSON so the UI can render clickable chips.
+    const final = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        ...messages,
+        {
+          role: "system",
+          content:
+            "Return STRICT JSON with this shape:\n" +
+            "{ \"title\": string,\n" +
+            "  \"choices\": [\n" +
+            "    { \"kind\": \"drink\"|\"experience\"|\"bundle\",\n" +
+            "      \"slug\": string,            // sku or experience slug (bundle id ok)\n" +
+            "      \"label\": string,          // short label for a chip\n" +
+            "      \"qty\": number,            // default 1 if omitted\n" +
+            "      \"where\": \"here\"|\"to-go\"|null, // drinks only\n" +
+            "      \"reason\": string          // 1-line why\n" +
+            "    }\n" +
+            "  ]\n" +
+            "}\n" +
+            "Rules: max 3 experience choices total; 2–6 drink choices total; use ONLY items returned by tools; no medical claims."
+        }
+      ],
+      // force json so you don't have to parse prose
+      response_format: { type: "json_object" },
+      temperature: 0.2,
+      // IMPORTANT: in this final pass we do NOT include tools again
+    });
+
+    const payload = final.choices[0]?.message?.content || "{\"title\":\"Suggestions\",\"choices\":[]}";
+    return new Response(payload, { headers: { "Content-Type": "application/json" } });
   }
 
   // Safety fallback

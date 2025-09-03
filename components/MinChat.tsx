@@ -9,14 +9,29 @@ interface MinChatProps {
   customerEmail?: string;
 }
 
+type Choice = {
+  kind: "drink" | "experience" | "bundle";
+  slug: string;
+  label: string;
+  qty?: number;
+  where?: "here" | "to-go" | null;
+  reason?: string;
+};
+
+type SuggestionResult = {
+  title: string;
+  choices: Choice[];
+};
+
 export default function MinChat({ customerEmail }: MinChatProps) {
   const [mode, setMode] = useState<"pairs" | "drinks">("pairs");
   const [text, setText] = useState("");
-  const [answer, setAnswer] = useState<string>("");
+  const [result, setResult] = useState<SuggestionResult | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function ask() {
-    setLoading(true); setAnswer("");
+    setLoading(true); 
+    setResult(null);
     // Use v2 endpoint for improved tool calling
     const res = await fetch("/api/minchat-v2", {
       method: "POST",
@@ -24,8 +39,30 @@ export default function MinChat({ customerEmail }: MinChatProps) {
       body: JSON.stringify({ mode, text, customer_email: customerEmail })
     });
     const data = await res.json();
-    setAnswer(data.text);
+    setResult(data);
     setLoading(false);
+  }
+
+  async function addDrink(slug: string, qty: number, where: "here" | "to-go") {
+    if (!customerEmail) return;
+    
+    try {
+      const res = await fetch("/api/cart/add-drink", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, qty, where, customerEmail })
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        // Could add toast notification here
+        console.log(data.message);
+      } else {
+        console.error(data.error);
+      }
+    } catch (error) {
+      console.error("Failed to add drink:", error);
+    }
   }
 
   return (
@@ -49,8 +86,33 @@ export default function MinChat({ customerEmail }: MinChatProps) {
         <span className="text-xs text-white/60">no hard rules here — model fetches from tables and suggests</span>
       </div>
 
-      <div className="mt-4 rounded-xl bg-white/5 p-3 text-sm ring-1 ring-white/10 min-h-[64px] whitespace-pre-wrap">
-        {answer || (loading ? "…" : "")}
+      <div className="mt-4 rounded-xl bg-white/5 p-3 text-sm ring-1 ring-white/10 min-h-[64px]">
+        {loading ? (
+          <div className="text-white/60">…</div>
+        ) : result ? (
+          <div className="space-y-3">
+            <div className="font-semibold">{result.title}</div>
+            <div className="flex flex-wrap gap-2">
+              {result.choices.map((choice, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    if (choice.kind === "drink") {
+                      addDrink(choice.slug, choice.qty ?? 1, (choice.where ?? "here") as "here" | "to-go");
+                    }
+                    // TODO: Handle experience and bundle clicks
+                  }}
+                  title={choice.reason}
+                  className="rounded-full px-3 py-1 text-xs font-medium ring-1 bg-white/5 ring-white/10 text-white hover:bg-white/10 transition-colors"
+                >
+                  {choice.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-white/40">Click "Suggest" to get AI recommendations</div>
+        )}
       </div>
     </div>
   );
