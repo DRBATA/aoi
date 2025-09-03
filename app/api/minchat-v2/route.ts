@@ -27,7 +27,7 @@ async function list_experiences({ q = "", limit = 8 }: { q?: string; limit?: num
 async function list_drinks(args: { q?: string; experience_name?: string; limit?: number }) {
   const limit = Math.min(args.limit || 6, 6);
   
-  // Use RPC for experience-based search (avoids PostgREST pairings::text filter limitation)
+  // Use RPC for experience-based search (returns minimal JSON)
   if (args.experience_name) {
     console.log('[list_drinks] Using RPC for:', args.experience_name);
     const { data, error } = await supa.rpc('search_products_by_trigger', {
@@ -41,8 +41,8 @@ async function list_drinks(args: { q?: string; experience_name?: string; limit?:
     return data || [];
   }
   
-  // Fallback: search by name
-  let query = supa.from("products").select("id, name, description, pairings").limit(limit);
+  // Fallback: search by name using simple view
+  let query = supa.from("simple_products").select("id, name, description, price_aed, category").limit(limit);
   if (args.q) {
     query = query.ilike("name", `%${args.q}%`);
   }
