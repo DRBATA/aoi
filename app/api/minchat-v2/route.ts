@@ -34,7 +34,8 @@ async function list_drinks(args: { q?: string; experience_name?: string; limit?:
   // Search for exact experience name in trigger arrays
   if (args.experience_name) {
     // Extract base experience name (remove timing)
-    const baseName = args.experience_name.replace(/\s*\(\d+-min\)$/, '');
+    const baseName = args.experience_name.replace(/\s*\(\d+-min\)$/, '').trim();
+    console.log('[list_drinks] Searching for:', baseName);
     query = query.filter('pairings::text', 'ilike', `%${baseName}%`);
   }
   
