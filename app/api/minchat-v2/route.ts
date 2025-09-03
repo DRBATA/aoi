@@ -215,8 +215,8 @@ export async function POST(req: Request) {
         {
           role: "system",
           content:
-            "Return STRICT JSON: { \"title\": string, \"choices\": [{ \"kind\": \"drink\"|\"experience\"|\"bundle\", \"slug\": string, \"label\": string, \"qty\": number, \"where\": \"here\"|\"to-go\"|null, \"reason\": string }] }\n" +
-            "Rules: max 3 experience choices total; 2–6 drink choices total; use ONLY items returned by tools; no medical claims."
+            "Return STRICT JSON: { \"title\": string, \"choices\": [{ \"kind\": \"drink\", \"id\": string, \"label\": string, \"qty\": number, \"reason\": string }] }\n" +
+            "Use product.id for id, product.name for label. Return 2-3 drink choices only."
         }
       ],
       response_format: { type: "json_object" },

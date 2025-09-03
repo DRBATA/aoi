@@ -11,7 +11,7 @@ interface MinChatProps {
 
 type Choice = {
   kind: "drink" | "experience" | "bundle";
-  slug: string;
+  id: string;
   label: string;
   qty?: number;
   where?: "here" | "to-go" | null;
@@ -43,14 +43,14 @@ export default function MinChat({ customerEmail }: MinChatProps) {
     setLoading(false);
   }
 
-  async function addDrink(slug: string, qty: number, where: "here" | "to-go") {
+  async function addDrink(id: string, qty: number, where: "here" | "to-go") {
     if (!customerEmail) return;
     
     try {
       const res = await fetch("/api/cart/add-drink", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, qty, where, customerEmail })
+        body: JSON.stringify({ id, qty, where, customerEmail })
       });
       
       const data = await res.json();
@@ -98,7 +98,7 @@ export default function MinChat({ customerEmail }: MinChatProps) {
                   <button
                     onClick={async () => {
                       if (choice.kind === "drink") {
-                        await addDrink(choice.slug, choice.qty ?? 1, (choice.where ?? "here") as "here" | "to-go");
+                        await addDrink(choice.id, choice.qty ?? 1, (choice.where ?? "here") as "here" | "to-go");
                       }
                       // TODO: Handle experience and bundle clicks
                     }}
