@@ -111,7 +111,7 @@ export default function MinChat({ customerEmail }: MinChatProps) {
             </div>
           </div>
         ) : (
-          <div className="text-white/40">Click "Suggest" to get AI recommendations</div>
+          <div className="text-white/40">Click &quot;Suggest&quot; to get AI recommendations</div>
         )}
       </div>
     </div>

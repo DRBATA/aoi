@@ -36,14 +36,10 @@ export async function POST(req: Request) {
             .single();
 
         let cartId;
-        let customerName = '';
-        let venueId = '';
 
         if (existingCart) {
             // Use existing cart
             cartId = existingCart.id;
-            customerName = existingCart.customer_name || '';
-            venueId = existingCart.venue_id || '';
         } else {
             return NextResponse.json({ 
                 error: "No active cart found. Please create a booking first." 
@@ -55,8 +51,8 @@ export async function POST(req: Request) {
             .from('cart_items')
             .select('*')
             .eq('cart_id', cartId)
-            .eq('drink_id', drink.id)
-            .eq('location', where)
+            .eq('item_id', drink.id)
+            .eq('item_type', 'product')
             .single();
 
         if (existingItem) {
@@ -64,8 +60,7 @@ export async function POST(req: Request) {
             const { error: updateError } = await supabase
                 .from('cart_items')
                 .update({ 
-                    quantity: existingItem.quantity + qty,
-                    updated_at: new Date().toISOString()
+                    qty: existingItem.qty + qty
                 })
                 .eq('id', existingItem.id);
 
@@ -78,7 +73,7 @@ export async function POST(req: Request) {
 
             return NextResponse.json({ 
                 success: true, 
-                message: `Updated ${drink.name} quantity to ${existingItem.quantity + qty}`,
+                message: `Updated ${drink.name} quantity to ${existingItem.qty + qty}`,
                 cartId: cartId
             });
         } else {
@@ -87,10 +82,10 @@ export async function POST(req: Request) {
                 .from('cart_items')
                 .insert({
                     cart_id: cartId,
-                    drink_id: drink.id,
-                    quantity: qty,
-                    location: where,
-                    price_aed: drink.price_aed
+                    item_id: drink.id,
+                    qty: qty,
+                    item_type: 'product',
+                    booking_metadata: { where: where }
                 });
 
             if (insertError) {
