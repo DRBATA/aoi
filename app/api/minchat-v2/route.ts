@@ -169,15 +169,15 @@ export async function POST(req: Request) {
       // Execute all tool calls in parallel
       const toolResults = await Promise.all(
         message.tool_calls.map(async (toolCall) => {
-          const name = (toolCall as any).function.name;
-          const args = JSON.parse((toolCall as any).function.arguments || "{}");
+          const name = (toolCall as { function: { name: string } }).function.name;
+          const args = JSON.parse((toolCall as { function: { arguments?: string } }).function.arguments || "{}");
           
-          let result: any = {};
+          let result: unknown = {};
           try {
             if (name === "get_cart_contents") result = await get_cart_contents(args);
             if (name === "list_experiences") result = await list_experiences(args);
             if (name === "list_drinks") result = await list_drinks(args);
-          } catch (error) {
+          } catch {
             result = { error: "Tool execution failed" };
           }
 
