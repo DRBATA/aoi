@@ -60,7 +60,7 @@ async function get_cart_and_drinks(customer_email: string) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { customer_email, mode, text } = body;
+    const { customer_email } = body;
 
     if (!customer_email) {
       return Response.json({ title: "Need email", choices: [] });
@@ -81,11 +81,11 @@ export async function POST(req: Request) {
     const response = await client.chat.completions.create({
       model: "gpt-5-mini",
       response_format: { type: "json_object" },
-      max_tokens: 400,
+      max_tokens: 800,
       messages: [
         {
           role: "system",
-          content: 'You are AOI\'s drink pairing expert. Return STRICT JSON: {"title":string,"choices":[{"kind":"drink","id":string,"label":string,"qty":number,"reason":string}]}. Pick exactly 2 drinks from the provided list.'
+          content: 'Return ONLY a JSON object with keys: title (string) and choices (array of EXACTLY 2 items). Each item: { "kind":"drink", "id":string, "label":string, "qty":number, "reason":string }. No markdown. No extra text.'
         },
         {
           role: "user",
