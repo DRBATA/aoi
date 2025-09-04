@@ -82,7 +82,8 @@ async function get_cart_contents({ customer_email }: { customer_email: string })
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { mode, text, tags = [], customer_email } = body;
+  // Extract body for use in buildMessages function
+  // const { mode, text, tags = [], customer_email } = body; // Unused destructuring removed
 
   const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     {
