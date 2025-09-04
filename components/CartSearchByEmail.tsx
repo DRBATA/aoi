@@ -99,7 +99,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
             id: item.id,
             item_id: item.item_id,
             qty: item.qty,
-            product_name: (item.products as any)?.name || 'Unknown Product'
+            product_name: (item.products as unknown as { name: string } | null)?.name || 'Unknown Product'
           })) || [];
 
           return {

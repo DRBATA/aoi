@@ -106,61 +106,7 @@ export default function StaffBookingsDashboard() {
     fetchExperiencesCallback();
   }, [fetchBookingsCallback, fetchExperiencesCallback, selectedDate, selectedExperience]);
 
-  const addToCart = async (booking: Booking) => {
-    // Enhanced: This now also starts the session automatically
-    try {
-      const response = await fetch('/api/cart/add-booking', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bookingId: booking.id,
-          customerEmail: booking.customer_email,
-          startSession: true // New parameter to start session when adding to cart
-        }),
-      });
 
-      const result = await response.json();
-
-      if (response.ok) {
-        alert(`✓ ${booking.experience_name} session started and added to cart for ${booking.customer_email}\nCart ID: ${result.cartId}`);
-        fetchBookingsCallback();
-      } else {
-        alert(`Error: ${result.error}`);
-      }
-    } catch (err: unknown) {
-      console.error('Error adding booking to cart:', err);
-    }
-  };
-
-  const removeFromCart = async (booking: Booking) => {
-    // Enhanced: This now also ends the session and returns booking to scheduled
-    try {
-      const response = await fetch('/api/cart/remove-booking', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bookingId: booking.id,
-          cartId: booking.cart_id,
-          endSession: true // New parameter to end session when removing from cart
-        }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        alert(`✓ ${booking.experience_name} session ended and removed from cart`);
-        fetchBookingsCallback();
-      } else {
-        alert(`Error: ${result.error}`);
-      }
-    } catch (err: unknown) {
-      console.error('Error removing booking from cart:', err);
-    }
-  };
 
   const getDateTitle = (dateString: string) => {
     const today = new Date().toISOString().split('T')[0];
