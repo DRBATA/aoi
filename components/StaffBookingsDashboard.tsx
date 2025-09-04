@@ -107,6 +107,7 @@ export default function StaffBookingsDashboard() {
   }, [fetchBookingsCallback, fetchExperiencesCallback, selectedDate, selectedExperience]);
 
   const addToCart = async (booking: Booking) => {
+    // Enhanced: This now also starts the session automatically
     try {
       const response = await fetch('/api/cart/add-booking', {
         method: 'POST',
@@ -115,14 +116,15 @@ export default function StaffBookingsDashboard() {
         },
         body: JSON.stringify({
           bookingId: booking.id,
-          customerEmail: booking.customer_email
+          customerEmail: booking.customer_email,
+          startSession: true // New parameter to start session when adding to cart
         }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        alert(`✓ ${booking.experience_name} added to cart for ${booking.customer_email}\nCart ID: ${result.cartId}`);
+        alert(`✓ ${booking.experience_name} session started and added to cart for ${booking.customer_email}\nCart ID: ${result.cartId}`);
         fetchBookingsCallback();
       } else {
         alert(`Error: ${result.error}`);
@@ -133,6 +135,7 @@ export default function StaffBookingsDashboard() {
   };
 
   const removeFromCart = async (booking: Booking) => {
+    // Enhanced: This now also ends the session and returns booking to scheduled
     try {
       const response = await fetch('/api/cart/remove-booking', {
         method: 'POST',
@@ -141,14 +144,15 @@ export default function StaffBookingsDashboard() {
         },
         body: JSON.stringify({
           bookingId: booking.id,
-          cartId: booking.cart_id
+          cartId: booking.cart_id,
+          endSession: true // New parameter to end session when removing from cart
         }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        alert(`✓ ${booking.experience_name} removed from cart`);
+        alert(`✓ ${booking.experience_name} session ended and removed from cart`);
         fetchBookingsCallback();
       } else {
         alert(`Error: ${result.error}`);
@@ -173,13 +177,117 @@ export default function StaffBookingsDashboard() {
     });
   };
 
-  const getButtonState = (booking: Booking) => {
-    if (!booking.cart_id) {
-      return { text: 'Add to Cart', action: () => addToCart(booking), disabled: false, className: 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' };
+  const startSession = async (booking: Booking) => {
+    try {
+      const response = await fetch('/api/booking/start-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId: booking.id,
+          customerEmail: booking.customer_email
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(`✓ Session started for ${booking.experience_name}`);
+        fetchBookingsCallback();
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (err: unknown) {
+      console.error('Error starting session:', err);
     }
-    
-    // TODO: Check if cart is paid - for now assume unpaid if cart_id exists
-    return { text: 'Remove from Cart', action: () => removeFromCart(booking), disabled: false, className: 'bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600' };
+  };
+
+  const completeSession = async (booking: Booking) => {
+    try {
+      const response = await fetch('/api/booking/complete-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId: booking.id
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(`✓ Session completed for ${booking.experience_name}`);
+        // Check if customer has more sessions today
+        const otherSessions = bookings.filter(b => 
+          b.customer_email === booking.customer_email && 
+          b.id !== booking.id && 
+          b.booking_status === 'sessions_scheduled'
+        );
+        
+        if (otherSessions.length > 0) {
+          const proceed = confirm(`Customer has ${otherSessions.length} more sessions scheduled today. Go to cart now or continue with other sessions?`);
+          if (proceed) {
+            setSelectedCustomerEmail(booking.customer_email);
+            setActiveTab('search');
+          }
+        } else {
+          // Auto-redirect to cart for payment
+          setSelectedCustomerEmail(booking.customer_email);
+          setActiveTab('search');
+        }
+        
+        fetchBookingsCallback();
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (err: unknown) {
+      console.error('Error completing session:', err);
+    }
+  };
+
+  const getButtonState = (booking: Booking) => {
+    switch (booking.booking_status) {
+      case 'sessions_scheduled':
+        return { 
+          text: 'Click to Start', 
+          action: () => startSession(booking), 
+          disabled: false, 
+          className: 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' 
+        };
+      case 'in_session':
+        return { 
+          text: 'Complete Session', 
+          action: () => completeSession(booking), 
+          disabled: false, 
+          className: 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600' 
+        };
+      case 'session_completed':
+        return { 
+          text: 'Go to Cart', 
+          action: () => {
+            setSelectedCustomerEmail(booking.customer_email);
+            setActiveTab('search');
+          }, 
+          disabled: false, 
+          className: 'bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600' 
+        };
+      case 'paid':
+        return { 
+          text: 'Completed & Paid', 
+          action: () => {}, 
+          disabled: true, 
+          className: 'bg-gray-400 cursor-not-allowed' 
+        };
+      default:
+        return { 
+          text: 'Unknown Status', 
+          action: () => {}, 
+          disabled: true, 
+          className: 'bg-gray-400 cursor-not-allowed' 
+        };
+    }
   };
 
 
@@ -269,31 +377,33 @@ export default function StaffBookingsDashboard() {
             <div className="grid grid-cols-3 gap-2 md:gap-4">
               <Card className="bg-gradient-to-br from-white to-blue-50 border-2 border-blue-200 shadow-lg">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-blue-600">Total Bookings</CardTitle>
+                  <CardTitle className="text-sm font-medium text-blue-600">Sessions Booked</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{bookings.length}</div>
+                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    {bookings.filter(b => b.booking_status === 'sessions_scheduled').length}
+                  </div>
                 </CardContent>
               </Card>
               
               <Card className="bg-gradient-to-br from-white to-orange-50 border-2 border-orange-200 shadow-lg">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-orange-600">Active Bookings</CardTitle>
+                  <CardTitle className="text-sm font-medium text-orange-600">Active Sessions</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
-                    {bookings.filter(b => b.booking_status === 'active').length}
+                    {bookings.filter(b => b.booking_status === 'in_session').length}
                   </div>
                 </CardContent>
               </Card>
               
               <Card className="bg-gradient-to-br from-white to-pink-50 border-2 border-pink-200 shadow-lg">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-pink-600">Completed Bookings</CardTitle>
+                  <CardTitle className="text-sm font-medium text-pink-600">Active Carts</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-                    {bookings.filter(b => b.booking_status === 'completed').length}
+                    {bookings.filter(b => b.cart_id !== null && b.booking_status !== 'paid').length}
                   </div>
                 </CardContent>
               </Card>

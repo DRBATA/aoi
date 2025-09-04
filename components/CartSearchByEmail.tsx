@@ -73,9 +73,12 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
           customer_email,
           customer_name,
           created_at,
-          booking_id
+          booking_id,
+          booking_status
         `)
-        .eq('customer_email', email);
+        .eq('customer_email', email)
+        .neq('booking_status', 'paid')
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error searching carts:', error instanceof Error ? error.message : 'Unknown error');
