@@ -85,33 +85,29 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: 'Return ONLY a JSON object with keys: title (string) and choices (array of EXACTLY 2 items). Each item: { "kind":"drink", "id":string, "label":string, "qty":number, "reason":string }. No markdown. No extra text.'
+          content: 'You are a drink expert. Respond with valid JSON only.'
         },
         {
           role: "user",
-          content: `Experience: ${experience}\n\nAvailable drinks:\n${JSON.stringify(drinks, null, 2)}\n\nCreate 2 personalized drink recommendations with scientific reasons why they pair well with this experience.`
+          content: `Experience: ${experience}\n\nAvailable drinks:\n${JSON.stringify(drinks, null, 2)}\n\nReturn JSON: {"title": "string", "choices": [{"kind": "drink", "id": "string", "label": "string", "qty": 1, "reason": "string"}]}. Pick exactly 2 drinks.`
         }
       ]
     });
 
-    // prefer parsed (new SDK field), then content
-    const parsed = (response.choices[0]?.message as any)?.parsed;
-    if (parsed) return Response.json(parsed);
-
     const content = response.choices[0]?.message?.content;
-    if (content) {
-      try {
-        const jsonParsed = JSON.parse(content);
-        if (jsonParsed.title && Array.isArray(jsonParsed.choices)) {
-          return new Response(content, { headers: { "Content-Type": "application/json" } });
-        }
-      } catch (e) {
-        console.error("[minchat-v4] JSON parse error:", e);
-      }
+    if (!content) {
+      return Response.json({ title: "No suggestions", choices: [] });
     }
 
-    // last resort: log whole response and fallback
-    console.error("[minchat-v4] empty model content:", JSON.stringify(response, null, 2));
+    // Validate it's proper JSON
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed.title && Array.isArray(parsed.choices)) {
+        return new Response(content, { headers: { "Content-Type": "application/json" } });
+      }
+    } catch (e) {
+      console.error("[minchat-v4] JSON parse error:", e);
+    }
 
     // Fallback: create simple chips from first 2 drinks
     const fallback = {
