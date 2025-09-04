@@ -79,7 +79,7 @@ export async function POST(req: Request) {
 
     // Ask AI to make 2 JSON chips directly
     const response = await client.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-5-mini",
       response_format: { type: "json_object" },
       max_completion_tokens: 800,
       messages: [
