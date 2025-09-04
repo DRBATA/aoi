@@ -32,8 +32,8 @@ export default function MinChat({ customerEmail }: MinChatProps) {
   async function ask() {
     setLoading(true); 
     setResult(null);
-    // Use v2 endpoint for improved tool calling
-    const res = await fetch("/api/minchat-v2", {
+    // Use v4 endpoint for simple 2-chip approach
+    const res = await fetch("/api/minchat-v4", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mode, text, customer_email: customerEmail })
