@@ -154,8 +154,7 @@ export async function POST(req: Request) {
     
     if (state.phase === "haveCart") {
       return [...base,
-        { role: "system" as const, content: `booking_experience=${JSON.stringify(state.experience)}` },
-        { role: "user" as const, content: "Call list_drinks with experience_name." }
+        { role: "user" as const, content: `Call list_drinks with experience_name: ${JSON.stringify(state.experience)}` }
       ];
     }
     
