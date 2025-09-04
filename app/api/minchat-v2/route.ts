@@ -15,14 +15,7 @@ const supa = createClient(
   { auth: { persistSession: false } }
 );
 
-async function list_experiences({ q = "", limit = 8 }: { q?: string; limit?: number }) {
-  // Search experiences - no status column in this table
-  let query = supa.from("experiences").select("id,name,description,tags,category,duration_minutes").limit(Math.min(limit, 20));
-  if (q) query = query.ilike("name", `%${q}%`);
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
-}
+// Removed unused list_experiences function
 
 async function list_drinks(args: { q?: string; experience_name?: string; limit?: number }) {
   const limit = Math.min(args.limit || 6, 6);
@@ -90,22 +83,6 @@ async function get_cart_contents({ customer_email }: { customer_email: string })
 export async function POST(req: Request) {
   const body = await req.json();
   const { mode, text, tags = [], customer_email } = body;
-
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    {
-      role: "system",
-      content: "You are AOI's personalized concierge. For drink suggestions, you MUST complete this workflow:\n" +
-        "1. Call get_cart_contents to see their booking and cart\n" +
-        "2. If they have a booking, extract the experience name from booking.experiences.name\n" +
-        "3. Call list_drinks with experience_name to find products that pair with this experience\n" +
-        "4. Return STRICT JSON: { \"title\": string, \"choices\": [{ \"kind\": \"drink\", \"id\": string, \"label\": string, \"qty\": number, \"reason\": string }] }\n" +
-        "CRITICAL: Use product.id for id, product.name for label. Return 2-3 drink choices. Use ONLY products returned by list_drinks."
-    },
-    {
-      role: "user",
-      content: JSON.stringify({ mode, text, tags, customer_email })
-    }
-  ];
 
   const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     {
@@ -211,7 +188,7 @@ export async function POST(req: Request) {
     
     if (call && 'function' in call && call.function.name === "get_cart_contents") {
       const r = await get_cart_contents(JSON.parse(call.function.arguments || "{}"));
-      const exp = (r.booking?.experiences as any)?.name;
+      const exp = (r.booking?.experiences as unknown as { name: string })?.name;
       if (!exp) return Response.json({ title: "No booking", choices: [] });
       state = { phase: "haveCart", experience: exp };
       continue;
@@ -224,7 +201,7 @@ export async function POST(req: Request) {
       state = {
         phase: "haveDrinks",
         experience: args.experience_name || currentExp,
-        drinks: rows.map((d: any) => ({ id: d.id, name: d.name }))
+        drinks: rows.map((d: { id: string; name: string }) => ({ id: d.id, name: d.name }))
       };
       continue;
     }
