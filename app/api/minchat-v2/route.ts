@@ -153,11 +153,46 @@ export async function POST(req: Request) {
     }
   ];
 
-  // Loop until no more tool calls (max 4 rounds for complex workflows)
-  for (let i = 0; i < 4; i++) {
+  // State machine for windowed stepper approach
+  type State = 
+    | { phase: "start" }
+    | { phase: "haveCart"; experience: string }
+    | { phase: "haveDrinks"; experience: string; drinks: {id:string; name:string}[] };
+
+  let state: State = { phase: "start" };
+
+  // Build fresh messages based on current state
+  function buildMessages(state: State) {
+    const base = [{ role: "system" as const, content: "You are AOI's personalized concierge. For drink suggestions, you MUST complete this workflow:\n" +
+      "1. Call get_cart_contents to see their booking and cart\n" +
+      "2. If they have a booking, extract the experience name from booking.experiences.name\n" +
+      "3. Call list_drinks with experience_name to find products that pair with this experience\n" +
+      "4. Return STRICT JSON: { \"title\": string, \"choices\": [{ \"kind\": \"drink\", \"id\": string, \"label\": string, \"qty\": number, \"reason\": string }] }\n" +
+      "CRITICAL: Use product.id for id, product.name for label. Return 2-3 drink choices. Use ONLY products returned by list_drinks." }];
+    
+    if (state.phase === "start") {
+      return [...base, { role: "user" as const, content: JSON.stringify(body) }];
+    }
+    
+    if (state.phase === "haveCart") {
+      return [...base,
+        { role: "system" as const, content: `booking_experience=${JSON.stringify(state.experience)}` },
+        { role: "user" as const, content: "Call list_drinks with experience_name." }
+      ];
+    }
+    
+    // haveDrinks - ready for final JSON
+    return [...base,
+      { role: "system" as const, content: `experience=${JSON.stringify(state.experience)}; drinks=${JSON.stringify(state.drinks)}` },
+      { role: "user" as const, content: "Return STRICT JSON with 2-3 drink choices." }
+    ];
+  }
+
+  // Loop with fresh messages each time (max 3 steps)
+  for (let i = 0; i < 3; i++) {
     const response = await client.chat.completions.create({
       model: "gpt-5-mini",
-      messages,
+      messages: buildMessages(state),
       tools,
       tool_choice: "auto",
       max_completion_tokens: 400
@@ -171,66 +206,51 @@ export async function POST(req: Request) {
       return Response.json({ text: "No response from AI." });
     }
 
-    // If AI wants to call tools, execute them and continue
-    if (message.tool_calls?.length) {
-      // CRITICAL: Push the assistant message with tool_calls first
-      messages.push(message);
-
-      // Execute all tool calls in parallel
-      const toolResults = await Promise.all(
-        message.tool_calls.map(async (toolCall) => {
-          const name = (toolCall as { function: { name: string } }).function.name;
-          const args = JSON.parse((toolCall as { function: { arguments?: string } }).function.arguments || "{}");
-          
-          let result: unknown = {};
-          try {
-            if (name === "get_cart_contents") result = await get_cart_contents(args);
-            if (name === "list_experiences") result = await list_experiences(args);
-            if (name === "list_drinks") result = await list_drinks(args);
-          } catch {
-            result = { error: "Tool execution failed" };
-          }
-
-          return {
-            role: "tool" as const,
-            tool_call_id: toolCall.id,
-            content: JSON.stringify(result)
-          };
-        })
-      );
-
-      // Push all tool results
-      messages.push(...toolResults);
-      
-      // Continue loop to let AI process tool results
+    // Handle tool calls and update state
+    const call = message.tool_calls?.[0];
+    
+    if (call && 'function' in call && call.function.name === "get_cart_contents") {
+      const r = await get_cart_contents(JSON.parse(call.function.arguments || "{}"));
+      const exp = (r.booking?.experiences as any)?.name;
+      if (!exp) return Response.json({ title: "No booking", choices: [] });
+      state = { phase: "haveCart", experience: exp };
       continue;
     }
 
-    // No tool calls = the model is ready to answer.
-    // Do ONE more call forcing JSON so the UI can render clickable chips.
+    if (call && 'function' in call && call.function.name === "list_drinks") {
+      const args = JSON.parse(call.function.arguments || "{}");
+      const rows = await list_drinks(args);
+      const currentExp: string = state.phase === "haveCart" ? state.experience : "Unknown";
+      state = {
+        phase: "haveDrinks",
+        experience: args.experience_name || currentExp,
+        drinks: rows.map((d: any) => ({ id: d.id, name: d.name }))
+      };
+      continue;
+    }
+
+    // If model already returned final JSON content
+    const content = message.content ?? '{"title":"Suggestions","choices":[]}';
+    return new Response(content, { headers: { "Content-Type": "application/json" } });
+  }
+
+  // Final fallback with nano for clean JSON generation
+  if (state.phase === "haveDrinks") {
     const final = await client.chat.completions.create({
       model: "gpt-5-nano",
       messages: [
-        ...messages,
-        {
-          role: "system",
-          content:
-            "Return STRICT JSON: { \"title\": string, \"choices\": [{ \"kind\": \"drink\", \"id\": string, \"label\": string, \"qty\": number, \"reason\": string }] }\n" +
-            "Use product.id for id, product.name for label. Return 2-3 drink choices only."
-        }
+        { role: "system", content: 'Return STRICT JSON: {"title":string,"choices":[{"kind":"drink","id":string,"label":string,"qty":number,"reason":string}]}' },
+        { role: "user", content: JSON.stringify(state) }
       ],
-      // response_format: { type: "json_object" }, // Temporarily removed to test
-      max_completion_tokens: 800
+      response_format: { type: "json_object" },
+      max_completion_tokens: 400
     });
-
-    console.log("[minchat-v2] final JSON model:", final.model);
-    const aiResponse = final.choices[0]?.message?.content;
-    console.log("[minchat-v2] AI response:", aiResponse);
-    const payload = aiResponse || "{\"title\":\"Suggestions\",\"choices\":[]}";
-    console.log("[minchat-v2] final payload:", payload);
-    return new Response(payload, { headers: { "Content-Type": "application/json" } });
+    
+    console.log("[minchat-v2] final nano JSON:", final.choices[0]?.message?.content);
+    return new Response(final.choices[0]?.message?.content ?? '{"title":"Suggestions","choices":[]}', {
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
-  // Safety fallback
-  return Response.json({ text: "Workflow incomplete. Please try a more specific request." });
+  return Response.json({ title: "No suggestions", choices: [] });
 }
