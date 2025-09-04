@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     const response = await client.chat.completions.create({
       model: "gpt-5-nano",
       response_format: { type: "json_object" },
-      max_completion_tokens: 400,
+      max_completion_tokens: 800,
       messages: [
         {
           role: "system",
