@@ -216,6 +216,10 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
         <p className="text-gray-500 text-center py-8">Keep typing...</p>
       )}
 
+      {email && email.length >= 3 && !hasSearched && (
+        <p className="text-gray-500 text-center py-8">Click Search to find carts</p>
+      )}
+
       {email && carts.length === 0 && !loading && hasSearched && (
         <p className="text-gray-500 text-center py-8">No carts found for this email</p>
       )}
