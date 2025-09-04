@@ -11,6 +11,12 @@ interface Cart {
   booking_id: string | null;
   venue_name: string;
   items_count: number;
+  cart_items?: Array<{
+    id: string;
+    item_id: string;
+    qty: number;
+    product_name: string;
+  }>;
 }
 
 interface CartSearchByEmailProps {
@@ -74,15 +80,36 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
       if (error) {
         console.error('Error searching carts:', error instanceof Error ? error.message : 'Unknown error');
       } else {
-        const formattedCarts = data?.map((cart) => ({
-          id: cart.id,
-          customer_email: cart.customer_email,
-          customer_name: cart.customer_name,
-          created_at: cart.created_at,
-          booking_id: cart.booking_id,
-          venue_name: 'No venue',
-          items_count: 0
-        })) || [];
+        const formattedCarts = await Promise.all(data?.map(async (cart) => {
+          // Fetch cart items for each cart
+          const { data: cartItems } = await supabase
+            .from('cart_items')
+            .select(`
+              id,
+              item_id,
+              qty,
+              products(name)
+            `)
+            .eq('cart_id', cart.id);
+
+          const formattedItems = cartItems?.map(item => ({
+            id: item.id,
+            item_id: item.item_id,
+            qty: item.qty,
+            product_name: (item.products as any)?.name || 'Unknown Product'
+          })) || [];
+
+          return {
+            id: cart.id,
+            customer_email: cart.customer_email,
+            customer_name: cart.customer_name,
+            created_at: cart.created_at,
+            booking_id: cart.booking_id,
+            venue_name: 'No venue',
+            items_count: formattedItems.length,
+            cart_items: formattedItems
+          };
+        }) || []);
         
         setCarts(formattedCarts);
       }
@@ -96,6 +123,27 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
   const addItemToCart = async (cartId: string, itemType: 'booking' | 'drink' | 'experience') => {
     // This would open a modal to add items to the selected cart
     alert(`Add ${itemType} to cart ${cartId}`);
+  };
+
+  const removeItemFromCart = async (cartItemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('cart_items')
+        .delete()
+        .eq('id', cartItemId);
+
+      if (error) {
+        console.error('Error removing item:', error);
+        alert('Error removing item from cart');
+      } else {
+        alert('Item removed from cart');
+        // Refresh the cart data
+        searchCarts();
+      }
+    } catch (error) {
+      console.error('Error removing item:', error);
+      alert('Error removing item from cart');
+    }
   };
 
   return (
@@ -172,12 +220,39 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
                     Created: {new Date(cart.created_at).toLocaleDateString()}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Venue: {cart.venue_name} • {cart.items_count} items
+                    Venue: {cart.venue_name}
                   </p>
                   {cart.booking_id && (
                     <p className="text-sm text-green-600">
                       ✓ Has booking: {cart.booking_id.substring(0, 8)}
                     </p>
+                  )}
+                  
+                  {/* Display individual cart items */}
+                  {cart.cart_items && cart.cart_items.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-sm font-medium text-gray-700">Items:</p>
+                      {cart.cart_items.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded p-2">
+                          <span className="text-sm text-gray-700">
+                            • {item.product_name} {item.qty > 1 && `(${item.qty})`}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeItemFromCart(item.id);
+                            }}
+                            className="text-red-600 hover:text-red-800 text-xs px-2 py-1 rounded border border-red-200 hover:bg-red-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {cart.cart_items && cart.cart_items.length === 0 && (
+                    <p className="text-sm text-gray-500 mt-2">No items in cart</p>
                   )}
                 </div>
                 
