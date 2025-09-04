@@ -41,7 +41,9 @@ async function get_cart_and_drinks(customer_email: string) {
     return { experience: null, drinks: [] };
   }
 
-  const experienceName = (booking.experiences as any).name;
+  const experienceName = Array.isArray(booking.experiences) 
+    ? booking.experiences[0]?.name 
+    : (booking.experiences as { name: string })?.name;
   
   // Get drinks that pair with this experience
   const { data: drinks } = await supa.rpc('search_products_by_trigger', {
@@ -110,7 +112,7 @@ export async function POST(req: Request) {
     // Fallback: create simple chips from first 2 drinks
     const fallback = {
       title: `Drinks for ${experience}`,
-      choices: drinks.slice(0, 2).map((drink: any) => ({
+      choices: drinks.slice(0, 2).map((drink: { id: string; name: string }) => ({
         kind: "drink",
         id: drink.id,
         label: drink.name,
