@@ -219,7 +219,7 @@ export async function POST(req: Request) {
             "Use product.id for id, product.name for label. Return 2-3 drink choices only."
         }
       ],
-      response_format: { type: "json_object" },
+      // response_format: { type: "json_object" }, // Temporarily removed to test
       max_completion_tokens: 800
     });
 
