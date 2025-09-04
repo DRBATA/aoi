@@ -60,7 +60,7 @@ async function get_cart_and_drinks(customer_email: string) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { customer_email } = body;
+    const { customer_email, mode, text } = body;
 
     if (!customer_email) {
       return Response.json({ title: "Need email", choices: [] });
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     const response = await client.chat.completions.create({
       model: "gpt-5-mini",
       response_format: { type: "json_object" },
-      max_completion_tokens: 400,
+      max_tokens: 400,
       messages: [
         {
           role: "system",
