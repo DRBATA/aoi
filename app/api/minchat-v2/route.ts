@@ -224,7 +224,10 @@ export async function POST(req: Request) {
     });
 
     console.log("[minchat-v2] final JSON model:", final.model);
-    const payload = final.choices[0]?.message?.content || "{\"title\":\"Suggestions\",\"choices\":[]}";
+    const aiResponse = final.choices[0]?.message?.content;
+    console.log("[minchat-v2] AI response:", aiResponse);
+    const payload = aiResponse || "{\"title\":\"Suggestions\",\"choices\":[]}";
+    console.log("[minchat-v2] final payload:", payload);
     return new Response(payload, { headers: { "Content-Type": "application/json" } });
   }
 
