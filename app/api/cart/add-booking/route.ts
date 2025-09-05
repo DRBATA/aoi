@@ -48,8 +48,7 @@ export async function POST(req: Request) {
                 .insert({
                     customer_email: customerEmail,
                     customer_name: booking.customer_name,
-                    venue_id: booking.venue_id,
-                    session_id: `booking_${Date.now()}`
+                    venue_id: booking.venue_id
                 })
                 .select()
                 .single();

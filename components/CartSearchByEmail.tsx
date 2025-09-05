@@ -24,9 +24,11 @@ interface CartSearchByEmailProps {
 }
 
 export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailProps) {
-  const [email, setEmail] = useState('');
+  const [searchEmail, setSearchEmail] = useState('');
   const [carts, setCarts] = useState<Cart[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [selectedCart, setSelectedCart] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -59,14 +61,15 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
   };
 
   const searchCarts = async () => {
-    if (!email) return;
+    if (!searchEmail) return;
     
-    setLoading(true);
+    setIsLoading(true);
     setShowSuggestions(false);
     setHasSearched(true);
     
     try {
-      const { data, error } = await supabase
+      // Build query with optional filtering for paid carts
+      let query = supabase
         .from('cart_headers')
         .select(`
           id,
@@ -75,8 +78,22 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
           created_at,
           booking_id
         `)
-        .eq('customer_email', email)
-        .order('created_at', { ascending: false });
+        .eq('customer_email', searchEmail);
+
+      // Filter out paid carts (those that exist in orders table) unless showing order history
+      if (!showOrderHistory) {
+        const { data: paidCartIds } = await supabase
+          .from('orders')
+          .select('cart_id')
+          .not('cart_id', 'is', null);
+        
+        if (paidCartIds && paidCartIds.length > 0) {
+          const paidIds = paidCartIds.map(order => order.cart_id);
+          query = query.not('id', 'in', `(${paidIds.join(',')})`);
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error searching carts:', error instanceof Error ? error.message : 'Unknown error');
@@ -118,7 +135,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
       console.error('Error searching carts:', error instanceof Error ? error.message : 'Unknown error');
     }
     
-    setLoading(false);
+    setIsLoading(false);
   };
 
   const addItemToCart = async (cartId: string, itemType: 'booking' | 'drink' | 'experience') => {
@@ -151,20 +168,33 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
     <div className="p-6 max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold mb-6">Search Customer Carts</h2>
       
+      {/* Toggle for showing order history */}
+      <div className="mb-4">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={showOrderHistory}
+            onChange={(e) => setShowOrderHistory(e.target.checked)}
+            className="rounded"
+          />
+          <span className="text-sm text-gray-700">Show order history (include paid carts)</span>
+        </label>
+      </div>
+
       {/* Search */}
       <div className="relative mb-6">
         <div className="flex gap-4">
           <div className="flex-1 relative">
             <input
               type="email"
-              value={email}
+              value={searchEmail}
               onChange={(e) => {
-                setEmail(e.target.value);
+                setSearchEmail(e.target.value);
                 setHasSearched(false);
                 searchEmailSuggestions(e.target.value);
                 onEmailChange?.(e.target.value);
               }}
-              onFocus={() => email.length >= 3 && setShowSuggestions(true)}
+              onFocus={() => searchEmail.length >= 3 && setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               placeholder="Enter customer email"
               className="w-full border border-gray-300 rounded-md px-3 py-2"
@@ -177,7 +207,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
                   <button
                     key={index}
                     onClick={() => {
-                      setEmail(suggestion);
+                      setSearchEmail(suggestion);
                       setShowSuggestions(false);
                       onEmailChange?.(suggestion);
                       setTimeout(() => searchCarts(), 100);
@@ -192,10 +222,10 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
           </div>
           <button
             onClick={searchCarts}
-            disabled={loading || !email}
+            disabled={isLoading || !searchEmail}
             className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Searching...' : 'Search Carts'}
+            {isLoading ? 'Searching...' : 'Search Carts'}
           </button>
         </div>
       </div>
@@ -284,19 +314,19 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
       )}
 
       {/* Different states based on user interaction */}
-      {!email && !hasSearched && (
+      {!searchEmail && !hasSearched && (
         <p className="text-gray-500 text-center py-8">Begin typing email to find match</p>
       )}
 
-      {email && email.length > 0 && email.length < 3 && !hasSearched && (
+      {searchEmail && searchEmail.length > 0 && searchEmail.length < 3 && !hasSearched && (
         <p className="text-gray-500 text-center py-8">Keep typing...</p>
       )}
 
-      {email && email.length >= 3 && !hasSearched && (
+      {searchEmail && searchEmail.length >= 3 && !hasSearched && (
         <p className="text-gray-500 text-center py-8">Click Search to find carts</p>
       )}
 
-      {email && carts.length === 0 && !loading && hasSearched && (
+      {searchEmail && carts.length === 0 && !isLoading && hasSearched && (
         <p className="text-gray-500 text-center py-8">No carts found for this email</p>
       )}
     </div>
