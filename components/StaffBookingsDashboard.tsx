@@ -327,7 +327,7 @@ export default function StaffBookingsDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    {bookings.filter(b => b.booking_status === 'sessions_scheduled').length}
+                    {bookings.filter(b => b.booking_status === 'scheduled').length}
                   </div>
                 </CardContent>
               </Card>

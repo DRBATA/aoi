@@ -27,7 +27,7 @@ export async function POST(req: Request) {
             }, { status: 404 });
         }
 
-        // Update booking to session_completed
+        // Update booking to session completed
         const { error: updateBookingError } = await supabase
             .from('bookings')
             .update({ 
@@ -42,20 +42,8 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
-        // Update cart status if exists
-        if (booking.cart_id) {
-            const { error: updateCartError } = await supabase
-                .from('cart_headers')
-                .update({ 
-                    booking_status: 'session_completed'
-                })
-                .eq('id', booking.cart_id);
-
-            if (updateCartError) {
-                console.warn('Failed to update cart status:', updateCartError.message);
-                // Don't fail the request for cart update issues
-            }
-        }
+        // Cart remains active after session completion
+        // No need to update cart status - it stays active for adding more items
 
         return NextResponse.json({ 
             success: true, 

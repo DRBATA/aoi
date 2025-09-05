@@ -64,12 +64,11 @@ export async function POST(req: Request) {
             cartId = newCart.id;
         }
 
-        // Link booking to cart
+        // Update cart with booking reference
         const { error: updateCartError } = await supabase
             .from('cart_headers')
             .update({ 
-                booking_id: bookingId,
-                booking_status: 'booked'
+                booking_id: bookingId
             })
             .eq('id', cartId);
 

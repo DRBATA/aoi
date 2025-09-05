@@ -73,11 +73,9 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
           customer_email,
           customer_name,
           created_at,
-          booking_id,
-          booking_status
+          booking_id
         `)
         .eq('customer_email', email)
-        .neq('booking_status', 'paid')
         .order('created_at', { ascending: false });
 
       if (error) {

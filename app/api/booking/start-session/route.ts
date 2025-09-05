@@ -84,8 +84,7 @@ export async function POST(req: Request) {
         const { error: updateCartError } = await supabase
             .from('cart_headers')
             .update({ 
-                booking_id: bookingId,
-                booking_status: 'in_session'
+                booking_id: bookingId
             })
             .eq('id', cartId);
 
