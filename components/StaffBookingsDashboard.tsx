@@ -197,7 +197,7 @@ export default function StaffBookingsDashboard() {
     switch (booking.booking_status) {
       case 'sessions_scheduled':
         return { 
-          text: 'Click to Start', 
+          text: 'Start Session', 
           action: () => startSession(booking), 
           disabled: false, 
           className: 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' 
@@ -212,9 +212,28 @@ export default function StaffBookingsDashboard() {
       case 'session_completed':
         return { 
           text: 'Go to Cart', 
-          action: () => {
-            setSelectedCustomerEmail(booking.customer_email);
-            setActiveTab('search');
+          action: async () => {
+            // Ensure booking is in cart before redirecting
+            try {
+              const response = await fetch('/api/booking/ensure-in-cart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId: booking.id }),
+              });
+              
+              if (response.ok) {
+                setSelectedCustomerEmail(booking.customer_email);
+                setActiveTab('search');
+              } else {
+                const result = await response.json();
+                alert(`Error: ${result.error}`);
+              }
+            } catch (err) {
+              console.error('Error ensuring booking in cart:', err);
+              // Fallback - still go to cart
+              setSelectedCustomerEmail(booking.customer_email);
+              setActiveTab('search');
+            }
           }, 
           disabled: false, 
           className: 'bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600' 
@@ -327,7 +346,7 @@ export default function StaffBookingsDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    {bookings.filter(b => b.booking_status === 'scheduled').length}
+                    {bookings.filter(b => b.booking_status === 'sessions_scheduled').length}
                   </div>
                 </CardContent>
               </Card>
@@ -417,7 +436,7 @@ export default function StaffBookingsDashboard() {
                             return (
                               <Button
                                 onClick={buttonState.action}
-                                disabled={buttonState.disabled || booking.booking_status !== 'active'}
+                                disabled={buttonState.disabled}
                                 size="sm"
                                 className={buttonState.className}
                               >
