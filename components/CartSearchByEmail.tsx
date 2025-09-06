@@ -105,8 +105,8 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
               id,
               item_id,
               qty,
-              item_type,
-              venue_id
+              venue_id,
+              booking_id
             `)
             .eq('cart_id', cart.id);
 
@@ -164,10 +164,9 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
               itemName = (item.products as unknown as { name: string })?.name || 'Unknown Product';
             } else if (item.experiences) {
               itemName = (item.experiences as unknown as { name: string })?.name || 'Unknown Experience';
-              // Get venue name if available
+              // Get price from venue_experiences but don't show venue name in UI
               if (item.venue_experiences) {
                 const venueExp = item.venue_experiences as unknown as { venue_name: string; venue_price: string };
-                itemName = `${itemName} at ${venueExp.venue_name}`;
                 itemPrice = venueExp.venue_price;
               }
             }
@@ -176,7 +175,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
               id: item.id,
               item_id: item.item_id,
               qty: item.qty,
-              item_type: item.item_type,
+              booking_id: item.booking_id,
               product_name: itemName,
               price: itemPrice
             };

@@ -111,7 +111,6 @@ export async function POST(req: Request) {
                     item_id: booking.experience_id,
                     venue_id: booking.venue_id,
                     booking_id: bookingId,
-                    item_type: 'experience',
                     qty: 1
                 });
 

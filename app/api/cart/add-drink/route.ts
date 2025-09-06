@@ -41,9 +41,24 @@ export async function POST(req: Request) {
             // Use existing cart
             cartId = existingCart.id;
         } else {
-            return NextResponse.json({ 
-                error: "No active cart found. Please create a booking first." 
-            }, { status: 404 });
+            // Create new cart for standalone drink purchase
+            const { data: newCart, error: cartError } = await supabase
+                .from('cart_headers')
+                .insert({
+                    customer_email: customerEmail,
+                    venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b' // AOI venue
+                })
+                .select()
+                .single();
+
+            if (cartError) {
+                return NextResponse.json({ 
+                    error: "Failed to create cart", 
+                    details: cartError.message 
+                }, { status: 500 });
+            }
+
+            cartId = newCart.id;
         }
 
         // Check if drink already exists in cart
@@ -52,7 +67,6 @@ export async function POST(req: Request) {
             .select('*')
             .eq('cart_id', cartId)
             .eq('item_id', drink.id)
-            .eq('item_type', 'product')
             .single();
 
         if (existingItem) {
@@ -84,7 +98,7 @@ export async function POST(req: Request) {
                     cart_id: cartId,
                     item_id: drink.id,
                     qty: qty,
-                    item_type: 'product',
+                    venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b', // AOI venue
                     booking_metadata: { where: where }
                 });
 

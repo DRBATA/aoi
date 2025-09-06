@@ -344,7 +344,6 @@ export default function LandingPage() {
         .from('cart_items')
         .insert({
           cart_id: cartId,
-          item_type: 'booking',
           item_id: selectedBookingExperience,
           quantity: 1,
           unit_price: selectedExp.price,
