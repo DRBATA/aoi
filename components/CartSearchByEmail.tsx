@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { createClient } from '../lib/supabase/client';
 
+// Define TypeScript interfaces
 interface CartItem {
   id: string;
   item_id: string;
@@ -10,6 +11,30 @@ interface CartItem {
   booking_id: string | null;
   product_name: string;
   price: string | null;
+}
+
+interface EmailSuggestion {
+  customer_email: string;
+}
+
+interface OrderRecord {
+  cart_id: string;
+}
+
+interface RawCartData {
+  id: string;
+  customer_email: string;
+  customer_name: string | null;
+  created_at: string;
+  booking_id: string | null;
+}
+
+interface RawCartItem {
+  id: string;
+  item_id: string;
+  qty: number;
+  venue_id: string;
+  booking_id: string | null;
 }
 
 interface Cart {
@@ -54,7 +79,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
         .limit(5);
 
       if (!error && data) {
-        const uniqueEmails = [...new Set(data.map((item: any) => item.customer_email))] as string[];
+        const uniqueEmails = [...new Set(data.map((item: EmailSuggestion) => item.customer_email))];
         setSuggestions(uniqueEmails);
         setShowSuggestions(true);
       }
@@ -91,7 +116,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
           .not('cart_id', 'is', null);
         
         if (paidCartIds && paidCartIds.length > 0) {
-          const paidIds = paidCartIds.map((order: any) => order.cart_id);
+          const paidIds = paidCartIds.map((order: OrderRecord) => order.cart_id);
           query = query.not('id', 'in', `(${paidIds.join(',')})`);
         }
       }
@@ -101,7 +126,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
       if (error) {
         console.error('Error searching carts:', error instanceof Error ? error.message : 'Unknown error');
       } else {
-        const formattedCarts = await Promise.all(data?.map(async (cart: any) => {
+        const formattedCarts = await Promise.all(data?.map(async (cart: RawCartData) => {
           // Fetch cart items for each cart
           const { data: cartItems } = await supabase
             .from('cart_items')
@@ -115,7 +140,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
             .eq('cart_id', cart.id);
 
           // Manually fetch product and experience details for each cart item
-          const itemsWithDetails = await Promise.all(cartItems?.map(async (item: any) => {
+          const itemsWithDetails = await Promise.all(cartItems?.map(async (item: RawCartItem) => {
             let productDetails = null;
             let experienceDetails = null;
             let venueExperienceDetails = null;
@@ -160,7 +185,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
             };
           }) || []);
 
-          const formattedItems = itemsWithDetails?.map((item: any) => {
+          const formattedItems = itemsWithDetails?.map((item: RawCartItem & { products?: unknown; experiences?: unknown; venue_experiences?: unknown }) => {
             // Get name from either products or experiences table
             let itemName = 'Unknown Item';
             let itemPrice = null;
