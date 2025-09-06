@@ -5,10 +5,11 @@ import { createClient } from '@/lib/supabase/client';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Plus, Search } from "lucide-react";
+import { Calendar, Plus, Search, GlassWater } from "lucide-react";
 import MinChat from "./MinChat";
 import BookingForm from './BookingForm';
 import CartSearchByEmail from './CartSearchByEmail';
+import AddDrinkTab from './AddDrinkTab';
 
 interface Booking {
   id: string;
@@ -31,7 +32,7 @@ export default function StaffBookingsDashboard() {
   const [selectedExperience, setSelectedExperience] = useState('all');
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('all');
   const [experiences, setExperiences] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'search'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'search' | 'drinks'>('dashboard');
 
   const supabase = createClient();
 
@@ -264,11 +265,12 @@ export default function StaffBookingsDashboard() {
           {[
             { id: 'dashboard', label: 'Dashboard', icon: <Calendar className="w-4 h-4" /> },
             { id: 'create', label: 'Create Booking', icon: <Plus className="w-4 h-4" /> },
-            { id: 'search', label: 'Search Carts', icon: <Search className="w-4 h-4" /> }
+            { id: 'search', label: 'Search Carts', icon: <Search className="w-4 h-4" /> },
+            { id: 'drinks', label: 'Add Drinks', icon: <GlassWater className="w-4 h-4" /> }
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'dashboard' | 'create' | 'search')}
+              onClick={() => setActiveTab(tab.id as 'dashboard' | 'create' | 'search' | 'drinks')}
               className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all border-2 ${
                 activeTab === tab.id
                   ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-xl border-transparent'
@@ -475,6 +477,18 @@ export default function StaffBookingsDashboard() {
               <div className="bg-neutral-900 rounded-2xl p-1">
                 <MinChat customerEmail={selectedCustomerEmail} />
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'drinks' && (
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white/80 rounded-2xl p-6 shadow-lg">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                <GlassWater className="w-6 h-6 text-blue-500" />
+                Add Drinks to Cart
+              </h2>
+              <AddDrinkTab customerEmail={selectedCustomerEmail} />
             </div>
           </div>
         )}
