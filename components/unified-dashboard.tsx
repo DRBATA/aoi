@@ -65,7 +65,7 @@ const serviceRooms = [
 
 export default function UnifiedDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>("all")
-  const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string>('')
+  const [selectedCustomerEmail] = useState<string>('')
   const [rooms] = useState(serviceRooms)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [selectedGuest, setSelectedGuest] = useState<Booking | null>(null)
