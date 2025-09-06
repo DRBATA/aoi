@@ -106,16 +106,35 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
               id,
               item_id,
               qty,
-              products(name)
+              item_type,
+              venue_id,
+              products(name),
+              venue_experiences(venue_name, experience_name, venue_price)
             `)
             .eq('cart_id', cart.id);
 
-          const formattedItems = cartItems?.map(item => ({
-            id: item.id,
-            item_id: item.item_id,
-            qty: item.qty,
-            product_name: (item.products as unknown as { name: string } | null)?.name || 'Unknown Product'
-          })) || [];
+          const formattedItems = cartItems?.map(item => {
+            // Get name based on item type
+            let itemName = 'Unknown Item';
+            let itemPrice = null;
+            
+            if (item.item_type === 'product' && item.products) {
+              itemName = (item.products as unknown as { name: string })?.name || 'Unknown Product';
+            } else if (item.item_type === 'experience' && item.venue_experiences) {
+              const venueExp = item.venue_experiences as unknown as { venue_name: string; experience_name: string; venue_price: string };
+              itemName = `${venueExp.experience_name} at ${venueExp.venue_name}`;
+              itemPrice = venueExp.venue_price;
+            }
+            
+            return {
+              id: item.id,
+              item_id: item.item_id,
+              qty: item.qty,
+              item_type: item.item_type,
+              product_name: itemName,
+              price: itemPrice
+            };
+          }) || [];
 
           return {
             id: cart.id,

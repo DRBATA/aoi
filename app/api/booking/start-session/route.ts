@@ -94,6 +94,35 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
+        // Check if experience is already in cart to prevent duplicates
+        const { data: existingCartItem } = await supabase
+            .from('cart_items')
+            .select('id')
+            .eq('cart_id', cartId)
+            .eq('booking_id', bookingId)
+            .single();
+
+        if (!existingCartItem) {
+            // Add experience to cart_items
+            const { error: cartItemError } = await supabase
+                .from('cart_items')
+                .insert({
+                    cart_id: cartId,
+                    item_id: booking.experience_id,
+                    venue_id: booking.venue_id,
+                    booking_id: bookingId,
+                    item_type: 'experience',
+                    qty: 1
+                });
+
+            if (cartItemError) {
+                return NextResponse.json({ 
+                    error: "Failed to add experience to cart", 
+                    details: cartItemError.message 
+                }, { status: 500 });
+            }
+        }
+
         return NextResponse.json({ 
             success: true, 
             message: "Session started successfully",
