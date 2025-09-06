@@ -15,35 +15,52 @@ const supa = createClient(
 );
 
 async function get_cart_and_drinks(customer_email: string) {
-  // Get cart and booking in one go
-  const { data: cart } = await supa
-    .from('cart_headers')
-    .select('*')
-    .eq('customer_email', customer_email)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+  // NEW: Find cart items with booking_id (experiences) for this customer
+  const { data: cartItems } = await supa
+    .from('cart_items')
+    .select(`
+      booking_id,
+      cart_id,
+      cart_headers!inner(customer_email, created_at)
+    `)
+    .eq('cart_headers.customer_email', customer_email)
+    .not('booking_id', 'is', null)
+    .order('cart_headers.created_at', { ascending: false })
+    .limit(1);
 
-  if (!cart?.booking_id) {
+  if (!cartItems || cartItems.length === 0) {
     return { experience: null, drinks: [] };
   }
 
-  // Get booking with experience
+  const cartItem = cartItems[0];
+  
+  // Get booking with experience details
   const { data: booking } = await supa
     .from('bookings')
     .select(`
-      experiences!inner(name, description, tags, category)
+      experience_id,
+      venue_id
     `)
-    .eq('id', cart.booking_id)
+    .eq('id', cartItem.booking_id)
     .single();
 
   if (!booking) {
     return { experience: null, drinks: [] };
   }
 
-  const experienceName = Array.isArray(booking.experiences) 
-    ? booking.experiences[0]?.name 
-    : (booking.experiences as { name: string })?.name;
+  // Get experience name from venue_experiences
+  const { data: venueExp } = await supa
+    .from('venue_experiences')
+    .select('experience_name')
+    .eq('venue_id', booking.venue_id)
+    .eq('experience_id', booking.experience_id)
+    .single();
+
+  if (!venueExp) {
+    return { experience: null, drinks: [] };
+  }
+
+  const experienceName = venueExp.experience_name;
   
   // Get drinks that pair with this experience
   const { data: drinks } = await supa.rpc('search_products_by_trigger', {
