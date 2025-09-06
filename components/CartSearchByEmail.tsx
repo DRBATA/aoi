@@ -116,17 +116,9 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
             let experienceDetails = null;
             let venueExperienceDetails = null;
 
-            // Check products table first
-            const { data: product } = await supabase
-              .from('products')
-              .select('name')
-              .eq('id', item.item_id)
-              .single();
-            
-            if (product) {
-              productDetails = product;
-            } else {
-              // Check experiences table
+            // Use booking_id presence to determine if it's an experience or product
+            if (item.booking_id) {
+              // It's an experience - look in experiences table
               const { data: experience } = await supabase
                 .from('experiences')
                 .select('name')
@@ -135,7 +127,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
               
               experienceDetails = experience;
               
-              // If it's an experience and has venue_id, get venue details
+              // Get venue details for pricing
               if (experience && item.venue_id) {
                 const { data: venueExp } = await supabase
                   .from('venue_experiences')
@@ -145,6 +137,15 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
                   .single();
                 venueExperienceDetails = venueExp;
               }
+            } else {
+              // It's a product - look in products table
+              const { data: product } = await supabase
+                .from('products')
+                .select('name')
+                .eq('id', item.item_id)
+                .single();
+              
+              productDetails = product;
             }
 
             return {
@@ -178,6 +179,13 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
               booking_id: item.booking_id,
               product_name: itemName,
               price: itemPrice
+            } as {
+              id: string;
+              item_id: string;
+              qty: number;
+              booking_id: string | null;
+              product_name: string;
+              price: string | null;
             };
           }) || [];
 
@@ -355,28 +363,41 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
                             • {item.product_name}
                           </span>
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateItemQuantity(item.id, item.qty - 1);
-                              }}
-                              disabled={item.qty <= 1}
-                              className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-gray-800 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              -
-                            </button>
-                            <span className="text-sm font-medium min-w-[20px] text-center">
-                              {item.qty}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateItemQuantity(item.id, item.qty + 1);
-                              }}
-                              className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-gray-800 text-sm border border-gray-300 rounded"
-                            >
-                              +
-                            </button>
+                            {/* Show quantity controls only for products (no booking_id) */}
+                            {!item.booking_id && (
+                              <>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateItemQuantity(item.id, item.qty - 1);
+                                  }}
+                                  disabled={item.qty <= 1}
+                                  className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-gray-800 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  -
+                                </button>
+                                <span className="text-sm font-medium min-w-[20px] text-center">
+                                  {item.qty}
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateItemQuantity(item.id, item.qty + 1);
+                                  }}
+                                  className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-gray-800 text-sm border border-gray-300 rounded"
+                                >
+                                  +
+                                </button>
+                              </>
+                            )}
+                            
+                            {/* Show quantity for experiences (read-only) */}
+                            {item.booking_id && (
+                              <span className="text-sm font-medium min-w-[20px] text-center">
+                                Qty: {item.qty}
+                              </span>
+                            )}
+                            
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
