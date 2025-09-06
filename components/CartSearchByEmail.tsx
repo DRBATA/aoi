@@ -380,14 +380,6 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
                   <p className="text-sm text-gray-500">
                     Created: {new Date(cart.created_at).toLocaleDateString()}
                   </p>
-                  <p className="text-sm text-gray-500">
-                    Venue: {cart.venue_name}
-                  </p>
-                  {cart.booking_id && (
-                    <p className="text-sm text-green-600">
-                      ✓ Has booking: {cart.booking_id.substring(0, 8)}
-                    </p>
-                  )}
                   
                   {/* Display individual cart items */}
                   {cart.cart_items && cart.cart_items.length > 0 && (
