@@ -188,6 +188,28 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
     alert(`Add ${itemType} to cart ${cartId}`);
   };
 
+  const updateItemQuantity = async (cartItemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    
+    try {
+      const { error } = await supabase
+        .from('cart_items')
+        .update({ qty: newQuantity })
+        .eq('id', cartItemId);
+
+      if (error) {
+        console.error('Error updating quantity:', error);
+        alert('Error updating item quantity');
+      } else {
+        // Refresh the cart data
+        searchCarts();
+      }
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      alert('Error updating item quantity');
+    }
+  };
+
   const removeItemFromCart = async (cartItemId: string) => {
     try {
       const { error } = await supabase
@@ -311,17 +333,41 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
                       {cart.cart_items.map((item) => (
                         <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded p-2">
                           <span className="text-sm text-gray-700">
-                            • {item.product_name} {item.qty > 1 && `(${item.qty})`}
+                            • {item.product_name}
                           </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeItemFromCart(item.id);
-                            }}
-                            className="text-red-600 hover:text-red-800 text-xs px-2 py-1 rounded border border-red-200 hover:bg-red-50"
-                          >
-                            Remove
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateItemQuantity(item.id, item.qty - 1);
+                              }}
+                              disabled={item.qty <= 1}
+                              className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-gray-800 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              -
+                            </button>
+                            <span className="text-sm font-medium min-w-[20px] text-center">
+                              {item.qty}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateItemQuantity(item.id, item.qty + 1);
+                              }}
+                              className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-gray-800 text-sm border border-gray-300 rounded"
+                            >
+                              +
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeItemFromCart(item.id);
+                              }}
+                              className="text-red-600 hover:text-red-800 text-xs px-2 py-1 rounded border border-red-200 hover:bg-red-50 ml-2"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
