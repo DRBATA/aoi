@@ -27,7 +27,6 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
   const [searchEmail, setSearchEmail] = useState('');
   const [carts, setCarts] = useState<Cart[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [selectedCart, setSelectedCart] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
