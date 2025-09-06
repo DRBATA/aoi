@@ -110,46 +110,66 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
             `)
             .eq('cart_id', cart.id);
 
-          // Manually fetch product and venue_experience details for each cart item
+          // Manually fetch product and experience details for each cart item
           const itemsWithDetails = await Promise.all(cartItems?.map(async (item) => {
             let productDetails = null;
+            let experienceDetails = null;
             let venueExperienceDetails = null;
 
-            if (item.item_type === 'product') {
-              const { data: product } = await supabase
-                .from('products')
+            // Check products table first
+            const { data: product } = await supabase
+              .from('products')
+              .select('name')
+              .eq('id', item.item_id)
+              .single();
+            
+            if (product) {
+              productDetails = product;
+            } else {
+              // Check experiences table
+              const { data: experience } = await supabase
+                .from('experiences')
                 .select('name')
                 .eq('id', item.item_id)
                 .single();
-              productDetails = product;
-            } else if (item.item_type === 'experience' && item.venue_id) {
-              const { data: venueExp } = await supabase
-                .from('venue_experiences')
-                .select('venue_name, experience_name, venue_price')
-                .eq('venue_id', item.venue_id)
-                .eq('experience_id', item.item_id)
-                .single();
-              venueExperienceDetails = venueExp;
+              
+              experienceDetails = experience;
+              
+              // If it's an experience and has venue_id, get venue details
+              if (experience && item.venue_id) {
+                const { data: venueExp } = await supabase
+                  .from('venue_experiences')
+                  .select('venue_name, experience_name, venue_price')
+                  .eq('venue_id', item.venue_id)
+                  .eq('experience_id', item.item_id)
+                  .single();
+                venueExperienceDetails = venueExp;
+              }
             }
 
             return {
               ...item,
               products: productDetails,
+              experiences: experienceDetails,
               venue_experiences: venueExperienceDetails
             };
           }) || []);
 
           const formattedItems = itemsWithDetails?.map(item => {
-            // Get name based on item type
+            // Get name from either products or experiences table
             let itemName = 'Unknown Item';
             let itemPrice = null;
             
-            if (item.item_type === 'product' && item.products) {
+            if (item.products) {
               itemName = (item.products as unknown as { name: string })?.name || 'Unknown Product';
-            } else if (item.item_type === 'experience' && item.venue_experiences) {
-              const venueExp = item.venue_experiences as unknown as { venue_name: string; experience_name: string; venue_price: string };
-              itemName = `${venueExp.experience_name} at ${venueExp.venue_name}`;
-              itemPrice = venueExp.venue_price;
+            } else if (item.experiences) {
+              itemName = (item.experiences as unknown as { name: string })?.name || 'Unknown Experience';
+              // Get venue name if available
+              if (item.venue_experiences) {
+                const venueExp = item.venue_experiences as unknown as { venue_name: string; venue_price: string };
+                itemName = `${itemName} at ${venueExp.venue_name}`;
+                itemPrice = venueExp.venue_price;
+              }
             }
             
             return {
