@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react'
 import { 
-  Calendar, Plus, Package, Home, TrendingUp, Users
+  Calendar, Plus, Package, Home, TrendingUp, Users, Coffee
 } from "lucide-react"
+import AddDrinkTab from './AddDrinkTab'
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +15,7 @@ import TimingAlerts from "./timing-alerts"
 import { createClient } from '@/lib/supabase/client'
 
 // Types
-type ViewMode = "all" | "arrived" | "active" | "complete"
+type ViewMode = "all" | "arrived" | "active" | "complete" | "drinks"
 interface Booking {
   id: string
   guest_name: string
@@ -64,6 +65,7 @@ const serviceRooms = [
 
 export default function UnifiedDashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>("all")
+  const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string>('')
   const [rooms] = useState(serviceRooms)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [selectedGuest, setSelectedGuest] = useState<Booking | null>(null)
@@ -384,7 +386,7 @@ export default function UnifiedDashboard() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                 <h2 className="text-lg md:text-xl font-light text-white">Today&apos;s Schedule</h2>
                 <div className="flex gap-1 sm:gap-2 overflow-x-auto">
-                  {(['all', 'arrived', 'active', 'complete'] as ViewMode[]).map((mode) => (
+                  {(['all', 'arrived', 'active', 'complete', 'drinks'] as ViewMode[]).map((mode) => (
                     <Button
                       key={mode}
                       variant={viewMode === mode ? "default" : "ghost"}
@@ -395,14 +397,27 @@ export default function UnifiedDashboard() {
                         : "text-white/60 hover:text-white hover:bg-gradient-to-r hover:from-white/10 hover:to-white/20"
                       }
                     >
-                      {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                      {mode === 'drinks' ? (
+                        <>
+                          <Coffee className="w-4 h-4 mr-1" />
+                          Add Drinks
+                        </>
+                      ) : (
+                        mode.charAt(0).toUpperCase() + mode.slice(1)
+                      )}
                     </Button>
                   ))}
                 </div>
               </div>
               
-              {/* Mobile-responsive table */}
-              <div className="overflow-x-auto -mx-4 md:mx-0">
+              {/* Conditional Content Based on View Mode */}
+              {viewMode === 'drinks' ? (
+                <div className="mt-4">
+                  <AddDrinkTab customerEmail={selectedCustomerEmail} />
+                </div>
+              ) : (
+                /* Mobile-responsive table */
+                <div className="overflow-x-auto -mx-4 md:mx-0">
               <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow className="border-white/10">
@@ -458,6 +473,7 @@ export default function UnifiedDashboard() {
                 </TableBody>
               </Table>
               </div>
+              )}
             </div>
           </Card>
         </div>
