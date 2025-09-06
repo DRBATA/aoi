@@ -1,22 +1,26 @@
 'use client';
 
 import React, { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../lib/supabase/client';
+
+interface CartItem {
+  id: string;
+  item_id: string;
+  qty: number;
+  booking_id: string | null;
+  product_name: string;
+  price: string | null;
+}
 
 interface Cart {
   id: string;
   customer_email: string;
-  customer_name: string;
+  customer_name: string | null;
   created_at: string;
   booking_id: string | null;
   venue_name: string;
   items_count: number;
-  cart_items?: Array<{
-    id: string;
-    item_id: string;
-    qty: number;
-    product_name: string;
-  }>;
+  cart_items: CartItem[];
 }
 
 interface CartSearchByEmailProps {
@@ -27,11 +31,11 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
   const [searchEmail, setSearchEmail] = useState('');
   const [carts, setCarts] = useState<Cart[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [selectedCart, setSelectedCart] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [showOrderHistory, setShowOrderHistory] = useState(false);
 
   const supabase = createClient();
 
@@ -50,7 +54,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
         .limit(5);
 
       if (!error && data) {
-        const uniqueEmails = [...new Set(data.map(item => item.customer_email))];
+        const uniqueEmails = [...new Set(data.map((item: any) => item.customer_email))] as string[];
         setSuggestions(uniqueEmails);
         setShowSuggestions(true);
       }
@@ -87,7 +91,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
           .not('cart_id', 'is', null);
         
         if (paidCartIds && paidCartIds.length > 0) {
-          const paidIds = paidCartIds.map(order => order.cart_id);
+          const paidIds = paidCartIds.map((order: any) => order.cart_id);
           query = query.not('id', 'in', `(${paidIds.join(',')})`);
         }
       }
@@ -97,7 +101,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
       if (error) {
         console.error('Error searching carts:', error instanceof Error ? error.message : 'Unknown error');
       } else {
-        const formattedCarts = await Promise.all(data?.map(async (cart) => {
+        const formattedCarts = await Promise.all(data?.map(async (cart: any) => {
           // Fetch cart items for each cart
           const { data: cartItems } = await supabase
             .from('cart_items')
@@ -111,7 +115,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
             .eq('cart_id', cart.id);
 
           // Manually fetch product and experience details for each cart item
-          const itemsWithDetails = await Promise.all(cartItems?.map(async (item) => {
+          const itemsWithDetails = await Promise.all(cartItems?.map(async (item: any) => {
             let productDetails = null;
             let experienceDetails = null;
             let venueExperienceDetails = null;
@@ -156,7 +160,7 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
             };
           }) || []);
 
-          const formattedItems = itemsWithDetails?.map(item => {
+          const formattedItems = itemsWithDetails?.map((item: any) => {
             // Get name from either products or experiences table
             let itemName = 'Unknown Item';
             let itemPrice = null;
@@ -197,7 +201,14 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
             booking_id: cart.booking_id,
             venue_name: 'No venue',
             items_count: formattedItems.length,
-            cart_items: formattedItems
+            cart_items: formattedItems as Array<{
+              id: string;
+              item_id: string;
+              qty: number;
+              booking_id: string | null;
+              product_name: string;
+              price: string | null;
+            }>
           };
         }) || []);
         
