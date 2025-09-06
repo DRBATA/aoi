@@ -106,13 +106,40 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
               item_id,
               qty,
               item_type,
-              venue_id,
-              products(name),
-              venue_experiences(venue_name, experience_name, venue_price)
+              venue_id
             `)
             .eq('cart_id', cart.id);
 
-          const formattedItems = cartItems?.map(item => {
+          // Manually fetch product and venue_experience details for each cart item
+          const itemsWithDetails = await Promise.all(cartItems?.map(async (item) => {
+            let productDetails = null;
+            let venueExperienceDetails = null;
+
+            if (item.item_type === 'product') {
+              const { data: product } = await supabase
+                .from('products')
+                .select('name')
+                .eq('id', item.item_id)
+                .single();
+              productDetails = product;
+            } else if (item.item_type === 'experience' && item.venue_id) {
+              const { data: venueExp } = await supabase
+                .from('venue_experiences')
+                .select('venue_name, experience_name, venue_price')
+                .eq('venue_id', item.venue_id)
+                .eq('experience_id', item.item_id)
+                .single();
+              venueExperienceDetails = venueExp;
+            }
+
+            return {
+              ...item,
+              products: productDetails,
+              venue_experiences: venueExperienceDetails
+            };
+          }) || []);
+
+          const formattedItems = itemsWithDetails?.map(item => {
             // Get name based on item type
             let itemName = 'Unknown Item';
             let itemPrice = null;
