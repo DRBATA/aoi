@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Plus, Minus, Loader2 } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 // Simple currency formatter
 const formatCurrency = (amount: number) => {
