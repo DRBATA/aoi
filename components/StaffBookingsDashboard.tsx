@@ -33,8 +33,47 @@ export default function StaffBookingsDashboard() {
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('all');
   const [experiences, setExperiences] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'search' | 'drinks'>('dashboard');
+  const [aiResults, setAiResults] = useState<any>(null);
+  const [showAiSection, setShowAiSection] = useState(false);
 
   const supabase = createClient();
+
+  // Pre-fire AI search when email reaches 3+ characters
+  const prefireAiSearch = useCallback(async (email: string) => {
+    if (email.length >= 3 && !aiResults) {
+      try {
+        const response = await fetch('/api/minchat-v4', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            mode: 'drinks', 
+            text: '', 
+            customer_email: email 
+          })
+        });
+        const data = await response.json();
+        setAiResults(data);
+      } catch (error) {
+        console.error('Pre-fire AI search failed:', error);
+      }
+    }
+  }, [aiResults]);
+
+  // Enhanced email change handler
+  const handleEmailChange = useCallback((email: string) => {
+    setSelectedCustomerEmail(email);
+    
+    // Pre-fire AI search on 3rd character
+    if (email.length >= 3) {
+      prefireAiSearch(email);
+    }
+    
+    // Reset AI visibility when email changes
+    if (email.length < 3) {
+      setShowAiSection(false);
+      setAiResults(null);
+    }
+  }, [prefireAiSearch]);
 
   const fetchBookingsCallback = useCallback(async () => {
     try {
@@ -464,20 +503,25 @@ export default function StaffBookingsDashboard() {
 
         {activeTab === 'search' && (
           <div className="max-w-4xl mx-auto space-y-6">
-            <CartSearchByEmail onEmailChange={setSelectedCustomerEmail} />
+            <CartSearchByEmail 
+              onEmailChange={handleEmailChange} 
+              onCartClick={() => setShowAiSection(true)}
+            />
             
-            {/* AI Suggestions */}
-            <div className="bg-white/80 rounded-2xl p-6 shadow-lg">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">🎭 AI Suggestions</h3>
-              {selectedCustomerEmail && (
-                <p className="text-sm text-gray-600 mb-3">
-                  Suggestions for: <span className="font-medium">{selectedCustomerEmail}</span>
-                </p>
-              )}
-              <div className="bg-neutral-900 rounded-2xl p-1">
-                <MinChat customerEmail={selectedCustomerEmail} />
+            {/* AI Suggestions - Only show when cart is found and clicked */}
+            {showAiSection && (
+              <div className="bg-white/80 rounded-2xl p-6 shadow-lg">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">🎭 AI Suggestions</h3>
+                {selectedCustomerEmail && (
+                  <p className="text-sm text-gray-600 mb-3">
+                    Suggestions for: <span className="font-medium">{selectedCustomerEmail}</span>
+                  </p>
+                )}
+                <div className="bg-neutral-900 rounded-2xl p-1">
+                  <MinChat customerEmail={selectedCustomerEmail} preloadedResults={aiResults} />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 

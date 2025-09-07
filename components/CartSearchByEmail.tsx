@@ -50,9 +50,10 @@ interface Cart {
 
 interface CartSearchByEmailProps {
   onEmailChange?: (email: string) => void;
+  onCartClick?: () => void;
 }
 
-export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailProps) {
+export default function CartSearchByEmail({ onEmailChange, onCartClick }: CartSearchByEmailProps) {
   const [searchEmail, setSearchEmail] = useState('');
   const [carts, setCarts] = useState<Cart[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -371,7 +372,10 @@ export default function CartSearchByEmail({ onEmailChange }: CartSearchByEmailPr
               className={`border rounded-lg p-4 cursor-pointer transition-colors ${
                 selectedCart === cart.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => setSelectedCart(cart.id)}
+              onClick={() => {
+                setSelectedCart(cart.id);
+                onCartClick?.();
+              }}
             >
               <div className="flex justify-between items-start">
                 <div>

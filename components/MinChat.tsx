@@ -7,6 +7,7 @@ import React, { useState } from "react";
 
 interface MinChatProps {
   customerEmail?: string;
+  preloadedResults?: any;
 }
 
 type Choice = {
@@ -23,10 +24,10 @@ type SuggestionResult = {
   choices: Choice[];
 };
 
-export default function MinChat({ customerEmail }: MinChatProps) {
+export default function MinChat({ customerEmail, preloadedResults }: MinChatProps) {
   const [mode, setMode] = useState<"pairs" | "drinks">("pairs");
   const [text, setText] = useState("");
-  const [result, setResult] = useState<SuggestionResult | null>(null);
+  const [result, setResult] = useState<SuggestionResult | null>(preloadedResults || null);
   const [loading, setLoading] = useState(false);
 
   async function ask() {
