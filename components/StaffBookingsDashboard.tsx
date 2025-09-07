@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Plus, Search, GlassWater } from "lucide-react";
+import { Calendar, Plus, Search, GlassWater, Home, ArrowLeft } from "lucide-react";
 import MinChat from "./MinChat";
 import BookingForm from './BookingForm';
 import CartSearchByEmail from './CartSearchByEmail';
@@ -33,8 +33,19 @@ export default function StaffBookingsDashboard() {
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('all');
   const [experiences, setExperiences] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'search' | 'drinks'>('dashboard');
-  const [aiResults, setAiResults] = useState<any>(null);
+  const [aiResults, setAiResults] = useState<{
+    title: string;
+    choices: Array<{
+      kind: "drink" | "experience" | "bundle";
+      id: string;
+      label: string;
+      qty?: number;
+      where?: "here" | "to-go" | null;
+      reason?: string;
+    }>;
+  } | null>(null);
   const [showAiSection, setShowAiSection] = useState(false);
+  const [previousTab, setPreviousTab] = useState<'dashboard' | 'create' | 'search' | 'drinks'>('dashboard');
 
   const supabase = createClient();
 
@@ -215,11 +226,17 @@ export default function StaffBookingsDashboard() {
         if (otherSessions.length > 0) {
           const proceed = confirm(`Customer has ${otherSessions.length} more sessions scheduled today. Go to cart now or continue with other sessions?`);
           if (proceed) {
+            // Clear AI cache since cart contents just changed
+            setAiResults(null);
+            setShowAiSection(false);
             setSelectedCustomerEmail(booking.customer_email);
             setActiveTab('search');
           }
         } else {
           // Auto-redirect to cart for payment
+          // Clear AI cache since cart contents just changed
+          setAiResults(null);
+          setShowAiSection(false);
           setSelectedCustomerEmail(booking.customer_email);
           setActiveTab('search');
         }
@@ -300,26 +317,59 @@ export default function StaffBookingsDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-50 to-orange-50 text-gray-800">
       <div className="container mx-auto px-4 py-8">
         {/* Tab Navigation - AOI Style */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8 pt-6">
-          {[
-            { id: 'dashboard', label: 'Dashboard', icon: <Calendar className="w-4 h-4" /> },
-            { id: 'create', label: 'Create Booking', icon: <Plus className="w-4 h-4" /> },
-            { id: 'search', label: 'Search Carts', icon: <Search className="w-4 h-4" /> },
-            { id: 'drinks', label: 'Add Drinks', icon: <GlassWater className="w-4 h-4" /> }
-          ].map((tab) => (
+        <div className="flex justify-between items-center mb-8 pt-6">
+          {/* Back Button */}
+          {activeTab !== 'dashboard' && (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'dashboard' | 'create' | 'search' | 'drinks')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all border-2 ${
-                activeTab === tab.id
-                  ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-xl border-transparent'
-                  : 'bg-white/90 text-gray-700 hover:bg-gradient-to-r hover:from-orange-100 hover:to-yellow-100 hover:shadow-lg border-orange-200 hover:border-orange-300'
-              }`}
+              onClick={() => {
+                setActiveTab(previousTab);
+                // Reset AI state when going back
+                if (previousTab === 'dashboard') {
+                  setShowAiSection(false);
+                  setAiResults(null);
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all"
             >
-              {tab.icon}
-              {tab.label}
+              <ArrowLeft className="w-4 h-4" />
+              Back
             </button>
-          ))}
+          )}
+          
+          {/* Main Navigation */}
+          <div className="flex flex-wrap justify-center gap-2 flex-1">
+            {[
+              { id: 'dashboard', label: 'Dashboard', icon: <Home className="w-4 h-4" /> },
+              { id: 'create', label: 'Create Booking', icon: <Plus className="w-4 h-4" /> },
+              { id: 'drinks', label: 'Add Drinks', icon: <GlassWater className="w-4 h-4" /> },
+              { id: 'search', label: 'Customer Search', icon: <Search className="w-4 h-4" /> }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setPreviousTab(activeTab);
+                  setActiveTab(tab.id as 'dashboard' | 'create' | 'search' | 'drinks');
+                  
+                  // Reset AI state when switching tabs
+                  if (tab.id !== 'search') {
+                    setShowAiSection(false);
+                    setAiResults(null);
+                  }
+                }}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all border-2 ${
+                  activeTab === tab.id
+                    ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-xl border-transparent'
+                    : 'bg-white/90 text-gray-700 hover:bg-gradient-to-r hover:from-orange-100 hover:to-yellow-100 hover:shadow-lg border-orange-200 hover:border-orange-300'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          
+          {/* Spacer for alignment */}
+          <div className="w-20"></div>
         </div>
 
       {/* Tab Content */}
@@ -506,6 +556,11 @@ export default function StaffBookingsDashboard() {
             <CartSearchByEmail 
               onEmailChange={handleEmailChange} 
               onCartClick={() => setShowAiSection(true)}
+              onSwitchToBooking={(email, cartId) => {
+                setSelectedCustomerEmail(email);
+                setActiveTab('create');
+                // TODO: Pass cartId to BookingForm component
+              }}
             />
             
             {/* AI Suggestions - Only show when cart is found and clicked */}

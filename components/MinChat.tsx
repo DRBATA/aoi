@@ -7,7 +7,7 @@ import React, { useState } from "react";
 
 interface MinChatProps {
   customerEmail?: string;
-  preloadedResults?: any;
+  preloadedResults?: SuggestionResult | null;
 }
 
 type Choice = {

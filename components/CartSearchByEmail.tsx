@@ -51,9 +51,10 @@ interface Cart {
 interface CartSearchByEmailProps {
   onEmailChange?: (email: string) => void;
   onCartClick?: () => void;
+  onSwitchToBooking?: (email: string, cartId: string) => void;
 }
 
-export default function CartSearchByEmail({ onEmailChange, onCartClick }: CartSearchByEmailProps) {
+export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitchToBooking }: CartSearchByEmailProps) {
   const [searchEmail, setSearchEmail] = useState('');
   const [carts, setCarts] = useState<Cart[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -248,8 +249,13 @@ export default function CartSearchByEmail({ onEmailChange, onCartClick }: CartSe
   };
 
   const addItemToCart = async (cartId: string, itemType: 'booking' | 'drink' | 'experience') => {
-    // This would open a modal to add items to the selected cart
-    alert(`Add ${itemType} to cart ${cartId}`);
+    if (itemType === 'booking') {
+      // Switch to Create Booking tab with pre-populated email and cart context
+      onSwitchToBooking?.(searchEmail, cartId);
+    } else {
+      // Handle drink additions (future implementation)
+      alert(`Add ${itemType} to cart ${cartId}`);
+    }
   };
 
   const updateItemQuantity = async (cartItemId: string, newQuantity: number) => {

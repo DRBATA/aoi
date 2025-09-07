@@ -63,18 +63,35 @@ export async function POST(req: Request) {
             cartId = newCart.id;
         }
 
-        // Update cart with booking reference
-        const { error: updateCartError } = await supabase
-            .from('cart_headers')
-            .update({ 
-                booking_id: bookingId
-            })
-            .eq('id', cartId);
+        // Get booking details for cart item
+        const { data: bookingDetails, error: bookingDetailsError } = await supabase
+            .from('bookings')
+            .select('experience_id, venue_id')
+            .eq('id', bookingId)
+            .single();
 
-        if (updateCartError) {
+        if (bookingDetailsError || !bookingDetails) {
             return NextResponse.json({ 
-                error: "Failed to link booking to cart", 
-                details: updateCartError.message 
+                error: "Failed to get booking details", 
+                details: bookingDetailsError?.message 
+            }, { status: 500 });
+        }
+
+        // Add booking as cart item with booking_id (NEW STRUCTURE)
+        const { error: addCartItemError } = await supabase
+            .from('cart_items')
+            .insert({
+                cart_id: cartId,
+                item_id: bookingDetails.experience_id,
+                qty: 1,
+                venue_id: bookingDetails.venue_id,
+                booking_id: bookingId
+            });
+
+        if (addCartItemError) {
+            return NextResponse.json({ 
+                error: "Failed to add booking to cart", 
+                details: addCartItemError.message 
             }, { status: 500 });
         }
 
