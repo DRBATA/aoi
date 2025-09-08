@@ -1,54 +1,62 @@
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { venueName } = await request.json();
-    
-    if (!venueName) {
-      return NextResponse.json({ error: 'Venue name is required' }, { status: 400 });
-    }
+    // Hard-code AOI venue name since this is AOI-specific API
+    const venueName = 'Art of Implosion x Johny Dar Experience';
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
-    // Get products for the venue
+    // Get products with venue stock using the correct table structure
     const { data: products, error } = await supabase
-      .from('venue_products')
+      .from('products')
       .select(`
-        product_id,
-        stock_quantity,
-        venue_price,
-        products!inner(
-          id,
-          name,
-          description,
-          tags,
-          category,
-          base_price
+        id, 
+        name, 
+        description, 
+        price_aed, 
+        tags, 
+        category,
+        venue_stock(
+          qty_on_hand, 
+          venue:venue_id(id, name, from_date, to_date)
         )
-      `)
-      .eq('venue_name', venueName)
-      .gt('stock_quantity', 0);
+      `);
 
     if (error) {
-      console.error('Error fetching venue products:', error);
+      console.error('Error fetching products:', error);
       return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
     }
 
-    // Format products for frontend
-    const formattedProducts = products?.map(item => {
-      const product = Array.isArray(item.products) ? item.products[0] : item.products;
+    const currentDateStr = new Date().toISOString().split('T')[0];
+
+    // Filter and format products for the specific venue
+    const formattedProducts = products?.map((product: any) => {
+      // Find venue stock for the requested venue
+      const venueStock = product.venue_stock?.find((vs: any) => 
+        vs.venue?.name === venueName &&
+        vs.qty_on_hand > 0 &&
+        (!vs.venue.from_date || vs.venue.from_date <= currentDateStr) &&
+        (!vs.venue.to_date || vs.venue.to_date >= currentDateStr)
+      );
+
+      if (!venueStock) return null;
+
+      // Construct image path pointing to thewater.bar public directory
+      const imagePath = `https://thewater.bar/${product.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}.png`;
+
       return {
         id: product.id,
         name: product.name,
         description: product.description,
         tags: product.tags,
         category: product.category,
-        base_price: product.base_price,
-        venue_price: item.venue_price,
-        stock_quantity: item.stock_quantity
+        price: product.price_aed,
+        qty_on_hand: venueStock.qty_on_hand,
+        image: imagePath
       };
-    }) || [];
+    }).filter(Boolean) || [];
 
     return NextResponse.json({ 
       products: formattedProducts,
