@@ -381,7 +381,7 @@ export default function LandingPage() {
                     <h3 className="text-xl font-medium text-white">The Mirror Effect</h3>
                   </div>
                   <p className="text-white/60">
-                    When AOI surrounds you with harmonic light and sound, your body naturally mirrors it back. Just like a greeting — "hello" answered with "hello" — your cells respond in kind, releasing what does not belong, remembering what does. This mirroring is the gateway to healing and transformation.
+                    When AOI surrounds you with harmonic light and sound, your body naturally mirrors it back. Just like a greeting — &quot;hello&quot; answered with &quot;hello&quot; — your cells respond in kind, releasing what does not belong, remembering what does. This mirroring is the gateway to healing and transformation.
                   </p>
                 </div>
                 
