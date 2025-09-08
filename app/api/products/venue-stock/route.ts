@@ -32,8 +32,10 @@ export async function POST() {
     const currentDateStr = new Date().toISOString().split('T')[0];
 
     // Filter and format products for the specific venue
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formattedProducts = products?.map((product: any) => {
       // Find venue stock for the requested venue
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const venueStock = product.venue_stock?.find((vs: any) => 
         vs.venue?.name === venueName &&
         vs.qty_on_hand > 0 &&
