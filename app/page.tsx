@@ -1,125 +1,73 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 'lucide-react'
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
-import { createClient } from '@/lib/supabase/client'
-
+import AOIBookingForm from '@/components/AOIBookingForm'
 
 export default function LandingPage() {
   const [selectedVenue, setSelectedVenue] = useState("dubai")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('science')
-  const [savedUsername, setSavedUsername] = useState('')
-  const [realExperiences, setRealExperiences] = useState<Array<{id: string, name: string, price: number, duration_minutes: number}>>([])
-  const [selectedBookingExperience, setSelectedBookingExperience] = useState("")
-  const [bookingDate, setBookingDate] = useState("")
-  const [bookingTime, setBookingTime] = useState("")
-  const [guestName, setGuestName] = useState("")
-  const [guestEmail, setGuestEmail] = useState("")
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
-  const [loadingSlots, setLoadingSlots] = useState(false)
-  const [showVoiceAgent, setShowVoiceAgent] = useState(false)
-  const [hasAutoWelcomed, setHasAutoWelcomed] = useState(false)
-  const [showNoThanks, setShowNoThanks] = useState(false)
-  const [aiMessages, setAiMessages] = useState<Array<{role: 'user' | 'assistant', content: string}>>([])
-  const [userInput, setUserInput] = useState("")
-  const [isAiThinking, setIsAiThinking] = useState(false)
-  const [activeBookingMode, setActiveBookingMode] = useState<'quick_order' | 'profile_build'>('quick_order')
-  const [userMode, setUserMode] = useState<'anonymous' | 'authenticated'>('anonymous')
-  const [showEmailCapture, setShowEmailCapture] = useState(false)
-  // LiveKit room state removed
-  const supabase = createClient()
+  const [activeTab, setActiveTab] = useState('philosophy')
 
-  // Auto-welcome agent on page load
-  useEffect(() => {
-    if (!hasAutoWelcomed) {
-      const timer = setTimeout(() => {
-        setShowVoiceAgent(true)
-        setHasAutoWelcomed(true)
-        // Show "no thanks" option after 3 seconds
-        setTimeout(() => setShowNoThanks(true), 3000)
-      }, 2000) // 2 second delay after page load
-      
-      return () => clearTimeout(timer)
-    }
-  }, [hasAutoWelcomed])
-
-  // Handle "no thanks" - scroll down with purple pulse fade
-  const handleNoThanks = () => {
-    setShowVoiceAgent(false)
-    setShowNoThanks(false)
-    
-    // Smooth scroll to experiences section with purple pulse
-    const experiencesSection = document.getElementById('experiences')
-    if (experiencesSection) {
-      experiencesSection.scrollIntoView({ behavior: 'smooth' })
-      
-      // Add purple pulse effect
-      experiencesSection.style.animation = 'purple-pulse 2s ease-in-out'
-      setTimeout(() => {
-        experiencesSection.style.animation = ''
-      }, 2000)
-    }
-  }
 
   const experiences = [
     {
-      id: "aoi-air",
-      name: "AOI AIR",
-      description: "Standing light & sound shower with 10 LED panels for movement-based release",
+      id: "aoi",
+      name: "AOI",
+      description: "The core light & sound machine experience - immersive frequencies for cellular transformation",
       icon: "✨",
       duration: "20 min",
-      benefits: ["Energy boost", "Mental clarity", "Posture alignment"],
+      benefits: ["Cellular activation", "Frequency healing", "Energy alignment"],
       color: "from-purple-400 to-pink-400"
-    },
-    {
-      id: "aoi-air-pro",
-      name: "AOI AIR PRO",
-      description: "Enhanced standing experience with premium light & sound protocols",
-      icon: "⭐",
-      duration: "20 min",
-      benefits: ["Peak performance", "Advanced healing", "Optimal alignment"],
-      color: "from-purple-500 to-pink-500"
-    },
-    {
-      id: "aoi-air-extended",
-      name: "AOI AIR Extended",
-      description: "Extended standing session for deeper transformation",
-      icon: "✨",
-      duration: "50 min",
-      benefits: ["Deep transformation", "Extended healing", "Complete alignment"],
-      color: "from-purple-400 via-pink-400 to-cyan-400"
-    },
-    {
-      id: "aoi-bed",
-      name: "AOI BED",
-      description: "Full-body light immersion with vibration for deep cellular rejuvenation",
-      icon: "🛸",
-      duration: "60 min",
-      benefits: ["Deep relaxation", "Energy retention", "Cellular repair"],
-      color: "from-blue-400 to-cyan-400"
     },
     {
       id: "aoi-earth",
       name: "AOI EARTH",
-      description: "Grounding comfort session for profound relaxation",
+      description: "Horizontal lying bed version - grounding light & sound therapy for deep relaxation",
       icon: "🌍",
       duration: "45 min",
-      benefits: ["Stress relief", "Grounding", "Balance"],
+      benefits: ["Deep grounding", "Stress relief", "Restorative healing"],
       color: "from-green-400 to-emerald-400"
     },
     {
-      id: "aoi-float",
-      name: "AOI FLOAT",
-      description: "30-minute flotation tank for deep relaxation and toxin expulsion",
-      icon: "🌊",
-      duration: "30 min",
-      benefits: ["Deep relaxation", "Detoxification", "Muscle recovery"],
+      id: "aoi-air",
+      name: "AOI AIR",
+      description: "Standing light & sound experience for physical unwinding and movement-based release",
+      icon: "🌬️",
+      duration: "20 min",
+      benefits: ["Physical unwinding", "Movement therapy", "Postural alignment"],
       color: "from-cyan-400 to-blue-400"
+    },
+    {
+      id: "aoi-air-pro",
+      name: "AOI AIR PRO",
+      description: "Intense version of AOI AIR with advanced protocols for deeper transformation",
+      icon: "⭐",
+      duration: "30 min",
+      benefits: ["Advanced healing", "Peak performance", "Intensive unwinding"],
+      color: "from-purple-500 to-pink-500"
+    },
+    {
+      id: "ice-bath",
+      name: "Ice Bath",
+      description: "Cold immersion therapy for mental clarity, circulation boost and resilience training",
+      icon: "❄️",
+      duration: "6 min",
+      benefits: ["Mental clarity", "Circulation boost", "Resilience training"],
+      color: "from-blue-500 to-cyan-300"
+    },
+    {
+      id: "infrared-sauna",
+      name: "Infrared Sauna",
+      description: "Deep heat therapy for detoxification, cardiovascular stimulation and recovery",
+      icon: "🔥",
+      duration: "30 min",
+      benefits: ["Deep detox", "Cardiovascular boost", "Recovery"],
+      color: "from-red-400 to-orange-400"
     }
   ]
 
@@ -130,296 +78,12 @@ export default function LandingPage() {
     { id: "costa-rica", name: "Costa Rica", location: "Coming Soon", address: "" }
   ]
 
-  // Fetch real experiences from Supabase
-  useEffect(() => {
-    const fetchExperiences = async () => {
-      const { data } = await supabase
-        .from('venue_experiences')
-        .select(`
-          experiences(id, name, price, duration_minutes)
-        `)
-        .eq('venue_id', '20c2f440-9133-42ec-a8d6-6336e649ec4b') // AOI venue ID
-        .eq('is_available', true)
-      
-      if (data) {
-        const experiences = data
-          .filter(item => item.experiences)
-          .map(item => {
-            const exp = Array.isArray(item.experiences) ? item.experiences[0] : item.experiences;
-            if (!exp) return null;
-            return {
-              id: exp.id,
-              name: exp.name,
-              price: exp.price,
-              duration_minutes: exp.duration_minutes
-            };
-          })
-          .filter((exp): exp is {id: string, name: string, price: number, duration_minutes: number} => exp !== null)
-        setRealExperiences(experiences)
-      }
-    }
-    fetchExperiences()
-  }, [supabase])
-
-  // Generate available time slots based on existing bookings
-  const generateAvailableSlots = useCallback(async (date: string, experienceId: string) => {
-    if (!date || !experienceId) return []
-    
-    setLoadingSlots(true)
-    
-    try {
-      // Get selected experience duration
-      const selectedExp = realExperiences.find(exp => exp.id === experienceId)
-      const duration = selectedExp?.duration_minutes || 30
-      
-      // Fetch existing bookings for the date and experience
-      const { data: existingBookings } = await supabase
-        .from('cart_items')
-        .select(`
-          booking_metadata,
-          booking_status
-        `)
-        .eq('item_type', 'booking')
-        .eq('item_id', experienceId)
-        .in('booking_status', ['pending', 'confirmed', 'checked-in', 'active'])
-      
-      // Extract booked time slots
-      const bookedSlots = existingBookings
-        ?.filter(booking => 
-          booking.booking_metadata?.date === date
-        )
-        .map(booking => ({
-          time: booking.booking_metadata.time,
-          duration: booking.booking_metadata.duration_minutes || 30
-        })) || []
-      
-      // Generate all possible 15-minute slots from 9 AM to 9 PM
-      const allSlots: string[] = []
-      for (let hour = 9; hour < 21; hour++) {
-        for (let minute = 0; minute < 60; minute += 15) {
-          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
-          allSlots.push(timeString)
-        }
-      }
-      
-      // Filter out unavailable slots (with 10-minute buffer)
-      const availableSlots = allSlots.filter(slot => {
-        const [slotHour, slotMinute] = slot.split(':').map(Number)
-        const slotStart = slotHour * 60 + slotMinute
-        const slotEnd = slotStart + duration
-        
-        return !bookedSlots.some(booked => {
-          const [bookedHour, bookedMinute] = booked.time.split(':').map(Number)
-          const bookedStart = bookedHour * 60 + bookedMinute - 10 // 10-min buffer before
-          const bookedEnd = bookedStart + booked.duration + 20 // 10-min buffer after
-          
-          // Check if slot overlaps with booked time (including buffers)
-          return (slotStart < bookedEnd && slotEnd > bookedStart)
-        })
-      })
-      
-      // AI-powered time suggestions: prioritize optimal times
-      const suggestedSlots = availableSlots.sort((a, b) => {
-        const [aHour] = a.split(':').map(Number)
-        const [bHour] = b.split(':').map(Number)
-        
-        // Priority order: 10-12 AM (morning energy), 2-4 PM (afternoon clarity), 6-8 PM (evening wind-down)
-        const getTimePriority = (hour: number) => {
-          if (hour >= 10 && hour < 12) return 1 // Morning priority
-          if (hour >= 14 && hour < 16) return 2 // Afternoon priority  
-          if (hour >= 18 && hour < 20) return 3 // Evening priority
-          return 4 // Other times
-        }
-        
-        return getTimePriority(aHour) - getTimePriority(bHour)
-      })
-      
-      setAvailableTimeSlots(suggestedSlots)
-      return suggestedSlots
-    } catch (error) {
-      console.error('Error generating time slots:', error)
-      return []
-    } finally {
-      setLoadingSlots(false)
-    }
-  }, [supabase, realExperiences])
-
-  // Update available slots when date or experience changes
-  useEffect(() => {
-    if (bookingDate && selectedBookingExperience) {
-      generateAvailableSlots(bookingDate, selectedBookingExperience)
-    } else {
-      setAvailableTimeSlots([])
-    }
-  }, [bookingDate, selectedBookingExperience, generateAvailableSlots])
-
-  // AI chat functionality removed - LiveKit integration disabled
-  const handleAiChat = async () => {
-    if (!userInput.trim() || isAiThinking) return
-    
-    const newMessage = { role: 'user' as const, content: userInput }
-    setAiMessages(prev => [...prev, newMessage])
-    setUserInput('')
-    setIsAiThinking(true)
-    
-    // Simulate AI response for now
-    setTimeout(() => {
-      setAiMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "AI chat functionality is temporarily unavailable. Please use the booking form to schedule your session."
-      }])
-      setIsAiThinking(false)
-    }, 1000)
-  }
-
-  // Save username to localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('aoi-username')
-    if (saved) setSavedUsername(saved)
-  }, [])
-  
-  useEffect(() => {
-    if (savedUsername) {
-      localStorage.setItem('aoi-username', savedUsername)
-    }
-  }, [savedUsername])
-
-  // Handle booking form submission
-  const handleBookingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!selectedBookingExperience || !bookingDate || !bookingTime || !guestName) {
-      alert('Please fill in all required fields')
-      return
-    }
-
-    try {
-      const selectedExp = realExperiences.find(exp => exp.id === selectedBookingExperience)
-      if (!selectedExp) {
-        alert('Selected experience not found')
-        return
-      }
-
-      // Check if user has existing active cart to merge with
-      let cartId: string
-      const { data: existingCart } = await supabase
-        .from('cart_headers')
-        .select('id, total_amount')
-        .eq('customer_name', guestName)
-        .eq('status', 'active')
-        .maybeSingle()
-
-      if (existingCart) {
-        // Merge with existing cart
-        cartId = existingCart.id
-        
-        // Update total amount
-        await supabase
-          .from('cart_headers')
-          .update({
-            total_amount: (existingCart.total_amount || 0) + selectedExp.price
-          })
-          .eq('id', cartId)
-      } else {
-        // Create new cart
-        const { data: cartData, error: cartError } = await supabase
-          .from('cart_headers')
-          .insert({
-            customer_name: guestName,
-            customer_email: guestEmail || null,
-            venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b',
-            status: 'active',
-            total_amount: selectedExp.price,
-            payment_method: 'venue'
-          })
-          .select()
-          .single()
-
-        if (cartError) throw cartError
-        cartId = cartData.id
-      }
-
-      // Add the booking item to cart
-      const { error: itemError } = await supabase
-        .from('cart_items')
-        .insert({
-          cart_id: cartId,
-          item_id: selectedBookingExperience,
-          quantity: 1,
-          unit_price: selectedExp.price,
-          total_price: selectedExp.price,
-          booking_status: 'pending',
-          booking_metadata: {
-            date: bookingDate,
-            time: bookingTime,
-            duration_minutes: selectedExp.duration_minutes,
-            experience_name: selectedExp.name
-          }
-        })
-
-      if (itemError) throw itemError
-
-      const cartMessage = existingCart 
-        ? `Added ${selectedExp.name} to your cart! Continue adding more items or checkout when ready.`
-        : `${selectedExp.name} added to cart for ${bookingDate} at ${bookingTime}. You can add more experiences or drinks before checkout.`
-      
-      alert(cartMessage)
-      
-      // Reset form for next booking
-      setSelectedBookingExperience('')
-      setBookingTime('')
-      
-      // TODO: Show cart preview or redirect to checkout
-    } catch (error) {
-      console.error('Booking error:', error)
-      alert('There was an error processing your booking. Please try again.')
-    }
-  }
-
-
-  // QR + AI Journey Planning Agent with Location Context
-  // const startAIJourney = (orderSource: string = 'main-booking', qrToken?: string) => {
-  //   const locationContext = detectLocationContext(orderSource)
-  //   
-  //   // QR scan provides precise location context
-  //   if (qrToken) {
-  //     // Agent gets WHO + WHERE + WHEN + WHAT THEY'RE DOING
-  //     initializeQRContext(qrToken, locationContext, guestName)
-  //     setShowAIChat(true) // Show chat for QR context
-  //   } else {
-  //     setShowAIChat(true) // Fallback to chat
-  //     const contextualMessage = getContextualWelcome(locationContext)
-  //     setAiMessages([{
-  //       role: 'assistant' as const,
-  //       content: contextualMessage
-  //     }])
-  //   }
-  //   
-  //   // Trigger context initialization in AI agent
-  //   initializeAIContext(locationContext, guestName)
-  // }
 
 
 
 
 
 
-  // const handlePyramidOptionClick = (key: string) => {
-  //   console.log('Pyramid Option Click:', key)
-  //   
-  //   if (key === 'remind') {
-  //     // Set reminder logic
-  //     console.log('Setting reminder...')
-  //     setShowAIChat(false)
-  //     window.location.href = '#booking';
-  //   } else if (key === 'electrolyte' || key === 'water') {
-  //     // Alternative drink option
-  //     handlePyramidApexClick('dispense', key)
-  //   } else if (key === 'ai_guide') {
-  //     // Switch to AI chat
-  //     setShowAIChat(true)
-  //   }
-  // }
 
 
 
@@ -540,10 +204,10 @@ export default function LandingPage() {
               className="mb-8"
             >
               <h1 className="text-5xl md:text-7xl font-light text-white mb-4">
-                Redefine your well-being
+                Your wellbeing journey
                 <br />
                 <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent font-medium">
-                  in one session
+                  starts here
                 </span>
               </h1>
             </motion.div>
@@ -554,8 +218,8 @@ export default function LandingPage() {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="text-lg text-white/80 mb-12 max-w-2xl mx-auto leading-relaxed"
             >
-              AOI combines synchronized 528 Hz light and sound therapy for 360° cellular rejuvenation.
-              Experience the future of wellness through biophotonic technology.
+              Experience how AOI weaves together temperature, sound, light and stillness 
+              in perfect rhythm, creating the conditions for deep transformation.
             </motion.p>
 
             <motion.div
@@ -597,20 +261,20 @@ export default function LandingPage() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
-              How <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">AOI</span> Works
+              The Art of <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Implosion</span>
             </h2>
             <p className="text-white/70 max-w-2xl mx-auto">
-              Delivering nutrients in the form of photons directly to your DNA
+              Stop exploding onto the world. Turn inward to access your original code.
             </p>
           </motion.div>
 
           {/* Tab Navigation */}
           <div className="flex flex-wrap justify-center gap-2 mb-12">
             {[
-              { id: 'science', label: 'The Science', icon: <Brain className="w-4 h-4" /> },
+              { id: 'philosophy', label: 'The Philosophy', icon: <Brain className="w-4 h-4" /> },
+              { id: 'how-it-works', label: 'How It Works', icon: <Sparkles className="w-4 h-4" /> },
               { id: 'technology', label: 'Technology', icon: <Zap className="w-4 h-4" /> },
-              { id: 'benefits', label: 'Benefits', icon: <Award className="w-4 h-4" /> },
-              { id: 'founder', label: 'Founder', icon: <Users className="w-4 h-4" /> }
+              { id: 'founder', label: 'Creator', icon: <Users className="w-4 h-4" /> }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -629,58 +293,119 @@ export default function LandingPage() {
 
           {/* Tab Content */}
           <div className="max-w-4xl mx-auto">
-            {activeTab === 'science' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="grid md:grid-cols-3 gap-6"
-              >
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <Sparkles className="w-8 h-8 text-purple-400 mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-3">528 Hz Frequency</h3>
-                  <p className="text-white/60 text-sm">The love frequency that resonates with DNA repair and transformation</p>
-                </div>
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <Brain className="w-8 h-8 text-cyan-400 mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-3">Biophotonic Field</h3>
-                  <p className="text-white/60 text-sm">Light patterns targeting energetic pathways for cellular communication</p>
-                </div>
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <Zap className="w-8 h-8 text-pink-400 mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-3">360° Cell Rejuvenation</h3>
-                  <p className="text-white/60 text-sm">Synchronized sound and light frequencies for maximum cellular absorption</p>
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'technology' && (
+            {activeTab === 'philosophy' && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
               >
                 <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-medium text-white mb-4">AOI AIR - Light & Sound Shower</h3>
-                  <p className="text-white/60 mb-4">Standing device with 10 LED panels for movement-based release. Bodies naturally gravitate towards bodily expression, enabling release of mental and emotional patterns.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">10 LED Panels</span>
-                    <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Interactive Release</span>
-                    <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Movement Based</span>
-                  </div>
+                  <h3 className="text-xl font-medium text-white mb-4">Implosion vs Explosion</h3>
+                  <p className="text-white/60 mb-3">
+                    Humans have become addicted to exploding - constantly reacting, consuming, and pushing outward. 
+                    We've lost our connection to nature and how creation really takes its highest form: through implosion.
+                  </p>
+                  <p className="text-white/60">
+                    AOI invites you to turn inward, to implode your true potential onto the world without needing 
+                    to destroy your surroundings to grow.
+                  </p>
                 </div>
+                
                 <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-medium text-white mb-4">AOI BED - Light & Sound Bed</h3>
-                  <p className="text-white/60 mb-4">Comfortable relaxation experience like a solarium. Subwoofer installed on lower glass surface induces vibrations throughout the user&apos;s entire body for energy retention.</p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-cyan-500/20 rounded-full text-xs text-cyan-300">Full Body Vibration</span>
-                    <span className="px-3 py-1 bg-cyan-500/20 rounded-full text-xs text-cyan-300">Energy Retention</span>
-                    <span className="px-3 py-1 bg-cyan-500/20 rounded-full text-xs text-cyan-300">Solarium Style</span>
-                  </div>
+                  <h3 className="text-xl font-medium text-white mb-4">The 1% vs 99% Within</h3>
+                  <p className="text-white/60">
+                    Just as 1% controls 99% in the world, within you, 1% of your conscious mind tries to overcome 
+                    99% of contradicting information stored in your cells. Your "yes" fights against millions of 
+                    ancestral "nos". AOI helps clear this internal conflict.
+                  </p>
+                </div>
+                
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <h3 className="text-xl font-medium text-white mb-4">Beyond Replicas</h3>
+                  <p className="text-white/60">
+                    Most people are replicas - mimicking their ancestors or environment. It's hard to meet an original 
+                    expression because we're all copies in the same traffic jam. AOI helps you break free from being 
+                    just another copy and access your true originality.
+                  </p>
                 </div>
               </motion.div>
             )}
 
-            {activeTab === 'benefits' && (
+            {activeTab === 'how-it-works' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl">🧬</span>
+                    <h3 className="text-xl font-medium text-white">DNA as the Receiver of Creation</h3>
+                  </div>
+                  <p className="text-white/60 mb-3">
+                    Science tells us DNA is more than just a code for building the body. The truth is, most of DNA's function is not about proteins at all — it is about receiving and transmitting the subtle information of life itself.
+                  </p>
+                  <p className="text-white/60">
+                    Research reveals DNA functions as an antenna — tuned to light and sound — the fundamental carriers of creation.
+                  </p>
+                </div>
+                
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl">🌊</span>
+                    <h3 className="text-xl font-medium text-white">Light and Sound: The Fabric of the Physical World</h3>
+                  </div>
+                  <p className="text-white/60 mb-3">
+                    Everything we touch, taste, and see is born of vibration. Sound and light are the primal forces that come together to create reality.
+                  </p>
+                  <p className="text-white/60">
+                    The Art of Implosion weaves these forces into harmonic patterns that speak directly to your cells, reminding them of their original blueprint.
+                  </p>
+                </div>
+                
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl">🌿</span>
+                    <h3 className="text-xl font-medium text-white">Resonance With All That is Living</h3>
+                  </div>
+                  <p className="text-white/60">
+                    Because this code underlies all of life, AOI doesn't only touch humans — it works on plants, water, coffee, even perfume, because everything organic carries this vibrational memory. The same universal patterns resonate through every living thing.
+                  </p>
+                </div>
+                
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl">⚡</span>
+                    <h3 className="text-xl font-medium text-white">Binary Code and the Dance of Duality</h3>
+                  </div>
+                  <p className="text-white/60">
+                    In the yin and yang of space — light and dark, vibration and stillness — lies the binary code of creation. AOI translates that hidden binary into an experience you can feel with your body.
+                  </p>
+                </div>
+                
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl">🪞</span>
+                    <h3 className="text-xl font-medium text-white">The Mirror Effect</h3>
+                  </div>
+                  <p className="text-white/60">
+                    When AOI surrounds you with harmonic light and sound, your body naturally mirrors it back. Just like a greeting — "hello" answered with "hello" — your cells respond in kind, releasing what does not belong, remembering what does. This mirroring is the gateway to healing and transformation.
+                  </p>
+                </div>
+                
+                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="text-2xl">✨</span>
+                    <h3 className="text-xl font-medium text-white">Simplicity at the Core</h3>
+                  </div>
+                  <p className="text-white/60">
+                    It is not complicated. Just as a child learns by mirroring what is around them, you do not need to study AOI. You only need to experience it. In the simplicity of that exchange lies its power.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'technology' && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -740,112 +465,6 @@ export default function LandingPage() {
                 </div>
               </motion.div>
             )}
-
-            {activeTab === 'ai-guide' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10"
-              >
-                <div className="flex flex-col items-center text-center mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-cyan-400 to-purple-400 rounded-full flex items-center justify-center mb-4">
-                    <Brain className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-medium text-white mb-2">AI Journey Guide</h3>
-                  <p className="text-cyan-400 mb-4">Personalized guidance for your transformation</p>
-                </div>
-                
-                {/* Username Input */}
-                <div className="mb-6">
-                  <label className="text-white/70 text-sm mb-2 block">Your Name (saved locally)</label>
-                  <input 
-                    placeholder="Enter your name..." 
-                    value={savedUsername}
-                    onChange={(e) => setSavedUsername(e.target.value)}
-                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
-                  />
-                  <p className="text-white/40 text-xs mt-2">Stored locally - only email needed to unlock your profile</p>
-                </div>
-
-                {/* AI Chat Interface */}
-                <div className="bg-black/20 rounded-xl p-6 mb-6 min-h-[300px]">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-purple-400 rounded-full flex items-center justify-center">
-                      <Brain className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-white font-medium">AOI Guide</span>
-                    <span className="text-green-400 text-xs">● Online</span>
-                  </div>
-                  
-                  <div className="space-y-4 mb-4 max-h-48 overflow-y-auto">
-                    {aiMessages.length === 0 ? (
-                      <div className="text-white/60 text-sm">
-                        👋 Hello! I&apos;m your AOI Journey Guide. I understand where you are in your booking process and can provide personalized recommendations based on your needs.
-                        <br /><br />
-                        I can help with:
-                        <br />• Experience recommendations
-                        <br />• Guided meditation preparation
-                        <br />• Understanding your transformation goals
-                        <br />• Booking assistance
-                      </div>
-                    ) : (
-                      aiMessages.map((msg, idx) => (
-                        <div key={idx} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          {msg.role === 'assistant' && (
-                            <div className="w-6 h-6 bg-gradient-to-br from-cyan-400 to-purple-400 rounded-full flex items-center justify-center flex-shrink-0">
-                              <Brain className="w-3 h-3 text-white" />
-                            </div>
-                          )}
-                          <div className={`max-w-xs p-3 rounded-lg text-sm ${
-                            msg.role === 'user' 
-                              ? 'bg-purple-500/20 text-white ml-auto' 
-                              : 'bg-white/10 text-white/90'
-                          }`}>
-                            {msg.content}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <input 
-                      placeholder="Ask about experiences, preparation, or your journey..." 
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      className="flex-1 p-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 text-sm" 
-                      onKeyPress={(e) => e.key === 'Enter' && !isAiThinking && userInput.trim() && handleAiChat()}
-                    />
-                    <button 
-                      onClick={handleAiChat}
-                      disabled={isAiThinking || !userInput.trim()}
-                      className="px-4 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg text-white font-medium hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                    >
-                      {isAiThinking ? '...' : 'Send'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Audio Dock */}
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-white font-medium">Guided Meditation</h4>
-                    <span className="text-white/40 text-xs">Preparation Audio</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M8 5v10l8-5-8-5z" />
-                      </svg>
-                    </button>
-                    <div className="flex-1 bg-white/10 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-cyan-400 to-purple-400 h-2 rounded-full" style={{width: '0%'}}></div>
-                    </div>
-                    <span className="text-white/60 text-xs">0:00 / 5:30</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
           </div>
         </div>
       </section>
@@ -874,9 +493,15 @@ export default function LandingPage() {
                 key={exp.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
+                transition={{ duration: 0.4, delay: index * 0.05 }}
                 viewport={{ once: true }}
-                onClick={() => setSelectedBookingExperience(exp.id)}
+                onClick={() => {
+                  // Scroll to booking section when experience is clicked
+                  const bookingSection = document.getElementById('booking')
+                  if (bookingSection) {
+                    bookingSection.scrollIntoView({ behavior: 'smooth' })
+                  }
+                }}
                 data-experience={exp.id}
                 className="relative bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer group"
               >
@@ -896,9 +521,7 @@ export default function LandingPage() {
                   
                   <div className="flex flex-wrap gap-2">
                     {exp.benefits.map((benefit) => (
-                      <span key={benefit} className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/70">
-                        {benefit}
-                      </span>
+                      <span key={benefit} className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/70">{benefit}</span>
                     ))}
                   </div>
                 </div>
@@ -911,298 +534,10 @@ export default function LandingPage() {
       {/* Booking Section */}
       <section id="booking" className="py-24 px-4 bg-gradient-to-b from-black to-purple-950/30">
         <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-white/10"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-light text-white">Reserve Your Transformation</h3>
-              <button
-                onClick={() => setShowVoiceAgent(!showVoiceAgent)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg text-white text-sm hover:scale-105 transition-transform"
-              >
-                <Brain className="w-4 h-4" />
-                {showVoiceAgent ? 'Close' : 'AI Journey Planner'}
-              </button>
-            </div>
-            
-            {/* Venue Selection */}
-            <div className="mb-8">
-              <label className="text-white/70 text-sm mb-3 block">Select Location</label>
-              <div className="grid grid-cols-2 gap-3">
-                {venues.map((venue) => (
-                  <button
-                    key={venue.id}
-                    onClick={() => setSelectedVenue(venue.id)}
-                    className={`p-4 rounded-xl border transition-all ${
-                      selectedVenue === venue.id
-                        ? "bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-purple-400 text-white"
-                        : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
-                    }`}
-                  >
-                    <div className="font-medium">{venue.name}</div>
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">10 LED Panels</span>
-                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Interactive Release</span>
-                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Movement Based</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Booking Mode Tabs */}
-            <div className="mb-8">
-              <div className="flex bg-white/5 rounded-xl p-1 mb-6">
-                <button
-                  type="button"
-                  onClick={() => setActiveBookingMode('quick_order')}
-                  className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
-                    activeBookingMode === 'quick_order'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                      : 'text-white/60 hover:text-white/80'
-                  }`}
-                >
-                  Order at Venue
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveBookingMode('profile_build')}
-                  className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
-                    activeBookingMode === 'profile_build'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                      : 'text-white/60 hover:text-white/80'
-                  }`}
-                >
-                  Build Profile for Recommendations
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleBookingSubmit}>
-              {/* Experience Selector */}
-              <div className="mb-8">
-                <label className="text-white/70 text-sm mb-3 block">
-                  {activeBookingMode === 'quick_order' ? 'Select Experience' : 'Initial Experience (we&apos;ll recommend more)'}
-                </label>
-                <select 
-                  value={selectedBookingExperience}
-                  onChange={(e) => setSelectedBookingExperience(e.target.value)}
-                  className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white appearance-none cursor-pointer"
-                  required
-                >
-                  <option value="">
-                    {activeBookingMode === 'quick_order' ? 'Choose an experience...' : 'Start with any experience...'}
-                  </option>
-                  {realExperiences.map((exp) => (
-                    <option key={exp.id} value={exp.id}>
-                      {exp.name} - {exp.duration_minutes}min - AED {exp.price}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Date & Time */}
-              <div className="grid md:grid-cols-2 gap-4 mb-8">
-                <div>
-                  <label className="text-white/70 text-sm mb-2 block">Date</label>
-                  <input 
-                    type="date" 
-                    value={bookingDate}
-                    onChange={(e) => setBookingDate(e.target.value)}
-                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white" 
-                    required
-                    min={new Date().toISOString().split('T')[0]}
-                    max={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-                  />
-                </div>
-                <div>
-                  <label className="text-white/70 text-sm mb-2 block">
-                    Available Times
-                    {loadingSlots && <span className="text-purple-400 ml-2">Loading...</span>}
-                  </label>
-                  {availableTimeSlots.length > 0 ? (
-                    <select
-                      value={bookingTime}
-                      onChange={(e) => setBookingTime(e.target.value)}
-                      className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white appearance-none cursor-pointer"
-                      required
-                    >
-                      <option value="">Select available time...</option>
-                      {availableTimeSlots.map((slot) => (
-                        <option key={slot} value={slot}>
-                          {slot}
-                        </option>
-                      ))}
-                    </select>
-                  ) : bookingDate && selectedBookingExperience && !loadingSlots ? (
-                    <div className="w-full p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300 text-sm">
-                      No available slots for this date. Please select another date.
-                    </div>
-                  ) : (
-                    <div className="w-full p-4 bg-white/5 border border-white/10 rounded-xl text-white/50 text-sm">
-                      Select date and experience to see available times
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* User Mode Selection */}
-              {activeBookingMode === 'quick_order' && (
-                <div className="mb-6">
-                  <div className="flex bg-white/5 rounded-xl p-1 mb-4">
-                    <button
-                      type="button"
-                      onClick={() => setUserMode('anonymous')}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                        userMode === 'anonymous'
-                          ? 'bg-white/10 text-white'
-                          : 'text-white/50 hover:text-white/70'
-                      }`}
-                    >
-                      Continue as Guest
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setUserMode('authenticated')}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                        userMode === 'authenticated'
-                          ? 'bg-white/10 text-white'
-                          : 'text-white/50 hover:text-white/70'
-                      }`}
-                    >
-                      Save My Preferences
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Contact Info - Conditional based on mode */}
-              {userMode === 'authenticated' || activeBookingMode === 'profile_build' ? (
-                <div className="grid md:grid-cols-2 gap-4 mb-8">
-                  <input 
-                    placeholder="Your Name" 
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
-                    required
-                  />
-                  <input 
-                    placeholder="Email" 
-                    type="email" 
-                    value={guestEmail}
-                    onChange={(e) => setGuestEmail(e.target.value)}
-                    className="p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
-                    required={activeBookingMode === 'profile_build'}
-                  />
-                </div>
-              ) : (
-                <div className="mb-8">
-                  <input 
-                    placeholder="First name or nickname (optional)" 
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40" 
-                  />
-                  <p className="text-white/40 text-xs mt-2">
-                    Anonymous booking - no email required. Payment at venue.
-                  </p>
-                </div>
-              )}
-
-              <button 
-                type="submit"
-                className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-medium hover:scale-[1.02] transition-transform"
-              >
-                {userMode === 'anonymous' && activeBookingMode === 'quick_order' 
-                  ? 'Reserve Anonymously' 
-                  : activeBookingMode === 'profile_build'
-                  ? 'Start Building My Profile'
-                  : 'Reserve Your Session'
-                }
-              </button>
-              
-              {/* Optional email capture for anonymous users */}
-              {userMode === 'anonymous' && activeBookingMode === 'quick_order' && (
-                <div className="mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowEmailCapture(!showEmailCapture)}
-                    className="text-white/60 text-sm hover:text-white/80 transition-colors"
-                  >
-                    {showEmailCapture ? '↑ Hide' : '↓ Want session reminders?'}
-                  </button>
-                  {showEmailCapture && (
-                    <div className="mt-3">
-                      <input 
-                        placeholder="Email for booking confirmation (optional)" 
-                        type="email" 
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 text-sm" 
-                      />
-                      <p className="text-white/30 text-xs mt-1">
-                        We&apos;ll only send booking confirmation - no marketing emails
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </form>
-
-            <p className="text-white/40 text-xs text-center mt-4">
-              {userMode === 'anonymous' 
-                ? 'Anonymous booking - payment at venue, no data stored'
-                : 'Payment is collected at the venue after your session'
-              }
-            </p>
-          </motion.div>
+          <AOIBookingForm />
         </div>
       </section>
 
-      {/* Embedded Voice Agent - No Modal */}
-      {showVoiceAgent && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 20 }}
-          className="fixed bottom-6 right-6 z-50 w-80 h-64 bg-gradient-to-b from-purple-950/95 to-black/95 backdrop-blur-xl border border-purple-500/30 rounded-2xl shadow-2xl overflow-hidden"
-        >
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <h3 className="text-white font-semibold flex items-center gap-2">
-              <Brain className="w-4 h-4" />
-              AI Guide
-            </h3>
-            <button 
-              onClick={() => setShowVoiceAgent(false)}
-              className="text-white/60 hover:text-white transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="p-4 h-full flex flex-col">
-            <div className="flex-1">
-              <div className="text-center text-white/60 py-8">
-                Voice chat functionality has been removed.
-                Please use the booking form below to schedule your session.
-              </div>
-            </div>
-            {showNoThanks && (
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                onClick={handleNoThanks}
-                className="mt-3 px-3 py-2 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-xs rounded-lg transition-all border border-white/20"
-              >
-                No thanks, show me experiences
-              </motion.button>
-            )}
-          </div>
-        </motion.div>
-      )}
 
       {/* Footer */}
       <footer id="contact" className="py-12 px-4 border-t border-white/10 bg-black">
@@ -1210,7 +545,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-8">
             <div>
               <div className="text-2xl font-light text-white mb-2">AOI</div>
-              <div className="text-white/40 text-sm">Art of Implosion © 2024</div>
+              <div className="text-white/40 text-sm">Art of Implosion &copy; 2024</div>
             </div>
             <div className="flex gap-8">
               <Link href="/privacy" className="text-white/60 hover:text-white transition-colors">Privacy</Link>
