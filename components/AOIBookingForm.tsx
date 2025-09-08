@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, Brain } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 interface Experience {

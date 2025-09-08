@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // Hard-code AOI venue name since this is AOI-specific API
     const venueName = 'Art of Implosion x Johny Dar Experience';
