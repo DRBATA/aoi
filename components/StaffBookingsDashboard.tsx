@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Plus, Search, GlassWater, Home, ArrowLeft } from "lucide-react";
+import { Plus, Search, GlassWater, Home, ArrowLeft } from "lucide-react";
 import MinChat from "./MinChat";
 import BookingForm from './BookingForm';
 import CartSearchByEmail from './CartSearchByEmail';
@@ -556,10 +556,9 @@ export default function StaffBookingsDashboard() {
             <CartSearchByEmail 
               onEmailChange={handleEmailChange} 
               onCartClick={() => setShowAiSection(true)}
-              onSwitchToBooking={(email, cartId) => {
+              onSwitchToBooking={(email) => {
                 setSelectedCustomerEmail(email);
                 setActiveTab('create');
-                // TODO: Pass cartId to BookingForm component
               }}
             />
             

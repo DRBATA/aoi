@@ -39,7 +39,7 @@ export default function AOIBookingForm() {
       .eq('venue_id', AOI_VENUE_ID);
 
     if (data) {
-      const formattedExperiences = data.map((item: any) => ({
+      const formattedExperiences = data.map((item: { experience_id: string; experience_name: string; duration_minutes: number; venue_price: string }) => ({
         id: item.experience_id,
         name: item.experience_name,
         duration_minutes: item.duration_minutes,
@@ -80,7 +80,7 @@ export default function AOIBookingForm() {
           
           if (slotEndTime.getHours() > endHour) continue;
           
-          const hasConflict = existingBookings?.some((booking: any) => {
+          const hasConflict = existingBookings?.some((booking: { slot_time: string; duration_minutes: number }) => {
             const bookingStart = new Date(booking.slot_time);
             const bookingEnd = new Date(bookingStart.getTime() + (booking.duration_minutes + bufferTime) * 60000);
             const newSlotStart = slotTime;

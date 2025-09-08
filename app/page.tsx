@@ -9,7 +9,6 @@ import FloatingPaths from "@/components/kokonutui/floating-paths"
 import AOIBookingForm from '@/components/AOIBookingForm'
 
 export default function LandingPage() {
-  const [selectedVenue, setSelectedVenue] = useState("dubai")
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('philosophy')
 
@@ -69,13 +68,6 @@ export default function LandingPage() {
       benefits: ["Deep detox", "Cardiovascular boost", "Recovery"],
       color: "from-red-400 to-orange-400"
     }
-  ]
-
-  const venues = [
-    { id: "dubai", name: "Dubai", location: "The Johny Dar Experience", address: "Al Quoz" },
-    { id: "berlin", name: "Berlin", location: "ORGÆNIC Salon", address: "Berliner Freiheit" },
-    { id: "ibiza", name: "Ibiza", location: "Coming Soon", address: "" },
-    { id: "costa-rica", name: "Costa Rica", location: "Coming Soon", address: "" }
   ]
 
 
@@ -303,7 +295,7 @@ export default function LandingPage() {
                   <h3 className="text-xl font-medium text-white mb-4">Implosion vs Explosion</h3>
                   <p className="text-white/60 mb-3">
                     Humans have become addicted to exploding - constantly reacting, consuming, and pushing outward. 
-                    We've lost our connection to nature and how creation really takes its highest form: through implosion.
+                    We&apos;ve lost our connection to nature and how creation really takes its highest form: through implosion.
                   </p>
                   <p className="text-white/60">
                     AOI invites you to turn inward, to implode your true potential onto the world without needing 
@@ -315,16 +307,16 @@ export default function LandingPage() {
                   <h3 className="text-xl font-medium text-white mb-4">The 1% vs 99% Within</h3>
                   <p className="text-white/60">
                     Just as 1% controls 99% in the world, within you, 1% of your conscious mind tries to overcome 
-                    99% of contradicting information stored in your cells. Your "yes" fights against millions of 
-                    ancestral "nos". AOI helps clear this internal conflict.
+                    99% of contradicting information stored in your cells. Your &quot;yes&quot; fights against millions of 
+                    ancestral &quot;nos&quot;. AOI helps clear this internal conflict.
                   </p>
                 </div>
                 
                 <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
                   <h3 className="text-xl font-medium text-white mb-4">Beyond Replicas</h3>
                   <p className="text-white/60">
-                    Most people are replicas - mimicking their ancestors or environment. It's hard to meet an original 
-                    expression because we're all copies in the same traffic jam. AOI helps you break free from being 
+                    Most people are replicas - mimicking their ancestors or environment. It&apos;s hard to meet an original 
+                    expression because we&apos;re all copies in the same traffic jam. AOI helps you break free from being 
                     just another copy and access your true originality.
                   </p>
                 </div>
@@ -343,7 +335,7 @@ export default function LandingPage() {
                     <h3 className="text-xl font-medium text-white">DNA as the Receiver of Creation</h3>
                   </div>
                   <p className="text-white/60 mb-3">
-                    Science tells us DNA is more than just a code for building the body. The truth is, most of DNA's function is not about proteins at all — it is about receiving and transmitting the subtle information of life itself.
+                    Science tells us DNA is more than just a code for building the body. The truth is, most of DNA&apos;s function is not about proteins at all — it is about receiving and transmitting the subtle information of life itself.
                   </p>
                   <p className="text-white/60">
                     Research reveals DNA functions as an antenna — tuned to light and sound — the fundamental carriers of creation.
@@ -359,7 +351,7 @@ export default function LandingPage() {
                     Everything we touch, taste, and see is born of vibration. Sound and light are the primal forces that come together to create reality.
                   </p>
                   <p className="text-white/60">
-                    The Art of Implosion weaves these forces into harmonic patterns that speak directly to your cells, reminding them of their original blueprint.
+                    The binary code of creation operates through simple &quot;yes&quot; and &quot;no&quot; signals, like a cosmic computer program. When these signals align properly, they create coherence in your system.
                   </p>
                 </div>
                 
@@ -369,7 +361,7 @@ export default function LandingPage() {
                     <h3 className="text-xl font-medium text-white">Resonance With All That is Living</h3>
                   </div>
                   <p className="text-white/60">
-                    Because this code underlies all of life, AOI doesn't only touch humans — it works on plants, water, coffee, even perfume, because everything organic carries this vibrational memory. The same universal patterns resonate through every living thing.
+                    Because this code underlies all of life, AOI doesn&apos;t only touch humans — it works on plants, water, coffee, even perfume, because everything organic carries this vibrational memory. The same universal patterns resonate through every living thing.
                   </p>
                 </div>
                 
