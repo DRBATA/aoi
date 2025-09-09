@@ -7,7 +7,10 @@ export async function POST(req: Request) {
         experienceId, 
         slotTime, 
         customerEmail, 
-        customerName 
+        customerName,
+        preDrinks = [],
+        duringDrinks = [],
+        afterDrinks = []
     } = await req.json();
 
     if (!venueId || !experienceId || !slotTime || !customerEmail) {
@@ -76,7 +79,10 @@ export async function POST(req: Request) {
                 duration_minutes: venueExperience.duration_minutes,
                 customer_email: customerEmail,
                 customer_name: customerName,
-                booking_status: 'active'
+                booking_status: 'active',
+                pre_drinks: preDrinks,
+                during_drinks: duringDrinks,
+                after_drinks: afterDrinks
             })
             .select()
             .single();

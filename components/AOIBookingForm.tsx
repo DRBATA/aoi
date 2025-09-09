@@ -225,31 +225,6 @@ export default function AOIBookingForm() {
       const selectedSuggestionsList = selectedSuggestion !== null ? [suggestions[selectedSuggestion]] : [];
       
       if (selectedSuggestionsList.length > 0) {
-        // Find if there's a combo suggestion selected
-        const comboSuggestion = selectedSuggestionsList.find(s => s.timing === 'combo');
-        
-        if (comboSuggestion) {
-          // Use create-pathway-bookings for combo
-          const response = await fetch('/api/pathway-chat/create-pathway-bookings', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              pathway_id: comboSuggestion.pathway_id,
-              customer_email: customerEmail,
-              customer_name: customerName,
-              start_time: selectedTime,
-              selected_date: selectedDate
-            })
-          });
-
-          const result = await response.json();
-          if (response.ok) {
-            setMessage(`✅ Complete journey booked! ${result.message}`);
-            resetForm();
-          } else {
-            setMessage(`❌ ${result.error}`);
-          }
-        } else {
           // Handle individual before/after additions
           const bookings = [];
           
@@ -289,6 +264,11 @@ export default function AOIBookingForm() {
           // Create all bookings
           let allSuccess = true;
           for (const booking of bookings) {
+            // Find the suggestion that matches this booking to get drinks
+            const matchingSuggestion = selectedSuggestionsList.find(s => 
+              s.experience_id === booking.experience_id
+            );
+            
             const response = await fetch('/api/booking/create', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -297,7 +277,10 @@ export default function AOIBookingForm() {
                 experienceId: booking.experience_id,
                 slotTime: booking.slot_time,
                 customerEmail,
-                customerName
+                customerName,
+                preDrinks: matchingSuggestion?.pre_drinks || [],
+                duringDrinks: matchingSuggestion?.during_drinks || [],
+                afterDrinks: matchingSuggestion?.after_drinks || []
               })
             });
             
@@ -313,7 +296,6 @@ export default function AOIBookingForm() {
           } else {
             setMessage('❌ Some bookings failed. Please check availability.');
           }
-        }
       } else {
         // Single booking only
         const response = await fetch('/api/booking/create', {
@@ -337,7 +319,7 @@ export default function AOIBookingForm() {
           setMessage(`Error: ${result.error}`);
         }
       }
-    } catch {
+    } catch (error) {
       setMessage('There was an error processing your booking. Please try again.');
     } finally {
       setIsLoading(false);
