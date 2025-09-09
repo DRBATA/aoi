@@ -616,12 +616,21 @@ export default function StaffBookingsDashboard() {
                             <div>💰 AED {booking.venue_price}</div>
                           </div>
 
-                          {/* Pathway Drinks */}
-                          {(booking.pre_drinks?.length || booking.during_drinks?.length || booking.after_drinks?.length) && (
+                          {/* Pathway Drinks - Phase-based display */}
+                          {(
+                            (booking.booking_status === 'confirmed' && booking.pre_drinks?.length) ||
+                            (booking.booking_status === 'in_session' && booking.during_drinks?.length) ||
+                            (booking.booking_status === 'session_completed' && booking.after_drinks?.length)
+                          ) && (
                             <div className="space-y-2">
-                              <h4 className="text-sm font-medium text-gray-700">Recommended Drinks:</h4>
+                              <h4 className="text-sm font-medium text-gray-700">
+                                {booking.booking_status === 'confirmed' && 'Pre-Session Drinks:'}
+                                {booking.booking_status === 'in_session' && 'During Session Drinks:'}
+                                {booking.booking_status === 'session_completed' && 'Post-Session Drinks:'}
+                              </h4>
                               
-                              {booking.pre_drinks?.map((drink, idx) => (
+                              {/* Pre-session drinks (only when confirmed) */}
+                              {booking.booking_status === 'confirmed' && booking.pre_drinks?.map((drink, idx) => (
                                 <div key={`pre-${idx}`} className="flex items-center justify-between text-xs">
                                   <span className="text-blue-600">🥤 Pre: {drink.name}</span>
                                   <Button
@@ -635,7 +644,8 @@ export default function StaffBookingsDashboard() {
                                 </div>
                               ))}
 
-                              {booking.during_drinks?.map((drink, idx) => (
+                              {/* During-session drinks (only when in_session) */}
+                              {booking.booking_status === 'in_session' && booking.during_drinks?.map((drink, idx) => (
                                 <div key={`during-${idx}`} className="flex items-center justify-between text-xs">
                                   <span className="text-green-600">🍹 During: {drink.name}</span>
                                   <Button
@@ -649,7 +659,8 @@ export default function StaffBookingsDashboard() {
                                 </div>
                               ))}
 
-                              {booking.after_drinks?.map((drink, idx) => (
+                              {/* After-session drinks (only when session_completed) */}
+                              {booking.booking_status === 'session_completed' && booking.after_drinks?.map((drink, idx) => (
                                 <div key={`after-${idx}`} className="flex items-center justify-between text-xs">
                                   <span className="text-purple-600">🥛 After: {drink.name}</span>
                                   <Button
