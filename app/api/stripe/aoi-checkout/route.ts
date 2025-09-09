@@ -105,10 +105,10 @@ export async function POST(req: Request) {
       session_id: checkout.id 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AOI checkout session creation failed:", error);
     return NextResponse.json({ 
-      error: `Checkout Error: ${error.message}` 
+      error: `Checkout Error: ${error instanceof Error ? error.message : 'Unknown error'}` 
     }, { status: 500 });
   }
 }

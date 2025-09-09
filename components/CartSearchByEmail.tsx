@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { createClient } from '../lib/supabase/client';
+import PaymentButton from './PaymentButton';
 
 // Define TypeScript interfaces
 interface CartItem {
@@ -475,6 +476,7 @@ export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitch
                   >
                     + Drink
                   </button>
+                  <PaymentButton customerEmail={cart.customer_email} />
                 </div>
               </div>
             </div>

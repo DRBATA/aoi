@@ -119,7 +119,7 @@ export default function AOIBookingForm() {
     if (selectedExperience) {
       generateSuggestions();
     }
-  }, [selectedExperience, generateSuggestions]);
+  }, [selectedExperience, selectedTime, generateSuggestions]);
 
   const enrichWithDrinksData = useCallback(async () => {
     if (!selectedExperience || !selectedTime || suggestions.length === 0) return;
