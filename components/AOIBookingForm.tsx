@@ -54,17 +54,7 @@ export default function AOIBookingForm() {
     }
   }, [supabase]);
 
-  useEffect(() => {
-    fetchExperiencesCallback();
-  }, [fetchExperiencesCallback]);
-
-  useEffect(() => {
-    if (selectedExperience) {
-      generateSuggestions();
-    }
-  }, [selectedExperience]);
-
-  const generateSuggestions = useCallback(async () => {
+  const generateSuggestions: () => Promise<void> = useCallback(async () => {
     if (!selectedExperience || !selectedTime) return;
     
     setLoadingSuggestions(true);
@@ -86,13 +76,16 @@ export default function AOIBookingForm() {
         
         // Second call: AI enrichment in background
         setTimeout(() => enrichWithAI(), 100);
+        
+        // Third call: Drinks data enrichment in parallel
+        setTimeout(() => enrichWithDrinksData(), 150);
       }
     } catch (error) {
       console.error('Error generating suggestions:', error);
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [selectedExperience, selectedTime, generateSuggestions]);
+  }, [selectedExperience, selectedTime]);
 
   const enrichWithAI = useCallback(async () => {
     if (!selectedExperience || !selectedTime) return;
@@ -116,7 +109,51 @@ export default function AOIBookingForm() {
       console.error('Error enriching with AI:', error);
       // Keep original suggestions if AI fails
     }
-  }, [selectedExperience, selectedTime, generateSuggestions]);
+  }, [selectedExperience, selectedTime]);
+
+  useEffect(() => {
+    fetchExperiencesCallback();
+  }, [fetchExperiencesCallback]);
+
+  useEffect(() => {
+    if (selectedExperience) {
+      generateSuggestions();
+    }
+  }, [selectedExperience, generateSuggestions]);
+
+  const enrichWithDrinksData = useCallback(async () => {
+    if (!selectedExperience || !selectedTime || suggestions.length === 0) return;
+    
+    try {
+      // Fetch pathway data for each suggestion
+      const enrichedSuggestions = await Promise.all(
+        suggestions.map(async (suggestion: Record<string, unknown>) => {
+          const response = await fetch('/api/pathway-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              selected_experience_id: suggestion.experience_id,
+              pathway_id: suggestion.pathway_id,
+              get_drinks_only: true
+            })
+          });
+          
+          const data = await response.json();
+          return {
+            ...suggestion,
+            pre_drinks: data.pre_drinks || [],
+            during_drinks: data.during_drinks || [],
+            after_drinks: data.after_drinks || []
+          };
+        })
+      );
+      
+      setSuggestions(enrichedSuggestions);
+    } catch (error) {
+      console.error('Error enriching with drinks data:', error);
+      // Keep original suggestions if drinks fetch fails
+    }
+  }, [selectedExperience, selectedTime, suggestions]);
 
   useEffect(() => {
     const handleChatControl = (event: CustomEvent) => {

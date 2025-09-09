@@ -112,14 +112,51 @@ function generatePathwayReason(displayName: string, timing: 'before' | 'after', 
     `Optimal recovery with ${experienceName}`;
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { customer_email, selected_date, selected_experience_id, selected_time, ai_enrich = false } = await request.json();
+    const { 
+      selected_experience_id, 
+      selected_time, 
+      ai_enrich = false,
+      customer_email,
+      pathway_id,
+      get_drinks_only = false
+    } = await req.json();
     
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
+
+    // Handle drinks-only request for specific pathway
+    if (get_drinks_only && pathway_id) {
+      const { data: pathway } = await supabase
+        .from('experience_pathways')
+        .select('sequence')
+        .eq('id', pathway_id)
+        .single();
+
+      if (pathway && pathway.sequence) {
+        // Find the step that matches the selected experience
+        const step = pathway.sequence.find((s: { experience_id: string }) => 
+          s.experience_id === selected_experience_id
+        );
+        
+        if (step) {
+          return NextResponse.json({
+            pre_drinks: step.pre_drinks || [],
+            during_drinks: step.during_drinks || [],
+            after_drinks: step.after_drinks || []
+          });
+        }
+      }
+      
+      return NextResponse.json({
+        pre_drinks: [],
+        during_drinks: [],
+        after_drinks: []
+      });
+    }
 
     // If an experience is selected, return suggestion chips
     if (selected_experience_id && selected_time) {
@@ -240,7 +277,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Original pathway/drink recommendation logic
-    const today = selected_date || new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
     
     // Check existing bookings for this customer today
     const { data: existingBookings } = await supabase
