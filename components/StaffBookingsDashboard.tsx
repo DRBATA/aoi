@@ -807,5 +807,6 @@ export default function StaffBookingsDashboard() {
     </div>
   </div>
 )}
-</div>
-);
+    </div>
+  );
+}
