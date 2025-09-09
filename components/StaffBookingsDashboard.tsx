@@ -225,7 +225,7 @@ export default function StaffBookingsDashboard() {
     }
   };
 
-  const addDrinkToCart = async (drink: any, bookingId: string) => {
+  const addDrinkToCart = async (drink: Record<string, unknown>, bookingId: string) => {
     try {
       const response = await fetch('/api/cart/add-drink', {
         method: 'POST',

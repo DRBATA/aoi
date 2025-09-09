@@ -26,7 +26,7 @@ export default function AOIBookingForm() {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [isAIControlled, setIsAIControlled] = useState(false);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<Record<string, unknown>[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
@@ -85,7 +85,7 @@ export default function AOIBookingForm() {
         setSuggestions(data.suggestions || []);
         
         // Second call: AI enrichment in background
-        setTimeout(() => enrichWithAI(), 100);
+        setTimeout(() => enrichWithAI(data.suggestions || []), 100);
       }
     } catch (error) {
       console.error('Error generating suggestions:', error);
@@ -94,7 +94,7 @@ export default function AOIBookingForm() {
     }
   }, [selectedExperience, selectedTime]);
 
-  const enrichWithAI = useCallback(async () => {
+  const enrichWithAI = useCallback(async (baseSuggestions: Record<string, unknown>[]) => {
     if (!selectedExperience || !selectedTime) return;
     
     try {
@@ -207,7 +207,7 @@ export default function AOIBookingForm() {
         generateAvailableSlotsCallback(selectedDate, experience);
       }
     }
-  }, [selectedDate, selectedExperience, generateAvailableSlotsCallback, experiences]);
+  }, [selectedDate, selectedExperience, generateAvailableSlotsCallback]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,7 +233,7 @@ export default function AOIBookingForm() {
           if (beforeSuggestion) {
             // Calculate time for before experience
             const mainTime = new Date(`${selectedDate}T${selectedTime}:00`);
-            const beforeTime = new Date(mainTime.getTime() - (beforeSuggestion.duration + 15) * 60000);
+            const beforeTime = new Date(mainTime.getTime() - ((beforeSuggestion.duration as number) + 15) * 60000);
             bookings.push({
               experience_id: beforeSuggestion.experience_id,
               slot_time: beforeTime.toISOString(),
@@ -319,7 +319,7 @@ export default function AOIBookingForm() {
           setMessage(`Error: ${result.error}`);
         }
       }
-    } catch (error) {
+    } catch {
       setMessage('There was an error processing your booking. Please try again.');
     } finally {
       setIsLoading(false);
@@ -527,13 +527,13 @@ export default function AOIBookingForm() {
                     >
                       <div className="text-left">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-white font-medium">{suggestion.label}</span>
+                          <span className="text-white font-medium">{suggestion.label as string}</span>
                           {selectedSuggestion === index && (
                             <span className="text-green-400 text-sm ml-2">✓ Selected</span>
                           )}
                         </div>
-                        <p className="text-white/60 text-sm">{suggestion.reason}</p>
-                        <p className="text-white/50 text-xs mt-1">From: {suggestion.pathway_name}</p>
+                        <p className="text-white/60 text-sm">{suggestion.reason as string}</p>
+                        <p className="text-white/50 text-xs mt-1">From: {suggestion.pathway_name as string}</p>
                       </div>
                     </motion.button>
                   ))}
@@ -542,7 +542,7 @@ export default function AOIBookingForm() {
                   {suggestions.length > 0 && selectedSuggestion !== null && (
                     <div className="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
                       <p className="text-green-400 text-sm">
-                        ✓ {suggestions[selectedSuggestion]?.label} selected
+                        ✓ {suggestions[selectedSuggestion]?.label as string} selected
                       </p>
                     </div>
                   )}

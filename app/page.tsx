@@ -534,7 +534,7 @@ export default function LandingPage() {
             className="text-center mb-12"
           >
             <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
-              Let's Create Your <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Journey</span>
+              Let&apos;s Create Your <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Journey</span>
             </h2>
             <p className="text-white/70 max-w-2xl mx-auto">
               Chat with our wellness guide to find your perfect pathway, or book directly below

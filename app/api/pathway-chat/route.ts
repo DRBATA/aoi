@@ -5,11 +5,18 @@ import OpenAI from "openai";
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 // AI enrichment function using pathway descriptions
-async function enrichSuggestionsWithAI(suggestions: any[], selectedExperienceName: string) {
+interface Suggestion {
+  pathway_id: string;
+  pathway_name: string;
+  pathway_description: string;
+  [key: string]: unknown;
+}
+
+async function enrichSuggestionsWithAI(suggestions: Suggestion[], selectedExperienceName: string) {
   if (suggestions.length === 0) return suggestions;
   
   // Group suggestions by pathway for context separation
-  const pathwayGroups: { [key: string]: any } = {};
+  const pathwayGroups: { [key: string]: { pathway_name: string; pathway_description: string; chips: Suggestion[] } } = {};
   
   suggestions.forEach(suggestion => {
     const pathwayId = suggestion.pathway_id;
@@ -20,12 +27,7 @@ async function enrichSuggestionsWithAI(suggestions: any[], selectedExperienceNam
         chips: []
       };
     }
-    pathwayGroups[pathwayId].chips.push({
-      chip_id: `${suggestion.timing}-${suggestion.experience_id}`,
-      timing: suggestion.timing,
-      experience_name: suggestion.experience_name,
-      current_reason: suggestion.reason
-    });
+    pathwayGroups[pathwayId].chips.push(suggestion);
   });
 
   try {
@@ -56,9 +58,9 @@ Return JSON: {"enriched_reasons": [{"chip_id": "string", "reason": "string"}]}`
     // Merge AI explanations back into suggestions
     suggestions.forEach(suggestion => {
       const chipId = `${suggestion.timing}-${suggestion.experience_id}`;
-      const enriched = aiResult.enriched_reasons?.find((r: any) => r.chip_id === chipId);
-      if (enriched && enriched.reason) {
-        suggestion.reason = enriched.reason;
+      const enrichedSuggestion = suggestions.find((s: Suggestion) => s.pathway_id === suggestion.pathway_id);
+      if (enrichedSuggestion && aiResult.enriched_reasons?.find((r: Record<string, unknown>) => r.chip_id === chipId)?.reason) {
+        suggestion.reason = aiResult.enriched_reasons?.find((r: Record<string, unknown>) => r.chip_id === chipId)?.reason;
       }
     });
 
@@ -215,7 +217,12 @@ export async function POST(request: NextRequest) {
 
       // AI enrichment if requested
       if (ai_enrich && suggestions.length > 0) {
-        const enrichedSuggestions = await enrichSuggestionsWithAI(suggestions, selectedExperienceName);
+        const enrichedSuggestions = await enrichSuggestionsWithAI(suggestions.map((s: Record<string, unknown>) => ({
+          ...s,
+          pathway_id: s.pathway_id as string,
+          pathway_name: s.pathway_name as string,
+          pathway_description: s.pathway_description as string
+        })), selectedExperienceName);
         console.log('AI enrichment completed for', enrichedSuggestions.length, 'suggestions');
         
         return NextResponse.json({
@@ -272,7 +279,6 @@ export async function POST(request: NextRequest) {
     }
 
     // If bookings exist, show drink recommendations based on pathway
-    const bookingIds = existingBookings.map(b => b.id);
     const pathwayId = existingBookings[0]?.pathway_id;
     
     if (pathwayId) {
@@ -361,16 +367,20 @@ export async function POST(request: NextRequest) {
       }
 
       // Fallback - show individual experience drinks
-      return NextResponse.json({
-        title: "Add drinks to your bookings",
-        type: "individual_drinks",
-        choices: existingBookings.map(booking => ({
+      const bookingPromises = existingBookings.map(async (booking) => {
+        return {
           kind: "booking",
           id: booking.id,
           label: `Add drinks to ${booking.experience_name} (${new Date(booking.slot_time).toLocaleTimeString()})`,
           experience: booking.experience_name,
           time: booking.slot_time
-        }))
+        }
+      });
+      const bookingChoices = await Promise.all(bookingPromises);
+      return NextResponse.json({
+        title: "Add drinks to your bookings",
+        type: "individual_drinks",
+        choices: bookingChoices
       });
 
     return NextResponse.json({

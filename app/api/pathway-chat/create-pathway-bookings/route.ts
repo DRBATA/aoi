@@ -2,7 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 // Get buffer time based on pathway step transition
-function getStepBuffer(currentStep: any, nextStep: any, pathwayName: string): number {
+interface PathwayStep {
+  experience_name?: string;
+  duration: number;
+  price?: number;
+  pre_drinks?: unknown[];
+  during_drinks?: unknown[];
+  after_drinks?: unknown[];
+}
+
+function getStepBuffer(currentStep: PathwayStep, nextStep: PathwayStep, pathwayName: string): number {
   const name = pathwayName?.toLowerCase() || '';
   
   // Maxi pathways: Ice-Sauna-Ice continuous flow (no buffers)
@@ -92,7 +101,7 @@ export async function POST(req: NextRequest) {
       if (i === pathway.sequence.length - 1 && pathway.takeaway && Array.isArray(pathway.takeaway)) {
         booking.after_drinks = [
           ...(booking.after_drinks || []),
-          ...pathway.takeaway.map((item: any) => ({
+          ...pathway.takeaway.map((item: Record<string, unknown>) => ({
             ...item,
             timing: "takeaway"
           }))
@@ -127,20 +136,22 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
+    const bookingMessage = createdBookings.map((booking: Record<string, unknown>) => ({
+      id: booking.id,
+      experience: booking.experience_name,
+      time: new Date(booking.slot_time as string).toLocaleTimeString(),
+      drinks: {
+        pre: Array.isArray(booking.pre_drinks) ? booking.pre_drinks.length : 0,
+        during: Array.isArray(booking.during_drinks) ? booking.during_drinks.length : 0,
+        after: Array.isArray(booking.after_drinks) ? booking.after_drinks.length : 0
+      }
+    }));
+
     return NextResponse.json({ 
       success: true,
       message: `Created ${createdBookings.length} bookings for ${pathway.display_name}`,
       pathway: pathway.display_name,
-      bookings: createdBookings.map((b: any) => ({
-        id: b.id,
-        experience: b.experience_name,
-        time: new Date(b.slot_time).toLocaleTimeString(),
-        drinks: {
-          pre: b.pre_drinks?.length || 0,
-          during: b.during_drinks?.length || 0,
-          after: b.after_drinks?.length || 0
-        }
-      }))
+      bookings: bookingMessage
     });
 
   } catch (error) {
