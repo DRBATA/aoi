@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, GlassWater, Home, ArrowLeft } from "lucide-react";
+import { Plus, Search, GlassWater, Home, ArrowLeft, CreditCard, QrCode } from "lucide-react";
 import MinChat from "./MinChat";
 import BookingForm from './BookingForm';
 import CartSearchByEmail from './CartSearchByEmail';
@@ -48,6 +48,9 @@ export default function StaffBookingsDashboard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentUrl, setPaymentUrl] = useState<string>('');
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [generatingPayment, setGeneratingPayment] = useState(false);
   const [selectedCustomerEmail, setSelectedCustomerEmail] = useState<string>('');
   const [selectedExperience, setSelectedExperience] = useState('all');
   const [selectedTimeFilter, setSelectedTimeFilter] = useState('all');
@@ -68,6 +71,30 @@ export default function StaffBookingsDashboard() {
   const [previousTab, setPreviousTab] = useState<'dashboard' | 'create' | 'search' | 'drinks'>('dashboard');
 
   const supabase = createClient();
+
+  const generatePaymentLink = async (customerEmail: string) => {
+    setGeneratingPayment(true);
+    try {
+      const response = await fetch('/api/aoi-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_email: customerEmail })
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        setPaymentUrl(data.url);
+        setShowQRCode(true);
+      } else {
+        alert(data.error || 'Failed to generate payment link');
+      }
+    } catch (error) {
+      console.error('Error generating payment link:', error);
+      alert('Network error generating payment link');
+    } finally {
+      setGeneratingPayment(false);
+    }
+  };
 
   // Pre-fire AI search when email reaches 3+ characters
   const prefireAiSearch = useCallback(async (email: string) => {
@@ -583,27 +610,25 @@ export default function StaffBookingsDashboard() {
                             <Badge variant={booking.booking_status === 'active' ? 'default' : 'secondary'}>
                               {booking.booking_status}
                             </Badge>
-                            {booking.pathway_id && (
-                              <Badge variant="outline" className="text-purple-600 border-purple-300">
-                                Pathway
-                              </Badge>
-                            )}
                           </div>
-                          
                           <div className="flex gap-2">
-                            {(() => {
-                              const buttonState = getButtonState(booking);
-                              return (
-                                <Button
-                                  onClick={buttonState.action}
-                                  disabled={buttonState.disabled}
-                                  size="sm"
-                                  className={buttonState.className}
-                                >
-                                  {buttonState.text}
-                                </Button>
-                              );
-                            })()}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                            >
+                              View Details
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-green-600 border-green-600 hover:bg-green-50"
+                              onClick={() => generatePaymentLink(booking.customer_email)}
+                              disabled={generatingPayment}
+                            >
+                              <CreditCard className="w-4 h-4 mr-1" />
+                              {generatingPayment ? 'Generating...' : 'Payment'}
+                            </Button>
                           </div>
                         </div>
 
@@ -728,5 +753,59 @@ export default function StaffBookingsDashboard() {
       </div>
       </div>
     </div>
-  );
-}
+  </SheetContent>
+</Sheet>
+
+{/* QR Code Modal */}
+{showQRCode && (
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
+    <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 text-center">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">Payment QR Code</h2>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowQRCode(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          ✕
+        </Button>
+      </div>
+      
+      <div className="mb-6">
+        <div className="bg-gray-100 p-4 rounded-lg mb-4">
+          <QrCode className="w-32 h-32 mx-auto text-gray-600" />
+          <p className="text-sm text-gray-600 mt-2">
+            Customer scans this code to pay
+          </p>
+        </div>
+        
+        <div className="space-y-2">
+          <Button
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => window.open(paymentUrl, '_blank')}
+          >
+            Open Payment Link
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              navigator.clipboard.writeText(paymentUrl);
+              alert('Payment link copied to clipboard!');
+            }}
+          >
+            Copy Link
+          </Button>
+        </div>
+      </div>
+      
+      <p className="text-xs text-gray-500">
+        Payment link will expire in 24 hours
+      </p>
+    </div>
+  </div>
+)}
+</div>
+);
