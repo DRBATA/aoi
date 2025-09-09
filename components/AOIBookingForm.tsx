@@ -85,16 +85,16 @@ export default function AOIBookingForm() {
         setSuggestions(data.suggestions || []);
         
         // Second call: AI enrichment in background
-        setTimeout(() => enrichWithAI(data.suggestions || []), 100);
+        setTimeout(() => enrichWithAI(), 100);
       }
     } catch (error) {
       console.error('Error generating suggestions:', error);
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [selectedExperience, selectedTime]);
+  }, [selectedExperience, selectedTime, generateSuggestions]);
 
-  const enrichWithAI = useCallback(async (baseSuggestions: Record<string, unknown>[]) => {
+  const enrichWithAI = useCallback(async () => {
     if (!selectedExperience || !selectedTime) return;
     
     try {
@@ -116,7 +116,7 @@ export default function AOIBookingForm() {
       console.error('Error enriching with AI:', error);
       // Keep original suggestions if AI fails
     }
-  }, [selectedExperience, selectedTime]);
+  }, [selectedExperience, selectedTime, generateSuggestions]);
 
   useEffect(() => {
     const handleChatControl = (event: CustomEvent) => {
@@ -136,7 +136,7 @@ export default function AOIBookingForm() {
           setCustomerEmail(data.email || '');
           break;
         case 'submitBooking':
-          handleSubmit(new Event('submit') as any);
+          // Form submission handled by button click
           break;
       }
       
@@ -144,8 +144,8 @@ export default function AOIBookingForm() {
       setTimeout(() => setIsAIControlled(false), 2000);
     };
 
-    window.addEventListener('chatControlBooking' as any, handleChatControl as any);
-    return () => window.removeEventListener('chatControlBooking' as any, handleChatControl as any);
+    window.addEventListener('chatControlBooking' as keyof WindowEventMap, handleChatControl as EventListener);
+    return () => window.removeEventListener('chatControlBooking' as keyof WindowEventMap, handleChatControl as EventListener);
   }, []);
 
 
@@ -207,7 +207,7 @@ export default function AOIBookingForm() {
         generateAvailableSlotsCallback(selectedDate, experience);
       }
     }
-  }, [selectedDate, selectedExperience, generateAvailableSlotsCallback]);
+  }, [selectedDate, selectedExperience, generateAvailableSlotsCallback, experiences]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

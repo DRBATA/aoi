@@ -59,8 +59,9 @@ Return JSON: {"enriched_reasons": [{"chip_id": "string", "reason": "string"}]}`
     suggestions.forEach(suggestion => {
       const chipId = `${suggestion.timing}-${suggestion.experience_id}`;
       const enrichedSuggestion = suggestions.find((s: Suggestion) => s.pathway_id === suggestion.pathway_id);
-      if (enrichedSuggestion && aiResult.enriched_reasons?.find((r: Record<string, unknown>) => r.chip_id === chipId)?.reason) {
-        suggestion.reason = aiResult.enriched_reasons?.find((r: Record<string, unknown>) => r.chip_id === chipId)?.reason;
+      const reason = aiResult.enriched_reasons?.find((r: { chip_id: string; reason?: string }) => r.chip_id === chipId)?.reason;
+      if (enrichedSuggestion && reason) {
+        suggestion.reason = reason;
       }
     });
 
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
         .select('id, display_name, name, description, sequence, color, duration_minutes');
 
       console.log('Found pathways:', pathways?.length);
-      const suggestions: any[] = [];
+      const suggestions: Record<string, unknown>[] = [];
       let beforeCount = 0;
       let afterCount = 0;
       let comboCount = 0;
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
       for (const pathway of pathways || []) {
         const sequence = pathway.sequence;
         console.log('Checking pathway:', pathway.display_name, 'sequence:', sequence);
-        const experienceIndex = sequence.findIndex((step: any) => step.experience_id === selected_experience_id);
+        const experienceIndex = sequence.findIndex((step: { experience_id: string }) => step.experience_id === selected_experience_id);
         console.log('Experience index in', pathway.display_name, ':', experienceIndex);
         
         if (experienceIndex !== -1) {
@@ -304,23 +305,23 @@ export async function POST(request: NextRequest) {
             const sequenceStep = pathway.sequence[index];
             if (sequenceStep) {
               // Pre drinks
-              sequenceStep.pre_drinks?.forEach((drink: any) => {
+              sequenceStep.pre_drinks?.forEach((drink: Record<string, unknown>) => {
                 recommendations.push({
                   kind: "drink",
-                  id: drink.product_id,
-                  label: `${drink.name} (before ${booking.experience_name})`,
+                  id: drink.product_id as string,
+                  label: `${drink.name as string} (before ${booking.experience_name})`,
                   booking_id: booking.id,
                   timing: "pre",
-                  reason: drink.reason || `Optimal before ${booking.experience_name}`
+                  reason: (drink.reason as string) || `Optimal before ${booking.experience_name}`
                 });
               });
 
               // During drinks
-              sequenceStep.during_drinks?.forEach((drink: any) => {
+              sequenceStep.during_drinks?.forEach((drink: Record<string, unknown>) => {
                 recommendations.push({
                   kind: "drink",
-                  id: drink.product_id,
-                  label: `${drink.name} (during ${booking.experience_name})`,
+                  id: drink.product_id as string,
+                  label: `${drink.name as string} (during ${booking.experience_name})`,
                   booking_id: booking.id,
                   timing: "during",
                   reason: `Perfect companion for ${booking.experience_name}`
@@ -329,11 +330,11 @@ export async function POST(request: NextRequest) {
 
               // After drinks (only for last booking)
               if (index === existingBookings.length - 1) {
-                sequenceStep.after_drinks?.forEach((drink: any) => {
+                sequenceStep.after_drinks?.forEach((drink: Record<string, unknown>) => {
                   recommendations.push({
                     kind: "drink",
-                    id: drink.product_id,
-                    label: `${drink.name} (after session)`,
+                    id: drink.product_id as string,
+                    label: `${drink.name as string} (after session)`,
                     booking_id: booking.id,
                     timing: "after",
                     reason: "Perfect recovery drink"
@@ -341,14 +342,14 @@ export async function POST(request: NextRequest) {
                 });
 
                 // Add takeaway drinks
-                pathway.takeaway?.forEach((drink: any) => {
+                pathway.takeaway?.forEach((drink: Record<string, unknown>) => {
                   recommendations.push({
                     kind: "takeaway",
-                    id: drink.product_id,
-                    label: `${drink.name} x${drink.quantity} (take home)`,
+                    id: drink.product_id as string,
+                    label: `${drink.name as string} x${drink.quantity as number} (take home)`,
                     booking_id: booking.id,
                     timing: "takeaway",
-                    quantity: drink.quantity,
+                    quantity: drink.quantity as number,
                     reason: "Continue your journey at home"
                   });
                 });
