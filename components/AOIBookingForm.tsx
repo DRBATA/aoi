@@ -75,6 +75,10 @@ export default function AOIBookingForm() {
         setSuggestions(data.suggestions || []);
         
         // Second call: AI enrichment in background
+        // Note: Using setTimeout to avoid React Hook circular dependency.
+        // enrichWithAI and enrichWithDrinksData are defined after this useCallback,
+        // so including them in dependency array would create circular reference.
+        // The setTimeout pattern ensures these functions are called after render cycle.
         setTimeout(() => enrichWithAI(), 100);
         
         // Third call: Drinks data enrichment in parallel
@@ -85,7 +89,9 @@ export default function AOIBookingForm() {
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [selectedExperience, selectedTime]);
+  }, [selectedExperience, selectedTime]); 
+  // Note: enrichWithAI and enrichWithDrinksData are intentionally NOT in dependency array
+  // to avoid circular dependency. They're called via setTimeout after suggestions are set.
 
   const enrichWithAI = useCallback(async () => {
     if (!selectedExperience || !selectedTime) return;
