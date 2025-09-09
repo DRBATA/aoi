@@ -526,6 +526,21 @@ export default function LandingPage() {
       {/* Booking Section */}
       <section id="booking" className="py-24 px-4 bg-gradient-to-b from-black to-purple-950/30">
         <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
+              Let's Create Your <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Journey</span>
+            </h2>
+            <p className="text-white/70 max-w-2xl mx-auto">
+              Chat with our wellness guide to find your perfect pathway, or book directly below
+            </p>
+          </motion.div>
+
           <AOIBookingForm />
         </div>
       </section>

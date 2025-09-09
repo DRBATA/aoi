@@ -33,14 +33,29 @@ export async function POST(req: Request) {
             }, { status: 404 });
         }
 
-        // Check for conflicts - same venue, same time slot
+        // Check for conflicts - same venue, same time slot, or same machine
         const slotStart = new Date(slotTime);
         const slotEnd = new Date(slotStart.getTime() + (venueExperience.duration_minutes * 60000));
 
+        // Get machine conflicts (Air and Air PRO use same machine)
+        const airMachineExperiences = [
+            'c3447c0f-e775-4de5-99ca-30991daa0366', // AOI Air (20-min)
+            'f1516053-d4c0-4ea1-81dd-4cfba0caa60a', // AOI Air (30-min)
+            'e5e9fdbd-fa6e-4360-8a5a-4e19f87fbdfe', // AOI Air (50-min)
+            'ad77be13-e3f7-4acf-8535-82b6d22dd540', // AOI Air PRO (20-min)
+            '7acac09d-a790-49d8-908c-5ebddd9a1ce7', // AOI Air PRO (30-min)
+            'f6507cf0-7757-439e-9d4e-f1f8f84c95b0'  // AOI Air PRO (50-min)
+        ];
+
+        const conflictExperiences = airMachineExperiences.includes(experienceId) 
+            ? airMachineExperiences 
+            : [experienceId];
+
         const { data: conflicts } = await supabase
             .from('bookings')
-            .select('id')
+            .select('id, experience_id')
             .eq('venue_id', venueId)
+            .in('experience_id', conflictExperiences)
             .gte('slot_time', slotStart.toISOString())
             .lt('slot_time', slotEnd.toISOString())
             .in('booking_status', ['active', 'booked', 'ordered']);

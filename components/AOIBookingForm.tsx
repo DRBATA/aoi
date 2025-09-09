@@ -12,6 +12,7 @@ interface Experience {
   venue_price: number;
 }
 
+
 export default function AOIBookingForm() {
   const AOI_VENUE_ID = '20c2f440-9133-42ec-a8d6-6336e649ec4b';
   const [experiences, setExperiences] = useState<Experience[]>([]);
@@ -24,6 +25,10 @@ export default function AOIBookingForm() {
   const [message, setMessage] = useState('');
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [isAIControlled, setIsAIControlled] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const supabase = createClient();
 
@@ -52,6 +57,97 @@ export default function AOIBookingForm() {
   useEffect(() => {
     fetchExperiencesCallback();
   }, [fetchExperiencesCallback]);
+
+  useEffect(() => {
+    if (selectedExperience) {
+      generateSuggestions();
+    }
+  }, [selectedExperience]);
+
+  const generateSuggestions = useCallback(async () => {
+    if (!selectedExperience || !selectedTime) return;
+    
+    setLoadingSuggestions(true);
+    try {
+      // First call: Fast hardcoded suggestions
+      const response = await fetch('/api/pathway-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selected_experience_id: selectedExperience,
+          selected_time: selectedTime,
+          ai_enrich: false
+        })
+      });
+
+      const data = await response.json();
+      if (data.type === 'experience_suggestions') {
+        setSuggestions(data.suggestions || []);
+        
+        // Second call: AI enrichment in background
+        setTimeout(() => enrichWithAI(), 100);
+      }
+    } catch (error) {
+      console.error('Error generating suggestions:', error);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }, [selectedExperience, selectedTime]);
+
+  const enrichWithAI = useCallback(async () => {
+    if (!selectedExperience || !selectedTime) return;
+    
+    try {
+      const response = await fetch('/api/pathway-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selected_experience_id: selectedExperience,
+          selected_time: selectedTime,
+          ai_enrich: true
+        })
+      });
+
+      const data = await response.json();
+      if (data.type === 'experience_suggestions') {
+        setSuggestions(data.suggestions || []);
+      }
+    } catch (error) {
+      console.error('Error enriching with AI:', error);
+      // Keep original suggestions if AI fails
+    }
+  }, [selectedExperience, selectedTime]);
+
+  useEffect(() => {
+    const handleChatControl = (event: CustomEvent) => {
+      const { action, data } = event.detail;
+      
+      setIsAIControlled(true);
+      
+      switch(action) {
+        case 'selectDate':
+          setSelectedDate(data.date);
+          break;
+        case 'selectTime':
+          setSelectedTime(data.time);
+          break;
+        case 'setCustomerInfo':
+          setCustomerName(data.name || '');
+          setCustomerEmail(data.email || '');
+          break;
+        case 'submitBooking':
+          handleSubmit(new Event('submit') as any);
+          break;
+      }
+      
+      // Remove AI control indicator after 2 seconds
+      setTimeout(() => setIsAIControlled(false), 2000);
+    };
+
+    window.addEventListener('chatControlBooking' as any, handleChatControl as any);
+    return () => window.removeEventListener('chatControlBooking' as any, handleChatControl as any);
+  }, []);
+
 
   const generateAvailableSlotsCallback = useCallback(async (date: string, experience: Experience) => {
     setLoadingSlots(true);
@@ -124,36 +220,122 @@ export default function AOIBookingForm() {
       return;
     }
 
-    const slotDateTime = `${selectedDate}T${selectedTime}:00`;
-
     try {
-      const response = await fetch('/api/booking/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          venueId: AOI_VENUE_ID,
-          experienceId: selectedExperience,
-          slotTime: slotDateTime,
-          customerEmail,
-          customerName
-        }),
-      });
+      // Check if any suggestions are selected
+      const selectedSuggestionsList = selectedSuggestion !== null ? [suggestions[selectedSuggestion]] : [];
+      
+      if (selectedSuggestionsList.length > 0) {
+        // Find if there's a combo suggestion selected
+        const comboSuggestion = selectedSuggestionsList.find(s => s.timing === 'combo');
+        
+        if (comboSuggestion) {
+          // Use create-pathway-bookings for combo
+          const response = await fetch('/api/pathway-chat/create-pathway-bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              pathway_id: comboSuggestion.pathway_id,
+              customer_email: customerEmail,
+              customer_name: customerName,
+              start_time: selectedTime,
+              selected_date: selectedDate
+            })
+          });
 
-      const result = await response.json();
-
-      if (response.ok) {
-        const selectedExp = experiences.find(exp => exp.id === selectedExperience);
-        setMessage(`✓ Booking confirmed! Your ${selectedExp?.name} session is scheduled for ${selectedDate} at ${selectedTime}. ${customerEmail ? `Confirmation sent to ${customerEmail}.` : ''}`);
-        // Reset form
-        setSelectedExperience('');
-        setSelectedDate('');
-        setSelectedTime('');
-        setCustomerEmail('');
-        setCustomerName('');
+          const result = await response.json();
+          if (response.ok) {
+            setMessage(`✅ Complete journey booked! ${result.message}`);
+            resetForm();
+          } else {
+            setMessage(`❌ ${result.error}`);
+          }
+        } else {
+          // Handle individual before/after additions
+          const bookings = [];
+          
+          // Add before experience if selected
+          const beforeSuggestion = selectedSuggestionsList.find(s => s.timing === 'before');
+          if (beforeSuggestion) {
+            // Calculate time for before experience
+            const mainTime = new Date(`${selectedDate}T${selectedTime}:00`);
+            const beforeTime = new Date(mainTime.getTime() - (beforeSuggestion.duration + 15) * 60000);
+            bookings.push({
+              experience_id: beforeSuggestion.experience_id,
+              slot_time: beforeTime.toISOString(),
+              experience_name: beforeSuggestion.experience_name
+            });
+          }
+          
+          // Add main booking
+          bookings.push({
+            experience_id: selectedExperience,
+            slot_time: `${selectedDate}T${selectedTime}:00`,
+            experience_name: experiences.find(exp => exp.id === selectedExperience)?.name
+          });
+          
+          // Add after experience if selected
+          const afterSuggestion = selectedSuggestionsList.find(s => s.timing === 'after');
+          if (afterSuggestion) {
+            const mainExp = experiences.find(exp => exp.id === selectedExperience);
+            const mainTime = new Date(`${selectedDate}T${selectedTime}:00`);
+            const afterTime = new Date(mainTime.getTime() + (mainExp?.duration_minutes || 30 + 15) * 60000);
+            bookings.push({
+              experience_id: afterSuggestion.experience_id,
+              slot_time: afterTime.toISOString(),
+              experience_name: afterSuggestion.experience_name
+            });
+          }
+          
+          // Create all bookings
+          let allSuccess = true;
+          for (const booking of bookings) {
+            const response = await fetch('/api/booking/create', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                venueId: AOI_VENUE_ID,
+                experienceId: booking.experience_id,
+                slotTime: booking.slot_time,
+                customerEmail,
+                customerName
+              })
+            });
+            
+            if (!response.ok) {
+              allSuccess = false;
+              break;
+            }
+          }
+          
+          if (allSuccess) {
+            setMessage(`✅ All ${bookings.length} experiences booked successfully!`);
+            resetForm();
+          } else {
+            setMessage('❌ Some bookings failed. Please check availability.');
+          }
+        }
       } else {
-        setMessage(`Error: ${result.error}`);
+        // Single booking only
+        const response = await fetch('/api/booking/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            venueId: AOI_VENUE_ID,
+            experienceId: selectedExperience,
+            slotTime: `${selectedDate}T${selectedTime}:00`,
+            customerEmail,
+            customerName
+          })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          const selectedExp = experiences.find(exp => exp.id === selectedExperience);
+          setMessage(`✓ Booking confirmed! Your ${selectedExp?.name} session is scheduled for ${selectedDate} at ${selectedTime}.`);
+          resetForm();
+        } else {
+          setMessage(`Error: ${result.error}`);
+        }
       }
     } catch {
       setMessage('There was an error processing your booking. Please try again.');
@@ -161,6 +343,17 @@ export default function AOIBookingForm() {
       setIsLoading(false);
     }
   };
+
+  const resetForm = () => {
+    setSelectedExperience('');
+    setSelectedDate('');
+    setSelectedTime('');
+    setCustomerEmail('');
+    setCustomerName('');
+    setSuggestions([]);
+    setSelectedSuggestion(null);
+  };
+
 
   const selectedExp = experiences.find(exp => exp.id === selectedExperience);
 
@@ -191,6 +384,7 @@ export default function AOIBookingForm() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+
         {/* Experience Selector */}
         <div>
           <label className="text-white/70 text-sm mb-3 block">Select Experience</label>
@@ -303,6 +497,78 @@ export default function AOIBookingForm() {
           </motion.div>
         )}
 
+        {isAIControlled && (
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 text-purple-400 text-sm mb-6">
+            AI is controlling the form. Please wait for the AI to complete its actions.
+          </div>
+        )}
+
+        {/* Suggestion Chips */}
+        {selectedExp && selectedDate && selectedTime && (
+          <div className="space-y-3">
+            {loadingSuggestions ? (
+              <div className="space-y-2">
+                <p className="text-white/70 text-sm">Finding perfect combinations...</p>
+                <div className="flex flex-col gap-2">
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/20 animate-pulse">
+                    <div className="h-4 bg-white/10 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/20 animate-pulse">
+                    <div className="h-4 bg-white/10 rounded w-2/3 mb-2"></div>
+                    <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/20 animate-pulse">
+                    <div className="h-4 bg-white/10 rounded w-4/5 mb-2"></div>
+                    <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                  </div>
+                </div>
+              </div>
+            ) : suggestions.length > 0 ? (
+              <>
+                <p className="text-white/70 text-sm">Enhance your experience:</p>
+                <div className="flex flex-col gap-2">
+                  {suggestions.map((suggestion, index) => (
+                    <motion.button
+                      key={index}
+                      type="button"
+                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                        selectedSuggestion === index
+                          ? 'border-blue-500 bg-blue-50'
+                          : selectedSuggestion !== null && selectedSuggestion !== index
+                          ? 'border-gray-200 opacity-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => {
+                        setSelectedSuggestion(selectedSuggestion === index ? null : index);
+                      }}
+                    >
+                      <div className="text-left">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-white font-medium">{suggestion.label}</span>
+                          {selectedSuggestion === index && (
+                            <span className="text-green-400 text-sm ml-2">✓ Selected</span>
+                          )}
+                        </div>
+                        <p className="text-white/60 text-sm">{suggestion.reason}</p>
+                        <p className="text-white/50 text-xs mt-1">From: {suggestion.pathway_name}</p>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+                
+                  {suggestions.length > 0 && selectedSuggestion !== null && (
+                    <div className="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+                      <p className="text-green-400 text-sm">
+                        ✓ {suggestions[selectedSuggestion]?.label} selected
+                      </p>
+                    </div>
+                  )}
+              </>
+            ) : null}
+          </div>
+        )}
+
         <motion.button
           type="submit"
           disabled={isLoading}
@@ -310,8 +576,10 @@ export default function AOIBookingForm() {
           whileTap={{ scale: 0.98 }}
           className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
-          {isLoading ? 'Creating Booking...' : 'Reserve Your Session'}
+          {isLoading ? 'Creating Booking...' : 
+           selectedSuggestion !== null ? `Reserve ${suggestions[selectedSuggestion]?.timing === 'combo' ? 'Complete Journey' : '2 Experiences'}` : 'Reserve Your Session'}
         </motion.button>
+
       </form>
     </motion.div>
   );

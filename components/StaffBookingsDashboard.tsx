@@ -22,6 +22,26 @@ interface Booking {
   booking_status: string;
   venue_price: number;
   cart_id: string | null;
+  pre_drinks?: Array<{
+    product_id: string;
+    name: string;
+    quantity: number;
+    reason?: string;
+  }>;
+  during_drinks?: Array<{
+    product_id: string;
+    name: string;
+    quantity: number;
+    reason?: string;
+  }>;
+  after_drinks?: Array<{
+    product_id: string;
+    name: string;
+    quantity: number;
+    reason?: string;
+  }>;
+  drinks_consumed?: boolean;
+  pathway_id?: string;
 }
 
 export default function StaffBookingsDashboard() {
@@ -98,6 +118,11 @@ export default function StaffBookingsDashboard() {
           customer_name,
           booking_status,
           venue_id,
+          pre_drinks,
+          during_drinks,
+          after_drinks,
+          drinks_consumed,
+          pathway_id,
           experience_id,
           cart_id
         `)
@@ -200,22 +225,68 @@ export default function StaffBookingsDashboard() {
     }
   };
 
+  const addDrinkToCart = async (drink: any, bookingId: string) => {
+    try {
+      const response = await fetch('/api/cart/add-drink', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: drink.product_id,
+          qty: drink.quantity || 1,
+          where: 'here',
+          customerEmail: bookings.find(b => b.id === bookingId)?.customer_email
+        })
+      });
+
+      if (response.ok) {
+        alert(`✅ Added ${drink.name} to cart`);
+        // Mark drink as consumed in booking
+        await supabase
+          .from('bookings')
+          .update({ drinks_consumed: true })
+          .eq('id', bookingId);
+        
+        fetchBookingsCallback();
+      } else {
+        const error = await response.text();
+        alert(`Failed to add drink: ${error}`);
+      }
+    } catch (error) {
+      console.error('Error adding drink to cart:', error);
+      alert('Failed to add drink to cart');
+    }
+  };
+
   const completeSession = async (booking: Booking) => {
     try {
+      // Collect all drinks that should be added to cart
+      const allDrinks = [
+        ...(booking.pre_drinks || []),
+        ...(booking.during_drinks || []),
+        ...(booking.after_drinks || [])
+      ];
+
+      let addDrinks = false;
+      if (allDrinks.length > 0) {
+        addDrinks = confirm(`Add ${allDrinks.length} drinks to cart?\n${allDrinks.map(d => `• ${d.name}`).join('\n')}`);
+      }
+
       const response = await fetch('/api/booking/complete-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          bookingId: booking.id
+          bookingId: booking.id,
+          addDrinksToCart: addDrinks,
+          drinks: addDrinks ? allDrinks : []
         }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        alert(`✓ Session completed for ${booking.experience_name}`);
+        alert(`✓ Session completed for ${booking.experience_name}${addDrinks ? ' + drinks added to cart' : ''}`);
         // Check if customer has more sessions today
         const otherSessions = bookings.filter(b => 
           b.customer_email === booking.customer_email && 
@@ -505,36 +576,100 @@ export default function StaffBookingsDashboard() {
                         return experienceMatch && timeMatch;
                       })
                       .map((booking) => (
-                      <div key={booking.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-blue-50 bg-white/80">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                      <div key={booking.id} className="p-4 border border-gray-200 rounded-lg hover:bg-blue-50 bg-white/80">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
                             <h3 className="font-semibold text-gray-800">{booking.experience_name}</h3>
                             <Badge variant={booking.booking_status === 'active' ? 'default' : 'secondary'}>
                               {booking.booking_status}
                             </Badge>
+                            {booking.pathway_id && (
+                              <Badge variant="outline" className="text-purple-600 border-purple-300">
+                                Pathway
+                              </Badge>
+                            )}
                           </div>
+                          
+                          <div className="flex gap-2">
+                            {(() => {
+                              const buttonState = getButtonState(booking);
+                              return (
+                                <Button
+                                  onClick={buttonState.action}
+                                  disabled={buttonState.disabled}
+                                  size="sm"
+                                  className={buttonState.className}
+                                >
+                                  {buttonState.text}
+                                </Button>
+                              );
+                            })()}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Booking Details */}
                           <div className="text-sm text-gray-600 space-y-1">
                             <div>📍 {booking.venue_name}</div>
                             <div>⏰ {new Date(booking.slot_time).toLocaleTimeString()} ({booking.duration_minutes} min)</div>
                             <div>👤 {booking.customer_name} ({booking.customer_email})</div>
                             <div>💰 AED {booking.venue_price}</div>
                           </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          {(() => {
-                            const buttonState = getButtonState(booking);
-                            return (
-                              <Button
-                                onClick={buttonState.action}
-                                disabled={buttonState.disabled}
-                                size="sm"
-                                className={buttonState.className}
-                              >
-                                {buttonState.text}
-                              </Button>
-                            );
-                          })()}
+
+                          {/* Pathway Drinks */}
+                          {(booking.pre_drinks?.length || booking.during_drinks?.length || booking.after_drinks?.length) && (
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-medium text-gray-700">Recommended Drinks:</h4>
+                              
+                              {booking.pre_drinks?.map((drink, idx) => (
+                                <div key={`pre-${idx}`} className="flex items-center justify-between text-xs">
+                                  <span className="text-blue-600">🥤 Pre: {drink.name}</span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => addDrinkToCart(drink, booking.id)}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    Add to Cart
+                                  </Button>
+                                </div>
+                              ))}
+
+                              {booking.during_drinks?.map((drink, idx) => (
+                                <div key={`during-${idx}`} className="flex items-center justify-between text-xs">
+                                  <span className="text-green-600">🍹 During: {drink.name}</span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => addDrinkToCart(drink, booking.id)}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    Add to Cart
+                                  </Button>
+                                </div>
+                              ))}
+
+                              {booking.after_drinks?.map((drink, idx) => (
+                                <div key={`after-${idx}`} className="flex items-center justify-between text-xs">
+                                  <span className="text-purple-600">🥛 After: {drink.name}</span>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => addDrinkToCart(drink, booking.id)}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    Add to Cart
+                                  </Button>
+                                </div>
+                              ))}
+
+                              {booking.drinks_consumed && (
+                                <div className="text-xs text-green-600 font-medium">
+                                  ✅ Drinks added to cart
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
