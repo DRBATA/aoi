@@ -751,58 +751,61 @@ export default function StaffBookingsDashboard() {
           </div>
         )}
       </div>
+      </div>
     </div>
+  </SheetContent>
+</Sheet>
 
-    {/* QR Code Modal */}
-    {showQRCode && (
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
-        <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 text-center">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Payment QR Code</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowQRCode(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </Button>
-          </div>
-          
-          <div className="mb-6">
-            <div className="bg-gray-100 p-4 rounded-lg mb-4">
-              <QrCode className="w-32 h-32 mx-auto text-gray-600" />
-              <p className="text-sm text-gray-600 mt-2">
-                Customer scans this code to pay
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Button
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => window.open(paymentUrl, '_blank')}
-              >
-                Open Payment Link
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  navigator.clipboard.writeText(paymentUrl);
-                  alert('Payment link copied to clipboard!');
-                }}
-              >
-                Copy Link
-              </Button>
-            </div>
-          </div>
-          
-          <p className="text-xs text-gray-500">
-            Payment link will expire in 24 hours
+{/* QR Code Modal */}
+{showQRCode && (
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
+    <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 text-center">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">Payment QR Code</h2>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowQRCode(false)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          ✕
+        </Button>
+      </div>
+      
+      <div className="mb-6">
+        <div className="bg-gray-100 p-4 rounded-lg mb-4">
+          <QrCode className="w-32 h-32 mx-auto text-gray-600" />
+          <p className="text-sm text-gray-600 mt-2">
+            Customer scans this code to pay
           </p>
         </div>
+        
+        <div className="space-y-2">
+          <Button
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => window.open(paymentUrl, '_blank')}
+          >
+            Open Payment Link
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              navigator.clipboard.writeText(paymentUrl);
+              alert('Payment link copied to clipboard!');
+            }}
+          >
+            Copy Link
+          </Button>
+        </div>
       </div>
-    )}
-  );
-}
+      
+      <p className="text-xs text-gray-500">
+        Payment link will expire in 24 hours
+      </p>
+    </div>
+  </div>
+)}
+</div>
+);

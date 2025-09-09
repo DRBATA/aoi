@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Plus, Minus, Loader2, CreditCard, ShoppingCart } from "lucide-react"
+import { Plus, Minus, Loader2 } from "lucide-react"
 
 // Simple currency formatter
 const formatCurrency = (amount: number) => {
@@ -54,9 +54,6 @@ export default function AddDrinkTab({ customerEmail }: AddDrinkTabProps) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [email, setEmail] = useState(customerEmail || '')
   const [addingToCart, setAddingToCart] = useState<string | null>(null)
-  const [generatingPayment, setGeneratingPayment] = useState(false)
-  const [paymentUrl, setPaymentUrl] = useState<string>('')
-  const [showQRCode, setShowQRCode] = useState(false)
 
   // Fetch products on mount
   useEffect(() => {
@@ -189,51 +186,6 @@ export default function AddDrinkTab({ customerEmail }: AddDrinkTabProps) {
     return item?.quantity || 0
   }
 
-  const generatePaymentLink = async () => {
-    if (!email.trim()) {
-      alert('Please enter an email address')
-      return
-    }
-
-    if (cart.length === 0) {
-      alert('Please add items to cart first')
-      return
-    }
-
-    setGeneratingPayment(true)
-    try {
-      const response = await fetch('/api/aoi-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customer_email: email.trim() })
-      })
-
-      const data = await response.json()
-      if (data.url) {
-        setPaymentUrl(data.url)
-        setShowQRCode(true)
-      } else {
-        alert(data.error || 'Failed to generate payment link')
-      }
-    } catch (error) {
-      console.error('Error generating payment link:', error)
-      alert('Network error generating payment link')
-    } finally {
-      setGeneratingPayment(false)
-    }
-  }
-
-  const getTotalItems = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0)
-  }
-
-  const getTotalPrice = () => {
-    return cart.reduce((total, item) => {
-      const product = products.find(p => p.id === item.product_id)
-      return total + (product?.price || 0) * item.quantity
-    }, 0)
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -258,31 +210,6 @@ export default function AddDrinkTab({ customerEmail }: AddDrinkTabProps) {
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
         />
       </div>
-
-      {/* Cart Summary & Payment */}
-      {cart.length > 0 && (
-        <div className="bg-gradient-to-r from-green-100 to-blue-100 p-4 rounded-lg">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-green-600" />
-              <span className="font-medium text-gray-800">
-                Cart: {getTotalItems()} items - {formatCurrency(getTotalPrice())}
-              </span>
-            </div>
-            <Button
-              onClick={generatePaymentLink}
-              disabled={generatingPayment}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              <CreditCard className="w-4 h-4 mr-2" />
-              {generatingPayment ? 'Generating...' : 'Generate Payment'}
-            </Button>
-          </div>
-          <div className="text-sm text-gray-600">
-            Items will be charged to: {email}
-          </div>
-        </div>
-      )}
 
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-2 justify-center">
@@ -322,7 +249,7 @@ export default function AddDrinkTab({ customerEmail }: AddDrinkTabProps) {
           >
             <div className="relative h-32 w-full">
               <Image
-                src={product.image ? `https://thewater.bar/public/${product.image}` : "/placeholder.svg"}
+                src={product.image || "/placeholder.svg"}
                 alt={product.name}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -423,60 +350,6 @@ export default function AddDrinkTab({ customerEmail }: AddDrinkTabProps) {
               : 'No products available'
             }
           </p>
-        </div>
-      )}
-
-      {/* QR Code Modal */}
-      {showQRCode && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 text-center">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Payment QR Code</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowQRCode(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </Button>
-            </div>
-            
-            <div className="mb-6">
-              <div className="bg-gray-100 p-4 rounded-lg mb-4">
-                <div className="w-32 h-32 mx-auto bg-gray-300 rounded flex items-center justify-center">
-                  <span className="text-gray-600 text-sm">QR Code</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-2">
-                  Customer scans this code to pay
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                  onClick={() => window.open(paymentUrl, '_blank')}
-                >
-                  Open Payment Link
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    navigator.clipboard.writeText(paymentUrl);
-                    alert('Payment link copied to clipboard!');
-                  }}
-                >
-                  Copy Link
-                </Button>
-              </div>
-            </div>
-            
-            <p className="text-xs text-gray-500">
-              Payment link will expire in 24 hours
-            </p>
-          </div>
         </div>
       )}
     </div>
