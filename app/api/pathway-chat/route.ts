@@ -164,7 +164,7 @@ export async function POST(req: Request) {
       
       const { data: pathways } = await supabase
         .from('experience_pathways')
-        .select('id, display_name, name, description, sequence, color, duration_minutes');
+        .select('id, display_name, name, Description, sequence, duration_minutes, venue_id');
 
       console.log('Found pathways:', pathways?.length);
       const suggestions: Record<string, unknown>[] = [];
@@ -202,10 +202,10 @@ export async function POST(req: Request) {
               duration: preStep.duration,
               label: `Add ${preStep.experience_name} before (${preStep.duration}min)`,
               reason: preStep.reason || pathwayReason,
-              pathway_color: pathway.color || '#3B82F6',
+              pathway_color: '#3B82F6',
               pathway_name: pathway.display_name,
               pathway_id: pathway.id,
-              pathway_description: pathway.description
+              pathway_description: pathway.Description
             });
             beforeCount++;
           }
@@ -222,10 +222,10 @@ export async function POST(req: Request) {
               duration: postStep.duration,
               label: `Add ${postStep.experience_name} after (${postStep.duration}min)`,
               reason: postStep.reason || pathwayReason,
-              pathway_color: pathway.color || '#10B981',
+              pathway_color: '#10B981',
               pathway_name: pathway.display_name,
               pathway_id: pathway.id,
-              pathway_description: pathway.description
+              pathway_description: pathway.Description
             });
             afterCount++;
           }
@@ -243,10 +243,10 @@ export async function POST(req: Request) {
               post_experience_name: postStep.experience_name,
               label: `Complete ${pathway.display_name}: ${preStep.experience_name} + ${postStep.experience_name}`,
               total_duration: preStep.duration + sequence[experienceIndex].duration + postStep.duration,
-              pathway_color: pathway.color || '#F59E0B',
+              pathway_color: '#F59E0B',
               pathway_name: pathway.display_name,
               pathway_id: pathway.id,
-              pathway_description: pathway.description
+              pathway_description: pathway.Description
             });
             comboCount++;
           }
