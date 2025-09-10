@@ -1,6 +1,16 @@
-import { NextResponse } from "next/server";
-import { createClient } from '@supabase/supabase-js';
-import OpenAI from "openai";
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { OpenAI } from 'openai';
+
+// Helper function to get experience name
+async function getExperienceName(experienceId: string, supabase: any): Promise<string> {
+  const { data } = await supabase
+    .from('experiences')
+    .select('name')
+    .eq('id', experienceId)
+    .single();
+  return data?.name || 'Experience';
+}
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
@@ -241,19 +251,26 @@ export async function POST(req: Request) {
             );
             
             if (beforeSuggestion && afterSuggestion) {
+              // For Activate Maxi pathway, get the actual before/after from sequence
+              const beforeStep = sequence[experienceIndex - 1];
+              const afterStep = sequence[experienceIndex + 1];
+              
               suggestions.push({
                 kind: "experience_combo",
                 timing: "combo",
-                pre_experience_id: beforeSuggestion.experience_id,
-                pre_experience_name: beforeSuggestion.experience_name,
-                post_experience_id: afterSuggestion.experience_id,
-                post_experience_name: afterSuggestion.experience_name,
-                label: `Complete ${pathway.display_name}: ${beforeSuggestion.experience_name} + ${afterSuggestion.experience_name}`,
-                total_duration: (beforeSuggestion.duration as number) + sequence[experienceIndex].duration + (afterSuggestion.duration as number),
+                pre_experience_id: beforeStep ? beforeStep.experience_id : beforeSuggestion.experience_id,
+                pre_experience_name: beforeStep ? (await getExperienceName(beforeStep.experience_id, supabase)) : beforeSuggestion.experience_name,
+                post_experience_id: afterStep ? afterStep.experience_id : afterSuggestion.experience_id,
+                post_experience_name: afterStep ? (await getExperienceName(afterStep.experience_id, supabase)) : afterSuggestion.experience_name,
+                label: `Complete ${pathway.display_name}: ${beforeStep ? (await getExperienceName(beforeStep.experience_id, supabase)) : beforeSuggestion.experience_name} + ${afterStep ? (await getExperienceName(afterStep.experience_id, supabase)) : afterSuggestion.experience_name}`,
+                total_duration: (beforeStep ? beforeStep.duration : (beforeSuggestion.duration as number)) + sequence[experienceIndex].duration + (afterStep ? afterStep.duration : (afterSuggestion.duration as number)),
                 pathway_color: '#F59E0B',
                 pathway_name: pathway.display_name,
                 pathway_id: pathway.id,
-                pathway_description: pathway.Description
+                pathway_description: pathway.Description,
+                pre_drinks: beforeStep?.pre_drinks || [],
+                during_drinks: sequence[experienceIndex]?.during_drinks || [],
+                after_drinks: afterStep?.after_drinks || []
               });
               comboCount++;
             }

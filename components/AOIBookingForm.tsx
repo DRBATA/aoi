@@ -277,9 +277,15 @@ export default function AOIBookingForm() {
           
           // Handle combo selection (before + main + after)
           if (selectedChip.timing === 'combo') {
-            // Add before experience from combo
+            console.log('Combo chip selected:', selectedChip);
+            // Get main experience details
+            const mainExp = experiences.find(exp => exp.id === selectedExperience);
             const mainTime = new Date(`${selectedDate}T${selectedTime}:00`);
-            const beforeTime = new Date(mainTime.getTime() - ((selectedChip.duration as number || 30) + 10) * 60000);
+            
+            // Add before experience from combo
+            // Use a fixed 10-min duration for Ice Bath (before)
+            const beforeDuration = 10; // Ice Bath is typically 10 minutes
+            const beforeTime = new Date(mainTime.getTime() - (beforeDuration + 10) * 60000);
             bookings.push({
               experience_id: selectedChip.pre_experience_id,
               slot_time: beforeTime.toISOString(),
@@ -289,12 +295,11 @@ export default function AOIBookingForm() {
             // Add main booking
             bookings.push({
               experience_id: selectedExperience,
-              slot_time: `${selectedDate}T${selectedTime}:00`,
-              experience_name: experiences.find(exp => exp.id === selectedExperience)?.name
+              slot_time: mainTime.toISOString(),
+              experience_name: mainExp?.name
             });
             
             // Add after experience from combo
-            const mainExp = experiences.find(exp => exp.id === selectedExperience);
             const afterTime = new Date(mainTime.getTime() + ((mainExp?.duration_minutes || 30) + 10) * 60000);
             bookings.push({
               experience_id: selectedChip.post_experience_id,
@@ -336,7 +341,10 @@ export default function AOIBookingForm() {
           }
           
           // Create all bookings
+          console.log('Creating bookings:', bookings);
           let allSuccess = true;
+          let createdCount = 0;
+          
           for (const booking of bookings) {
             // For combo chips, use the selected chip for all bookings
             // For individual chips, match by experience_id
@@ -358,6 +366,8 @@ export default function AOIBookingForm() {
                 null
             };
             
+            console.log(`Creating booking ${createdCount + 1}/${bookings.length}:`, bookingData);
+            
             const response = await fetch('/api/booking/create', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -365,9 +375,12 @@ export default function AOIBookingForm() {
             });
             
             if (!response.ok) {
+              const errorData = await response.json();
+              console.error('Booking failed:', errorData);
               allSuccess = false;
               break;
             }
+            createdCount++;
           }
           
           if (allSuccess) {
