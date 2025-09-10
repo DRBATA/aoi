@@ -89,7 +89,7 @@ export default function AOIBookingForm() {
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [selectedExperience]);
+  }, [selectedExperience, selectedTime]);
 
   const enrichWithAI = useCallback(async () => {
     if (!selectedExperience) return;
@@ -113,7 +113,7 @@ export default function AOIBookingForm() {
       console.error('Error enriching with AI:', error);
       // Keep original suggestions if AI fails
     }
-  }, [selectedExperience]);
+  }, [selectedExperience, selectedTime]);
 
   useEffect(() => {
     fetchExperiencesCallback();
@@ -157,7 +157,7 @@ export default function AOIBookingForm() {
       console.error('Error enriching with drinks data:', error);
       // Keep original suggestions if drinks fetch fails
     }
-  }, [selectedExperience, suggestions.length]);
+  }, [selectedExperience, suggestions]);
 
   useEffect(() => {
     const handleChatControl = (event: CustomEvent) => {
@@ -274,7 +274,7 @@ export default function AOIBookingForm() {
           if (beforeSuggestion) {
             // Calculate time for before experience
             const mainTime = new Date(`${selectedDate}T${selectedTime}:00`);
-            const beforeTime = new Date(mainTime.getTime() - ((beforeSuggestion.duration as number) + 15) * 60000);
+            const beforeTime = new Date(mainTime.getTime() - ((beforeSuggestion.duration as number) + 10) * 60000);
             bookings.push({
               experience_id: beforeSuggestion.experience_id,
               slot_time: beforeTime.toISOString(),
@@ -294,7 +294,7 @@ export default function AOIBookingForm() {
           if (afterSuggestion) {
             const mainExp = experiences.find(exp => exp.id === selectedExperience);
             const mainTime = new Date(`${selectedDate}T${selectedTime}:00`);
-            const afterTime = new Date(mainTime.getTime() + (mainExp?.duration_minutes || 30 + 15) * 60000);
+            const afterTime = new Date(mainTime.getTime() + (mainExp?.duration_minutes || 30 + 10) * 60000);
             bookings.push({
               experience_id: afterSuggestion.experience_id,
               slot_time: afterTime.toISOString(),

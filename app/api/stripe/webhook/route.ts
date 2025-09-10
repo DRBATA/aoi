@@ -27,7 +27,6 @@ export async function POST(req: NextRequest) {
       
       // Extract metadata from the session
       const customerEmail = session.metadata?.customer_email;
-      const cartId = session.metadata?.cart_id;
       const venueId = session.metadata?.venue_id;
 
       if (!customerEmail) {

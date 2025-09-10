@@ -58,14 +58,21 @@ export async function POST(req: Request) {
 
         const { data: conflicts } = await supabase
             .from('bookings')
-            .select('id, experience_id')
+            .select('id, experience_id, slot_time, duration_minutes')
             .eq('venue_id', venueId)
             .in('experience_id', conflictExperiences)
-            .gte('slot_time', slotStart.toISOString())
-            .lt('slot_time', slotEnd.toISOString())
             .in('booking_status', ['active', 'booked', 'ordered']);
 
-        if (conflicts && conflicts.length > 0) {
+        // Check for time overlaps (not just start time conflicts)
+        const hasTimeConflict = conflicts?.some((existingBooking: { slot_time: string; duration_minutes: number }) => {
+            const existingStart = new Date(existingBooking.slot_time);
+            const existingEnd = new Date(existingStart.getTime() + existingBooking.duration_minutes * 60000);
+            
+            // Check if new booking overlaps with existing booking
+            return (slotStart < existingEnd && slotEnd > existingStart);
+        });
+
+        if (hasTimeConflict) {
             return NextResponse.json({ 
                 error: "Time slot not available - conflicts with existing booking" 
             }, { status: 409 });
@@ -101,7 +108,7 @@ export async function POST(req: Request) {
         try {
             // Fetch the actual drink details from drinks table
             const allDrinkIds = [...preDrinks, ...duringDrinks, ...afterDrinks];
-            let drinkDetails: any = {};
+            let drinkDetails: Record<string, { name: string; description: string }> = {};
             
             if (allDrinkIds.length > 0) {
                 const { data: drinks } = await supabase
@@ -110,7 +117,7 @@ export async function POST(req: Request) {
                     .in('id', allDrinkIds);
                 
                 if (drinks) {
-                    drinkDetails = drinks.reduce((acc: any, drink: any) => {
+                    drinkDetails = drinks.reduce((acc: Record<string, { name: string; description: string }>, drink: { id: string; name: string; description: string }) => {
                         acc[drink.id] = drink;
                         return acc;
                     }, {});
