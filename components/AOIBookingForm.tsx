@@ -149,13 +149,21 @@ export default function AOIBookingForm() {
     }
   }, [selectedExperience, generateSuggestions]);
   
-  // Trigger enrichments after suggestions are loaded
+  // Trigger enrichments after initial suggestions are loaded
+  const [hasEnriched, setHasEnriched] = useState(false);
+  
   useEffect(() => {
-    if (suggestions.length > 0 && selectedExperience) {
+    if (suggestions.length > 0 && selectedExperience && !hasEnriched) {
+      setHasEnriched(true);
       enrichWithAI();
       enrichWithDrinksData();
     }
-  }, [suggestions.length, selectedExperience, enrichWithAI, enrichWithDrinksData]);
+  }, [suggestions.length, selectedExperience, hasEnriched, enrichWithAI, enrichWithDrinksData]);
+  
+  // Reset enrichment flag when experience changes
+  useEffect(() => {
+    setHasEnriched(false);
+  }, [selectedExperience]);
 
   useEffect(() => {
     const handleChatControl = (event: CustomEvent) => {
@@ -264,49 +272,77 @@ export default function AOIBookingForm() {
       const selectedSuggestionsList = selectedSuggestion !== null ? [suggestions[selectedSuggestion]] : [];
       
       if (selectedSuggestionsList.length > 0) {
-          // Handle individual before/after additions
+          const selectedChip = selectedSuggestionsList[0];
           const bookings = [];
           
-          // Add before experience if selected
-          const beforeSuggestion = selectedSuggestionsList.find(s => s.timing === 'before');
-          if (beforeSuggestion) {
-            // Calculate time for before experience
+          // Handle combo selection (before + main + after)
+          if (selectedChip.timing === 'combo') {
+            // Add before experience from combo
             const mainTime = new Date(`${selectedDate}T${selectedTime}:00`);
-            const beforeTime = new Date(mainTime.getTime() - ((beforeSuggestion.duration as number) + 10) * 60000);
+            const beforeTime = new Date(mainTime.getTime() - ((selectedChip.duration as number || 30) + 10) * 60000);
             bookings.push({
-              experience_id: beforeSuggestion.experience_id,
+              experience_id: selectedChip.pre_experience_id,
               slot_time: beforeTime.toISOString(),
-              experience_name: beforeSuggestion.experience_name
+              experience_name: selectedChip.pre_experience_name
             });
-          }
-          
-          // Add main booking
-          bookings.push({
-            experience_id: selectedExperience,
-            slot_time: `${selectedDate}T${selectedTime}:00`,
-            experience_name: experiences.find(exp => exp.id === selectedExperience)?.name
-          });
-          
-          // Add after experience if selected
-          const afterSuggestion = selectedSuggestionsList.find(s => s.timing === 'after');
-          if (afterSuggestion) {
-            const mainExp = experiences.find(exp => exp.id === selectedExperience);
-            const mainTime = new Date(`${selectedDate}T${selectedTime}:00`);
-            const afterTime = new Date(mainTime.getTime() + (mainExp?.duration_minutes || 30 + 10) * 60000);
+            
+            // Add main booking
             bookings.push({
-              experience_id: afterSuggestion.experience_id,
-              slot_time: afterTime.toISOString(),
-              experience_name: afterSuggestion.experience_name
+              experience_id: selectedExperience,
+              slot_time: `${selectedDate}T${selectedTime}:00`,
+              experience_name: experiences.find(exp => exp.id === selectedExperience)?.name
             });
+            
+            // Add after experience from combo
+            const mainExp = experiences.find(exp => exp.id === selectedExperience);
+            const afterTime = new Date(mainTime.getTime() + ((mainExp?.duration_minutes || 30) + 10) * 60000);
+            bookings.push({
+              experience_id: selectedChip.post_experience_id,
+              slot_time: afterTime.toISOString(),
+              experience_name: selectedChip.post_experience_name
+            });
+          } else {
+            // Handle individual before/after additions
+            
+            // Add before experience if selected
+            if (selectedChip.timing === 'before') {
+              const mainTime = new Date(`${selectedDate}T${selectedTime}:00`);
+              const beforeTime = new Date(mainTime.getTime() - ((selectedChip.duration as number) + 10) * 60000);
+              bookings.push({
+                experience_id: selectedChip.experience_id,
+                slot_time: beforeTime.toISOString(),
+                experience_name: selectedChip.experience_name
+              });
+            }
+            
+            // Add main booking
+            bookings.push({
+              experience_id: selectedExperience,
+              slot_time: `${selectedDate}T${selectedTime}:00`,
+              experience_name: experiences.find(exp => exp.id === selectedExperience)?.name
+            });
+            
+            // Add after experience if selected
+            if (selectedChip.timing === 'after') {
+              const mainExp = experiences.find(exp => exp.id === selectedExperience);
+              const mainTime = new Date(`${selectedDate}T${selectedTime}:00`);
+              const afterTime = new Date(mainTime.getTime() + ((mainExp?.duration_minutes || 30) + 10) * 60000);
+              bookings.push({
+                experience_id: selectedChip.experience_id,
+                slot_time: afterTime.toISOString(),
+                experience_name: selectedChip.experience_name
+              });
+            }
           }
           
           // Create all bookings
           let allSuccess = true;
           for (const booking of bookings) {
-            // Find the suggestion that matches this booking to get drinks
-            const matchingSuggestion = selectedSuggestionsList.find(s => 
-              s.experience_id === booking.experience_id
-            );
+            // For combo chips, use the selected chip for all bookings
+            // For individual chips, match by experience_id
+            const matchingSuggestion = selectedChip.timing === 'combo' 
+              ? selectedChip 
+              : selectedSuggestionsList.find(s => s.experience_id === booking.experience_id);
             
             const bookingData = {
               venue_id: AOI_VENUE_ID,
