@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Call the migration function
-      const supabase = createClient();
+      const supabase = await createClient();
       
       try {
         const { data: orderId, error: migrationError } = await supabase
