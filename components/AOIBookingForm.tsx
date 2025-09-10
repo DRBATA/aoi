@@ -74,15 +74,11 @@ export default function AOIBookingForm() {
       if (data.type === 'experience_suggestions') {
         setSuggestions(data.suggestions || []);
         
-        // Second call: AI enrichment in background
-        // Note: Using setTimeout to avoid React Hook circular dependency.
-        // enrichWithAI and enrichWithDrinksData are defined after this useCallback,
-        // so including them in dependency array would create circular reference.
-        // The setTimeout pattern ensures these functions are called after render cycle.
-        setTimeout(() => enrichWithAI(), 100);
+        // Second call: AI enrichment in parallel
+        enrichWithAI();
         
         // Third call: Drinks data enrichment in parallel
-        setTimeout(() => enrichWithDrinksData(), 150);
+        enrichWithDrinksData();
       }
     } catch (error) {
       console.error('Error generating suggestions:', error);
@@ -310,19 +306,25 @@ export default function AOIBookingForm() {
               s.experience_id === booking.experience_id
             );
             
+            const selectedChip = selectedSuggestion !== null ? suggestions[selectedSuggestion] : null;
+            const bookingData = {
+              venue_id: venueId,
+              experience_id: booking.experience_id,
+              slot_time: booking.slot_time,
+              customer_email: email,
+              customer_name: name,
+              pre_drinks: matchingSuggestion?.pre_drinks || [],
+              during_drinks: matchingSuggestion?.during_drinks || [],
+              after_drinks: matchingSuggestion?.after_drinks || [],
+              booking_explanation: matchingSuggestion ? 
+                `${matchingSuggestion.pathway_name}: ${matchingSuggestion.reason}. ${matchingSuggestion.pathway_description || ''}` : 
+                null
+            };
+            
             const response = await fetch('/api/booking/create', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                venueId: AOI_VENUE_ID,
-                experienceId: booking.experience_id,
-                slotTime: booking.slot_time,
-                customerEmail,
-                customerName,
-                preDrinks: matchingSuggestion?.pre_drinks || [],
-                duringDrinks: matchingSuggestion?.during_drinks || [],
-                afterDrinks: matchingSuggestion?.after_drinks || []
-              })
+              body: JSON.stringify(bookingData)
             });
             
             if (!response.ok) {

@@ -5,14 +5,15 @@ import { AOIBookingConfirmationEmail } from '@/emails/aoi-booking-confirmation';
 
 export async function POST(req: Request) {
     const { 
-        venueId, 
-        experienceId, 
-        slotTime, 
-        customerEmail, 
-        customerName,
-        preDrinks = [],
-        duringDrinks = [],
-        afterDrinks = []
+        venue_id: venueId,
+        experience_id: experienceId, 
+        slot_time: slotTime,
+        customer_email: customerEmail,
+        customer_name: customerName,
+        pre_drinks: preDrinks = [],
+        during_drinks: duringDrinks = [],
+        after_drinks: afterDrinks = [],
+        booking_explanation: bookingExplanation = null
     } = await req.json();
 
     if (!venueId || !experienceId || !slotTime || !customerEmail) {
@@ -88,10 +89,11 @@ export async function POST(req: Request) {
                 duration_minutes: venueExperience.duration_minutes,
                 customer_email: customerEmail,
                 customer_name: customerName,
-                booking_status: 'active',
+                booking_status: 'sessions_scheduled',
                 pre_drinks: preDrinks,
                 during_drinks: duringDrinks,
-                after_drinks: afterDrinks
+                after_drinks: afterDrinks,
+                booking_explanation: bookingExplanation
             })
             .select()
             .single();
