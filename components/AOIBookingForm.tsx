@@ -54,7 +54,7 @@ export default function AOIBookingForm() {
     }
   }, [supabase]);
 
-  const generateSuggestions: () => Promise<void> = useCallback(async () => {
+  const generateSuggestions = useCallback(async () => {
     if (!selectedExperience) return;
     
     setLoadingSuggestions(true);
@@ -73,12 +73,6 @@ export default function AOIBookingForm() {
       const data = await response.json();
       if (data.type === 'experience_suggestions') {
         setSuggestions(data.suggestions || []);
-        
-        // Second call: AI enrichment in parallel
-        enrichWithAI();
-        
-        // Third call: Drinks data enrichment in parallel
-        enrichWithDrinksData();
       }
     } catch (error) {
       console.error('Error generating suggestions:', error);
@@ -120,6 +114,14 @@ export default function AOIBookingForm() {
       generateSuggestions();
     }
   }, [selectedExperience, generateSuggestions]);
+  
+  // Trigger enrichments after suggestions are loaded
+  useEffect(() => {
+    if (suggestions.length > 0 && selectedExperience) {
+      enrichWithAI();
+      enrichWithDrinksData();
+    }
+  }, [suggestions.length, selectedExperience, enrichWithAI, enrichWithDrinksData]);
 
   const enrichWithDrinksData = useCallback(async () => {
     if (!selectedExperience || suggestions.length === 0) return;
@@ -306,7 +308,6 @@ export default function AOIBookingForm() {
               s.experience_id === booking.experience_id
             );
             
-            const selectedChip = selectedSuggestion !== null ? suggestions[selectedSuggestion] : null;
             const bookingData = {
               venue_id: venueId,
               experience_id: booking.experience_id,
