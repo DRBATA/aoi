@@ -105,24 +105,6 @@ export default function AOIBookingForm() {
     }
   }, [selectedExperience, selectedTime]);
 
-  useEffect(() => {
-    fetchExperiencesCallback();
-  }, [fetchExperiencesCallback]);
-
-  useEffect(() => {
-    if (selectedExperience) {
-      generateSuggestions();
-    }
-  }, [selectedExperience, generateSuggestions]);
-  
-  // Trigger enrichments after suggestions are loaded
-  useEffect(() => {
-    if (suggestions.length > 0 && selectedExperience) {
-      enrichWithAI();
-      enrichWithDrinksData();
-    }
-  }, [suggestions.length, selectedExperience, enrichWithAI, enrichWithDrinksData]);
-
   const enrichWithDrinksData = useCallback(async () => {
     if (!selectedExperience || suggestions.length === 0) return;
     
@@ -156,6 +138,24 @@ export default function AOIBookingForm() {
       // Keep original suggestions if drinks fetch fails
     }
   }, [selectedExperience, suggestions]);
+
+  useEffect(() => {
+    fetchExperiencesCallback();
+  }, [fetchExperiencesCallback]);
+
+  useEffect(() => {
+    if (selectedExperience) {
+      generateSuggestions();
+    }
+  }, [selectedExperience, generateSuggestions]);
+  
+  // Trigger enrichments after suggestions are loaded
+  useEffect(() => {
+    if (suggestions.length > 0 && selectedExperience) {
+      enrichWithAI();
+      enrichWithDrinksData();
+    }
+  }, [suggestions.length, selectedExperience, enrichWithAI, enrichWithDrinksData]);
 
   useEffect(() => {
     const handleChatControl = (event: CustomEvent) => {
@@ -309,11 +309,11 @@ export default function AOIBookingForm() {
             );
             
             const bookingData = {
-              venue_id: venueId,
+              venue_id: AOI_VENUE_ID,
               experience_id: booking.experience_id,
               slot_time: booking.slot_time,
-              customer_email: email,
-              customer_name: name,
+              customer_email: customerEmail,
+              customer_name: customerName,
               pre_drinks: matchingSuggestion?.pre_drinks || [],
               during_drinks: matchingSuggestion?.during_drinks || [],
               after_drinks: matchingSuggestion?.after_drinks || [],
