@@ -159,7 +159,7 @@ export async function POST(req: Request) {
     }
 
     // If an experience is selected, return suggestion chips
-    if (selected_experience_id && selected_time) {
+    if (selected_experience_id) {
       console.log('Fetching suggestions for experience:', selected_experience_id, 'at time:', selected_time);
       
       const { data: pathways } = await supabase
@@ -178,7 +178,7 @@ export async function POST(req: Request) {
       // Find pathways containing this experience (allow multiple suggestions)
       for (const pathway of pathways || []) {
         const sequence = pathway.sequence;
-        console.log('Checking pathway:', pathway.display_name, 'sequence:', sequence);
+        console.log('Checking pathway:', pathway.display_name, 'sequence:', JSON.stringify(sequence));
         const experienceIndex = sequence.findIndex((step: { experience_id: string }) => step.experience_id === selected_experience_id);
         console.log('Experience index in', pathway.display_name, ':', experienceIndex);
         

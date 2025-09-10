@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/client";
+import { Resend } from 'resend';
+import { AOIBookingConfirmationEmail } from '@/emails/aoi-booking-confirmation';
 
 export async function POST(req: Request) {
     const { 
@@ -93,6 +95,61 @@ export async function POST(req: Request) {
                 error: "Failed to create booking", 
                 details: bookingError.message 
             }, { status: 500 });
+        }
+
+        // Send booking confirmation email with preflight menu
+        try {
+            // Fetch the actual drink details from drinks table
+            const allDrinkIds = [...preDrinks, ...duringDrinks, ...afterDrinks];
+            let drinkDetails: any = {};
+            
+            if (allDrinkIds.length > 0) {
+                const { data: drinks } = await supabase
+                    .from('drinks')
+                    .select('id, name, description')
+                    .in('id', allDrinkIds);
+                
+                if (drinks) {
+                    drinkDetails = drinks.reduce((acc: any, drink: any) => {
+                        acc[drink.id] = drink;
+                        return acc;
+                    }, {});
+                }
+            }
+
+            // Format drinks for email
+            const formatDrinks = (drinkIds: string[]) => {
+                return drinkIds.map(id => ({
+                    name: drinkDetails[id]?.name || 'Specialty Drink',
+                    description: drinkDetails[id]?.description || 'Curated for your wellness journey'
+                }));
+            };
+
+            const resend = new Resend(process.env.RESEND_API_KEY);
+            
+            await resend.emails.send({
+                from: 'AOI Experience <hello@thewater.bar>',
+                to: [customerEmail],
+                subject: `Your ${venueExperience.experience_name} Booking is Confirmed!`,
+                react: AOIBookingConfirmationEmail({
+                    customerName: customerName || customerEmail.split('@')[0],
+                    bookingId: booking.id,
+                    experienceName: venueExperience.experience_name,
+                    slotTime: slotTime,
+                    durationMinutes: venueExperience.duration_minutes,
+                    venueName: venueExperience.venue_name || 'AOI Wellness Center',
+                    preflightMenu: {
+                        preDrinks: formatDrinks(preDrinks),
+                        duringDrinks: formatDrinks(duringDrinks),
+                        afterDrinks: formatDrinks(afterDrinks)
+                    }
+                })
+            });
+
+            console.log('Booking confirmation email sent to:', customerEmail);
+        } catch (emailError) {
+            console.error('Failed to send booking confirmation email:', emailError);
+            // Don't fail the booking if email fails
         }
 
         return NextResponse.json({ 
