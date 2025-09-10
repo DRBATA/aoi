@@ -230,25 +230,33 @@ export async function POST(req: Request) {
             afterCount++;
           }
 
-          // Combo suggestion (complete pathway) - only 1
-          if (experienceIndex > 0 && experienceIndex < sequence.length - 1 && comboCount === 0) {
-            const preStep = sequence[experienceIndex - 1];
-            const postStep = sequence[experienceIndex + 1];
-            suggestions.push({
-              kind: "experience_combo",
-              timing: "combo",
-              pre_experience_id: preStep.experience_id,
-              pre_experience_name: preStep.experience_name,
-              post_experience_id: postStep.experience_id,
-              post_experience_name: postStep.experience_name,
-              label: `Complete ${pathway.display_name}: ${preStep.experience_name} + ${postStep.experience_name}`,
-              total_duration: preStep.duration + sequence[experienceIndex].duration + postStep.duration,
-              pathway_color: '#F59E0B',
-              pathway_name: pathway.display_name,
-              pathway_id: pathway.id,
-              pathway_description: pathway.Description
-            });
-            comboCount++;
+          // Combo suggestion - generate if we have both before and after options
+          if (beforeCount > 0 && afterCount > 0 && comboCount === 0) {
+            // Find the most recent before and after suggestions for this pathway
+            const beforeSuggestion = suggestions.find(s => 
+              s.timing === 'before' && s.pathway_id === pathway.id
+            );
+            const afterSuggestion = suggestions.find(s => 
+              s.timing === 'after' && s.pathway_id === pathway.id
+            );
+            
+            if (beforeSuggestion && afterSuggestion) {
+              suggestions.push({
+                kind: "experience_combo",
+                timing: "combo",
+                pre_experience_id: beforeSuggestion.experience_id,
+                pre_experience_name: beforeSuggestion.experience_name,
+                post_experience_id: afterSuggestion.experience_id,
+                post_experience_name: afterSuggestion.experience_name,
+                label: `Complete ${pathway.display_name}: ${beforeSuggestion.experience_name} + ${afterSuggestion.experience_name}`,
+                total_duration: (beforeSuggestion.duration as number) + sequence[experienceIndex].duration + (afterSuggestion.duration as number),
+                pathway_color: '#F59E0B',
+                pathway_name: pathway.display_name,
+                pathway_id: pathway.id,
+                pathway_description: pathway.Description
+              });
+              comboCount++;
+            }
           }
         }
       }
