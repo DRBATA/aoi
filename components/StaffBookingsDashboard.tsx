@@ -151,7 +151,12 @@ export default function StaffBookingsDashboard() {
             customer_name: booking.customer_name,
             booking_status: booking.booking_status,
             venue_price: parseFloat(expData?.venue_price || '0'),
-            cart_id: booking.cart_id
+            cart_id: booking.cart_id,
+            pre_drinks: booking.pre_drinks,
+            during_drinks: booking.during_drinks,
+            after_drinks: booking.after_drinks,
+            drinks_consumed: booking.drinks_consumed,
+            pathway_id: booking.pathway_id
           };
       }) || []);
       setBookings(formattedBookings);
