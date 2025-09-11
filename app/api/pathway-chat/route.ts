@@ -44,19 +44,34 @@ async function enrichSuggestionsWithAI(suggestions: Suggestion[], selectedExperi
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       response_format: { type: "json_object" },
-      max_completion_tokens: 1000,
+      max_completion_tokens: 1400,
       messages: [{
         role: "system",
-        content: "You explain pathway sequences using ONLY the provided pathway descriptions. Do not add external wellness knowledge. Use the pathway description to explain why experiences work in sequence."
+        content: "You explain pathway sequences using ONLY the provided pathway descriptions. Create explanations with summary + detailed parts. For drinks, pick ONE drink per timing field (pre/during/after) from the pathway data if available."
       }, {
         role: "user",
         content: `Selected Experience: ${selectedExperienceName}
 
 Pathway Groups: ${JSON.stringify(pathwayGroups, null, 2)}
 
-For each chip, use ONLY the pathway_description to explain why the suggested experience works before/after the selected experience based on the chip timing. Keep explanations concise and scientific based on the pathway description content.
+For each chip:
+1. Create explanation with summary (max 80 chars) + detailed explanation
+2. Pick ONE drink per timing field from pathway data (if drinks exist)
+3. Use ONLY pathway_description content
+4. Use position-based chip_id format: "-1_experience_id" (before), "+1_experience_id" (after), "+2_experience_id" (second after)
 
-Return JSON: {"enriched_reasons": [{"chip_id": "string", "reason": "string"}]}`
+Return JSON: {
+  "enriched_chips": [
+    {
+      "chip_id": "-1_experience_id or +1_experience_id or combo_experience_id",
+      "summary": "Brief summary for chip display",
+      "explanation": "Detailed explanation for email",
+      "selected_pre_drink": "drink_id or null",
+      "selected_during_drink": "drink_id or null", 
+      "selected_after_drink": "drink_id or null"
+    }
+  ]
+}`
       }]
     });
 
@@ -65,13 +80,24 @@ Return JSON: {"enriched_reasons": [{"chip_id": "string", "reason": "string"}]}`
 
     const aiResult = JSON.parse(content);
     
-    // Merge AI explanations back into suggestions
+    // Merge AI enrichment back into suggestions
     suggestions.forEach(suggestion => {
-      const chipId = `${suggestion.timing}-${suggestion.experience_id}`;
-      const enrichedSuggestion = suggestions.find((s: Suggestion) => s.pathway_id === suggestion.pathway_id);
-      const reason = aiResult.enriched_reasons?.find((r: { chip_id: string; reason?: string }) => r.chip_id === chipId)?.reason;
-      if (enrichedSuggestion && reason) {
-        suggestion.reason = reason;
+      // Create position-based chip ID
+      let position = '';
+      if (suggestion.timing === 'before') position = '-1';
+      else if (suggestion.timing === 'after') position = '+1';
+      else if (suggestion.timing === 'combo') position = 'combo';
+      
+      const chipId = `${position}_${suggestion.experience_id}`;
+      const enrichedChip = aiResult.enriched_chips?.find((c: { chip_id: string; summary?: string; explanation?: string; selected_pre_drink?: string; selected_during_drink?: string; selected_after_drink?: string }) => c.chip_id === chipId);
+      
+      if (enrichedChip) {
+        suggestion.summary = enrichedChip.summary || suggestion.reason;
+        suggestion.explanation = enrichedChip.explanation || suggestion.reason;
+        suggestion.reason = enrichedChip.summary || suggestion.reason; // Keep for backward compatibility
+        suggestion.selected_pre_drink = enrichedChip.selected_pre_drink;
+        suggestion.selected_during_drink = enrichedChip.selected_during_drink;
+        suggestion.selected_after_drink = enrichedChip.selected_after_drink;
       }
     });
 
@@ -234,26 +260,11 @@ export async function POST(req: Request) {
       }
 
       // Always use AI enrichment for better explanations
-      if (suggestions.length > 0) {
-        const enrichedSuggestions = await enrichSuggestionsWithAI(suggestions.map((s: Record<string, unknown>) => ({
-          ...s,
-          pathway_id: s.pathway_id as string,
-          pathway_name: s.pathway_name as string,
-          pathway_description: s.pathway_description as string
-        })), selectedExperienceName);
-        console.log('AI enrichment completed for', enrichedSuggestions.length, 'suggestions');
-        
-        return NextResponse.json({
-          type: "experience_suggestions",
-          suggestions: enrichedSuggestions.slice(0, 5) // Max 5 suggestions
-        });
-      }
-
-      console.log('No suggestions found');
-      return NextResponse.json({
-        type: "experience_suggestions",
-        suggestions: []
-      });
+      console.log('Enriching suggestions with AI...');
+      const enrichedSuggestions = await enrichSuggestionsWithAI(suggestions as Suggestion[], selectedExperienceName);
+      console.log('AI enrichment complete');
+      
+      return NextResponse.json(enrichedSuggestions);
     }
 
     // Original pathway/drink recommendation logic

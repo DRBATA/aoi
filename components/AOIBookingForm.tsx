@@ -21,6 +21,10 @@ interface BookingRow {
   source: 'user' | 'ai';
   pathway_name?: string;
   pathway_color?: string;
+  selected_pre_drink?: string;
+  selected_during_drink?: string;
+  selected_after_drink?: string;
+  explanation?: string;
 }
 
 
@@ -71,14 +75,13 @@ export default function AOIBookingForm() {
     
     setLoadingSuggestions(true);
     try {
-      // First call: Fast hardcoded suggestions
+      // Single call with AI enrichment
       const response = await fetch('/api/pathway-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           selected_experience_id: selectedExperience,
-          selected_time: selectedTime || null,
-          ai_enrich: false
+          selected_time: selectedTime || null
         })
       });
 
@@ -90,30 +93,6 @@ export default function AOIBookingForm() {
       console.error('Error generating suggestions:', error);
     } finally {
       setLoadingSuggestions(false);
-    }
-  }, [selectedExperience, selectedTime]);
-
-  const enrichWithAI = useCallback(async () => {
-    if (!selectedExperience) return;
-    
-    try {
-      const response = await fetch('/api/pathway-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          selected_experience_id: selectedExperience,
-          selected_time: selectedTime || null,
-          ai_enrich: true
-        })
-      });
-
-      const data = await response.json();
-      if (data.type === 'experience_suggestions') {
-        setSuggestions(data.suggestions || []);
-      }
-    } catch (error) {
-      console.error('Error enriching with AI:', error);
-      // Keep original suggestions if AI fails
     }
   }, [selectedExperience, selectedTime]);
 
@@ -167,10 +146,9 @@ export default function AOIBookingForm() {
   useEffect(() => {
     if (suggestions.length > 0 && selectedExperience && !hasEnriched) {
       setHasEnriched(true);
-      enrichWithAI();
       enrichWithDrinksData();
     }
-  }, [suggestions.length, selectedExperience, hasEnriched, enrichWithAI, enrichWithDrinksData]);
+  }, [suggestions.length, selectedExperience, hasEnriched, enrichWithDrinksData]);
   
   // Reset enrichment flag when experience changes
   useEffect(() => {
@@ -306,7 +284,11 @@ export default function AOIBookingForm() {
         selected_time: beforeTime,
         source: 'ai',
         pathway_name: chip.pathway_name as string,
-        pathway_color: chip.pathway_color as string
+        pathway_color: chip.pathway_color as string,
+        selected_pre_drink: chip.selected_pre_drink as string,
+        selected_during_drink: chip.selected_during_drink as string,
+        selected_after_drink: chip.selected_after_drink as string,
+        explanation: chip.explanation as string
       });
     } else if (chip.timing === 'after') {
       // Add single experience after
@@ -319,7 +301,11 @@ export default function AOIBookingForm() {
         selected_time: afterTime,
         source: 'ai',
         pathway_name: chip.pathway_name as string,
-        pathway_color: chip.pathway_color as string
+        pathway_color: chip.pathway_color as string,
+        selected_pre_drink: chip.selected_pre_drink as string,
+        selected_during_drink: chip.selected_during_drink as string,
+        selected_after_drink: chip.selected_after_drink as string,
+        explanation: chip.explanation as string
       });
     } else if (chip.timing === 'combo') {
       // Add multiple experiences from combo
@@ -333,7 +319,11 @@ export default function AOIBookingForm() {
           selected_time: beforeTime,
           source: 'ai',
           pathway_name: chip.pathway_name as string,
-          pathway_color: chip.pathway_color as string
+          pathway_color: chip.pathway_color as string,
+          selected_pre_drink: chip.selected_pre_drink as string,
+          selected_during_drink: chip.selected_during_drink as string,
+          selected_after_drink: chip.selected_after_drink as string,
+          explanation: chip.explanation as string
         });
       }
       if (chip.post_experience_id) {
@@ -346,7 +336,11 @@ export default function AOIBookingForm() {
           selected_time: afterTime,
           source: 'ai',
           pathway_name: chip.pathway_name as string,
-          pathway_color: chip.pathway_color as string
+          pathway_color: chip.pathway_color as string,
+          selected_pre_drink: chip.selected_pre_drink as string,
+          selected_during_drink: chip.selected_during_drink as string,
+          selected_after_drink: chip.selected_after_drink as string,
+          explanation: chip.explanation as string
         });
       }
     }
@@ -420,7 +414,11 @@ export default function AOIBookingForm() {
             duration_minutes: bookingRow?.duration_minutes,
             customer_email: customerEmail,
             customer_name: customerName,
-            booking_status: 'sessions_scheduled'
+            booking_status: 'sessions_scheduled',
+            pre_drinks: bookingRow?.selected_pre_drink ? [bookingRow.selected_pre_drink] : [],
+            during_drinks: bookingRow?.selected_during_drink ? [bookingRow.selected_during_drink] : [],
+            after_drinks: bookingRow?.selected_after_drink ? [bookingRow.selected_after_drink] : [],
+            booking_explanation: bookingRow?.explanation || ''
           };
 
           const { error } = await supabase
