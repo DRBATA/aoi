@@ -618,19 +618,19 @@ export default function StaffBookingsDashboard() {
 
                           {/* Pathway Drinks - Phase-based display */}
                           {(
-                            (booking.booking_status === 'confirmed' && booking.pre_drinks?.length) ||
+                            (booking.booking_status === 'sessions_scheduled' && booking.pre_drinks?.length) ||
                             (booking.booking_status === 'in_session' && booking.during_drinks?.length) ||
                             (booking.booking_status === 'session_completed' && booking.after_drinks?.length)
                           ) && (
                             <div className="space-y-2">
                               <h4 className="text-sm font-medium text-gray-700">
-                                {booking.booking_status === 'confirmed' && 'Pre-Session Drinks:'}
+                                {booking.booking_status === 'sessions_scheduled' && 'Pre-Session Drinks:'}
                                 {booking.booking_status === 'in_session' && 'During Session Drinks:'}
                                 {booking.booking_status === 'session_completed' && 'Post-Session Drinks:'}
                               </h4>
                               
-                              {/* Pre-session drinks (only when confirmed) */}
-                              {booking.booking_status === 'confirmed' && booking.pre_drinks?.map((drink, idx) => (
+                              {/* Pre-session drinks (only when sessions_scheduled) */}
+                              {booking.booking_status === 'sessions_scheduled' && booking.pre_drinks?.map((drink, idx) => (
                                 <div key={`pre-${idx}`} className="flex items-center justify-between text-xs">
                                   <span className="text-blue-600">🥤 Pre: {drink.name}</span>
                                   <Button

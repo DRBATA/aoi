@@ -27,34 +27,6 @@ export async function POST(req: Request) {
             }, { status: 404 });
         }
 
-        // Ensure the booking experience is in the cart before completing
-        const { data: existingCartItem } = await supabase
-            .from('cart_items')
-            .select('id')
-            .eq('cart_id', booking.cart_id)
-            .eq('booking_id', bookingId)
-            .single();
-
-        if (!existingCartItem) {
-            // Re-add the experience to cart if missing
-            const { error: cartItemError } = await supabase
-                .from('cart_items')
-                .insert({
-                    cart_id: booking.cart_id,
-                    item_id: booking.experience_id,
-                    venue_id: booking.venue_id,
-                    booking_id: bookingId,
-                    qty: 1
-                });
-
-            if (cartItemError) {
-                return NextResponse.json({ 
-                    error: "Failed to ensure experience is in cart", 
-                    details: cartItemError.message 
-                }, { status: 500 });
-            }
-        }
-
         // Update booking to session completed
         const { error: updateBookingError } = await supabase
             .from('bookings')
