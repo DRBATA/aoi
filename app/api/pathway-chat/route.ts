@@ -66,9 +66,9 @@ Return JSON: {
       "chip_id": "-1_experience_id or +1_experience_id or combo_experience_id",
       "summary": "Brief summary for chip display",
       "explanation": "Detailed explanation for email",
-      "selected_pre_drink": "drink_id or null",
-      "selected_during_drink": "drink_id or null", 
-      "selected_after_drink": "drink_id or null"
+      "selected_pre_drink": null,
+      "selected_during_drink": null, 
+      "selected_after_drink": null
     }
   ]
 }`
@@ -197,7 +197,8 @@ export async function POST(req: Request) {
               pathway_color: '#3B82F6',
               pathway_name: pathway.display_name,
               pathway_id: pathway.id,
-              pathway_description: pathway.Description
+              pathway_description: pathway.Description,
+              chip_id: `-1_${preStep.experience_id}`
             });
             beforeCount++;
           }
@@ -216,7 +217,8 @@ export async function POST(req: Request) {
               pathway_color: '#10B981',
               pathway_name: pathway.display_name,
               pathway_id: pathway.id,
-              pathway_description: pathway.Description
+              pathway_description: pathway.Description,
+              chip_id: `+${afterCount + 1}_${postStep.experience_id}`
             });
             afterCount++;
           }
@@ -251,7 +253,8 @@ export async function POST(req: Request) {
                 pathway_description: pathway.Description,
                 pre_drinks: beforeStep?.pre_drinks || [],
                 during_drinks: sequence[experienceIndex]?.during_drinks || [],
-                after_drinks: afterStep?.after_drinks || []
+                after_drinks: afterStep?.after_drinks || [],
+                chip_id: `combo_${pathway.id}`
               });
               comboCount++;
             }

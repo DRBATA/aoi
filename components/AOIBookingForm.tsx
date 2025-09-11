@@ -96,40 +96,6 @@ export default function AOIBookingForm() {
     }
   }, [selectedExperience, selectedTime]);
 
-  const enrichWithDrinksData = useCallback(async () => {
-    if (!selectedExperience || suggestions.length === 0) return;
-    
-    try {
-      // Fetch pathway data for each suggestion
-      const enrichedSuggestions = await Promise.all(
-        suggestions.map(async (suggestion: Record<string, unknown>) => {
-          const response = await fetch('/api/pathway-chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              selected_experience_id: suggestion.experience_id,
-              pathway_id: suggestion.pathway_id,
-              get_drinks_only: true
-            })
-          });
-          
-          const data = await response.json();
-          return {
-            ...suggestion,
-            pre_drinks: data.pre_drinks || [],
-            during_drinks: data.during_drinks || [],
-            after_drinks: data.after_drinks || []
-          };
-        })
-      );
-      
-      setSuggestions(enrichedSuggestions);
-    } catch (error) {
-      console.error('Error enriching with drinks data:', error);
-      // Keep original suggestions if drinks fetch fails
-    }
-  }, [selectedExperience, suggestions]);
-
   useEffect(() => {
     fetchExperiencesCallback();
   }, [fetchExperiencesCallback]);
@@ -140,20 +106,7 @@ export default function AOIBookingForm() {
     }
   }, [selectedExperience, generateSuggestions]);
   
-  // Trigger enrichments after initial suggestions are loaded
-  const [hasEnriched, setHasEnriched] = useState(false);
-  
-  useEffect(() => {
-    if (suggestions.length > 0 && selectedExperience && !hasEnriched) {
-      setHasEnriched(true);
-      enrichWithDrinksData();
-    }
-  }, [suggestions.length, selectedExperience, hasEnriched, enrichWithDrinksData]);
-  
-  // Reset enrichment flag when experience changes
-  useEffect(() => {
-    setHasEnriched(false);
-  }, [selectedExperience]);
+  // Removed enrichment logic - pathway-chat API now returns fully enriched suggestions
 
   useEffect(() => {
     const handleChatControl = (event: CustomEvent) => {
