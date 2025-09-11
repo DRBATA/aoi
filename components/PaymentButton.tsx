@@ -40,8 +40,8 @@ export default function PaymentButton({ customerEmail }: PaymentButtonProps) {
   };
 
   const generateQRCode = (url: string) => {
-    // QR code generation using QR Server API
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&format=png&data=${encodeURIComponent(url)}`;
+    // High resolution QR code for reliable scanning across devices
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&format=png&ecc=M&data=${encodeURIComponent(url)}`;
     return qrUrl;
   };
 
@@ -69,9 +69,9 @@ export default function PaymentButton({ customerEmail }: PaymentButtonProps) {
                 <Image 
                   src={generateQRCode(paymentUrl)} 
                   alt="Payment QR Code"
-                  width={300}
-                  height={300}
-                  className="mx-auto"
+                  width={250}
+                  height={250}
+                  className="mx-auto max-w-full h-auto"
                   unoptimized
                 />
               </div>
