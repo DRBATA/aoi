@@ -130,7 +130,9 @@ export default function StaffBookingsDashboard() {
         .lt('slot_time', `${selectedDate}T23:59:59`)
         .order('slot_time');
 
-      if (error) throw error
+      if (error) throw error;
+
+      console.log('Raw booking data from DB:', data);
 
       // Fetch experience details for each booking
       const formattedBookings = await Promise.all(data?.map(async (booking) => {
@@ -159,6 +161,13 @@ export default function StaffBookingsDashboard() {
             pathway_id: booking.pathway_id
           };
       }) || []);
+      console.log('Formatted bookings with drinks:', formattedBookings.map(b => ({
+        id: b.id,
+        status: b.booking_status,
+        pre_drinks: b.pre_drinks,
+        during_drinks: b.during_drinks,
+        after_drinks: b.after_drinks
+      })));
       setBookings(formattedBookings);
     } catch (err) {
       console.error('Error fetching bookings:', err)
