@@ -370,10 +370,29 @@ export default function AOIBookingForm() {
   setIsLoading(true);
   setMessage('');
 
-  if (!selectedExperience || !selectedDate || !selectedTime || !customerName) {
-    setMessage('Please fill in all required fields');
-    setIsLoading(false);
-    return;
+  // For booking rows flow, validate all required fields
+  if (bookingRows.length > 0) {
+    if (!selectedDate || !customerName || !customerEmail) {
+      setMessage('Please fill in date, name, and email');
+      setIsLoading(false);
+      return;
+    }
+    
+    // Check each booking row has required fields
+    for (const row of bookingRows) {
+      if (!row.experience_id || !row.selected_time || !row.duration_minutes) {
+        setMessage('Each experience must have a time and duration selected');
+        setIsLoading(false);
+        return;
+      }
+    }
+  } else {
+    // Original single experience flow needs all fields
+    if (!selectedExperience || !selectedDate || !selectedTime || !customerName || !customerEmail) {
+      setMessage('Please fill in all required fields');
+      setIsLoading(false);
+      return;
+    }
   }
     try {
       // Use booking rows if available, otherwise fall back to single experience
