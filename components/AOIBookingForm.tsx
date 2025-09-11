@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -394,15 +393,16 @@ export default function AOIBookingForm() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setMessage('');
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage('');
 
-  if (!selectedExperience || !selectedDate || !selectedTime || !customerName) {
-    setMessage('Please fill in all required fields');
-    setIsLoading(false);
-    return;
-  }
+    if (!selectedExperience || !selectedDate || !selectedTime || !customerName) {
+      setMessage('Please fill in all required fields');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       // Check if any suggestions are selected
       const selectedSuggestionsList = selectedSuggestion !== null ? [suggestions[selectedSuggestion]] : [];
@@ -526,35 +526,35 @@ export default function AOIBookingForm() {
           } else {
             setMessage('❌ Some bookings failed. Please check availability.');
           }
-      } else {
-        // Single booking only
-        const response = await fetch('/api/booking/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            venueId: AOI_VENUE_ID,
-            experienceId: selectedExperience,
-            slotTime: `${selectedDate}T${selectedTime}:00`,
-            customerEmail,
-            customerName
-          })
-        });
-
-        const result = await response.json();
-        if (response.ok) {
-          const selectedExp = experiences.find(exp => exp.id === selectedExperience);
-          setMessage(`✓ Booking confirmed! Your ${selectedExp?.name} session is scheduled for ${selectedDate} at ${selectedTime}.`);
-          resetForm();
         } else {
-          setMessage(`Error: ${result.error}`);
+          // Single booking only
+          const response = await fetch('/api/booking/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              venue_id: AOI_VENUE_ID,
+              experience_id: selectedExperience,
+              slot_time: `${selectedDate}T${selectedTime}:00`,
+              customer_email: customerEmail,
+              customer_name: customerName
+            })
+          });
+
+          const result = await response.json();
+          if (response.ok) {
+            const selectedExp = experiences.find(exp => exp.id === selectedExperience);
+            setMessage(`✓ Booking confirmed! Your ${selectedExp?.name} session is scheduled for ${selectedDate} at ${selectedTime}.`);
+            resetForm();
+          } else {
+            setMessage(`Error: ${result.error}`);
+          }
         }
+      } catch {
+        setMessage('There was an error processing your booking. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
-    } catch {
-      setMessage('There was an error processing your booking. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
   const resetForm = () => {
     setSelectedExperience('');
@@ -567,7 +567,7 @@ export default function AOIBookingForm() {
   };
 
   // BookingRow component
-  const BookingRowComponent = ({ row, index }: { row: BookingRow; index: number }) => {
+  const BookingRowComponent = React.memo(({ row, index }: { row: BookingRow; index: number }) => {
     const variants = getExperienceVariants(row.experience_name);
     const isUserRow = row.source === 'user';
     const filteredSlots = getFilteredTimeSlots(row.id, row.duration_minutes);
@@ -657,34 +657,26 @@ export default function AOIBookingForm() {
         </div>
       </div>
     );
-  };
+  });
 
   const selectedExp = experiences.find(exp => exp.id === selectedExperience);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8 }}
-      viewport={{ once: true }}
-      className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-white/10"
-    >
+    <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-white/10">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-2xl font-light text-white">Reserve Your Transformation</h3>
       </div>
       
       {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
+        <div
           className={`p-4 rounded-xl mb-6 ${
             message.includes('Error') || message.includes('error') 
-              ? 'bg-red-500/10 border border-red-500/20 text-red-300' 
-              : 'bg-green-500/10 border border-green-500/20 text-green-300'
+              ? 'bg-red-500/20 border border-red-500/30 text-red-100' 
+              : 'bg-green-500/20 border border-green-500/30 text-green-100'
           }`}
         >
           {message}
-        </motion.div>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -779,10 +771,7 @@ export default function AOIBookingForm() {
 
         {/* Experience Details */}
         {selectedExp && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10"
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10"
           >
             <div className="flex items-center gap-3 mb-2">
               <Clock className="w-4 h-4 text-purple-400" />
@@ -798,7 +787,7 @@ export default function AOIBookingForm() {
                 <span className="text-white ml-2">AED {selectedExp.venue_price}</span>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {isAIControlled && (
@@ -833,53 +822,49 @@ export default function AOIBookingForm() {
                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Suggested Combinations</h3>
                 <div className="space-y-2">
                   {suggestions.map((suggestion, index) => (
-                    <motion.button
+                    <button
                       key={index}
                       type="button"
                       onClick={() => setShowChipExplanation({chip: suggestion, show: true})}
-                      className="w-full p-3 text-left border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg transition-all"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      className="w-full p-3 text-left border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg transition-all hover:scale-105"
                     >
-                      <div className="font-medium">{suggestion.label as string}</div>
-                      {suggestion.total_duration && (
+                      <div className="font-medium">{String(suggestion.label)}</div>
+                      {suggestion.total_duration ? (
                         <div className="text-sm text-gray-600 mt-1">
                           Total duration: {String(suggestion.total_duration)} minutes
                         </div>
-                      )}
-                      {suggestion.pathway_description && (
+                      ) : null}
+                      {suggestion.pathway_description ? (
                         <div className="text-sm text-gray-600 mt-1">
                           {String(suggestion.pathway_description).slice(0, 100)}...
                         </div>
-                      )}
-                    </motion.button>
+                      ) : null}
+                    </button>
                   ))}
                 </div>
                 
-                  {suggestions.length > 0 && selectedSuggestion !== null && (
-                    <div className="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
-                      <p className="text-green-400 text-sm">
-                        ✓ {String(suggestions[selectedSuggestion]?.label)} selected
-                      </p>
-                    </div>
-                  )}
-                </>
-              ) : null}
+                {suggestions.length > 0 && selectedSuggestion !== null && (
+                  <div className="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+                    <p className="text-green-400 text-sm">
+                      ✓ {String(suggestions[selectedSuggestion]?.label)} selected
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         )}
 
-        <motion.button
+        <button
           type="submit"
           disabled={isLoading}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 px-8 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Creating Booking...' : 
            selectedSuggestion !== null ? `Reserve ${suggestions[selectedSuggestion]?.timing === 'combo' ? 'Complete Journey' : '2 Experiences'}` : 'Reserve Your Session'}
-        </motion.button>
+        </button>
 
       </form>
-    </motion.div>
+    </div>
   );
 }

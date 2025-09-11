@@ -133,10 +133,7 @@ export async function POST(req: Request) {
       get_drinks_only = false
     } = await req.json();
     
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = await createClient();
 
     // Handle drinks-only request for specific pathway
     if (get_drinks_only && pathway_id) {
