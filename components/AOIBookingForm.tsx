@@ -658,8 +658,46 @@ export default function AOIBookingForm() {
           </div>
         </div>
 
+        {/* Booking Rows Display */}
+        {bookingRows.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 space-y-3"
+          >
+            <h3 className="text-white font-medium flex items-center gap-2">
+              <Clock className="w-4 h-4 text-purple-400" />
+              Your Experience Journey
+            </h3>
+            {bookingRows.map((row, index) => (
+              <div key={row.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
+                      {index + 1}
+                    </span>
+                    <span className="text-white font-medium">{row.experience_name}</span>
+                    {row.source === 'ai' && (
+                      <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
+                        AI Added
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-white/60 text-sm">{row.selected_time}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-xs text-white/60">
+                  <div>Duration: {row.duration_minutes} min</div>
+                  {row.pathway_name && (
+                    <div>From: {row.pathway_name}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
         {/* Experience Details */}
-        {selectedExp && (
+        {selectedExp && bookingRows.length === 0 && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
