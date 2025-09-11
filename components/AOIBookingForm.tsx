@@ -410,10 +410,14 @@ export default function AOIBookingForm() {
         let createdCount = 0;
         
         for (const booking of bookings) {
+          // Find the booking row to get duration_minutes
+          const bookingRow = bookingRows.find(row => row.experience_id === booking.experience_id);
+          
           const bookingData = {
             venue_id: AOI_VENUE_ID,
             experience_id: booking.experience_id,
             slot_time: booking.slot_time,
+            duration_minutes: bookingRow?.duration_minutes,
             customer_email: customerEmail,
             customer_name: customerName,
             booking_status: 'sessions_scheduled'
