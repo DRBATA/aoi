@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { OpenAI } from 'openai';
 
 // Helper function to get experience name
-async function getExperienceName(experienceId: string, supabase: any): Promise<string> {
+async function getExperienceName(experienceId: string, supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {
   const { data } = await supabase
     .from('experiences')
     .select('name')
@@ -327,7 +327,7 @@ export async function POST(req: Request) {
       return NextResponse.json({
         title: "Choose Your Journey",
         type: "pathway_selection",
-          choices: pathways?.map((pathway: any) => ({
+          choices: pathways?.map((pathway: {id: string, display_name: string, name: string, duration_minutes: number, sequence: unknown[]}) => ({
             kind: "pathway",
             id: pathway.id,
             label: `${pathway.display_name} (${pathway.duration_minutes} mins)`,
@@ -360,7 +360,7 @@ export async function POST(req: Request) {
   }> = [];
           
           // Add drinks for each booking based on pathway sequence
-          existingBookings.forEach((booking: any, index: number) => {
+          existingBookings.forEach((booking: {id: string, experience_name: string}, index: number) => {
             const sequenceStep = pathway.sequence[index];
             if (sequenceStep) {
               // Pre drinks
@@ -427,7 +427,7 @@ export async function POST(req: Request) {
       }
 
       // Fallback - show individual experience drinks
-      const bookingPromises = existingBookings.map(async (booking: any) => {
+      const bookingPromises = existingBookings.map(async (booking: {id: string, experience_name: string, slot_time: string}) => {
         return {
           kind: "booking",
           id: booking.id,

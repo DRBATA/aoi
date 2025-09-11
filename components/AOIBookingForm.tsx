@@ -40,8 +40,6 @@ export default function AOIBookingForm() {
   const [suggestions, setSuggestions] = useState<Record<string, unknown>[]>([]);
   const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [bookingRows, setBookingRows] = useState<BookingRow[]>([]);
-  const [showChipExplanation, setShowChipExplanation] = useState<{chip: any, show: boolean}>({chip: null, show: false});
 
   const supabase = createClient();
 
@@ -209,7 +207,7 @@ export default function AOIBookingForm() {
   }, []);
 
 
-  const generateAvailableSlotsCallback = useCallback(async (date: string, experience: Experience) => {
+  const generateAvailableSlots = useCallback(async (date: string, experience: Experience) => {
     setLoadingSlots(true);
     try {
       const { data: existingBookings, error } = await supabase
@@ -258,103 +256,8 @@ export default function AOIBookingForm() {
     } finally {
       setLoadingSlots(false);
     }
-  }, [selectedDate, selectedExperience, experiences]);
+  }, [selectedDate, selectedExperience, experiences, supabase]);
 
-  // Initialize booking rows with user's initial selection
-  useEffect(() => {
-    if (selectedExperience && selectedTime && experiences.length > 0) {
-      const experience = experiences.find(exp => exp.id === selectedExperience);
-      if (experience) {
-        const initialRow: BookingRow = {
-          id: 'initial',
-          experience_id: selectedExperience,
-          experience_name: experience.name,
-          duration_minutes: experience.duration_minutes,
-          selected_time: selectedTime,
-          source: 'user'
-        };
-        setBookingRows([initialRow]);
-      }
-    }
-  }, [selectedExperience, selectedTime, experiences]);
-
-  // Add booking rows from chip selection
-  const addBookingRowsFromChip = (chip: any) => {
-    const newRows: BookingRow[] = [];
-    
-    if (chip.timing === 'before') {
-      // Add single experience before
-      const beforeTime = calculateBeforeTime(selectedTime, chip.duration || 30);
-      newRows.push({
-        id: `before-${Date.now()}`,
-        experience_id: chip.experience_id,
-        experience_name: chip.experience_name,
-        duration_minutes: chip.duration || 30,
-        selected_time: beforeTime,
-        source: 'ai',
-        pathway_name: chip.pathway_name,
-        pathway_color: chip.pathway_color
-      });
-    } else if (chip.timing === 'after') {
-      // Add single experience after
-      const afterTime = calculateAfterTime(selectedTime, selectedExperience, chip.duration || 30);
-      newRows.push({
-        id: `after-${Date.now()}`,
-        experience_id: chip.experience_id,
-        experience_name: chip.experience_name,
-        duration_minutes: chip.duration || 30,
-        selected_time: afterTime,
-        source: 'ai',
-        pathway_name: chip.pathway_name,
-        pathway_color: chip.pathway_color
-      });
-    } else if (chip.timing === 'combo') {
-      // Add multiple experiences from combo
-      if (chip.pre_experience_id) {
-        const beforeTime = calculateBeforeTime(selectedTime, chip.pre_duration || 10);
-        newRows.push({
-          id: `combo-before-${Date.now()}`,
-          experience_id: chip.pre_experience_id,
-          experience_name: chip.pre_experience_name,
-          duration_minutes: chip.pre_duration || 10,
-          selected_time: beforeTime,
-          source: 'ai',
-          pathway_name: chip.pathway_name,
-          pathway_color: chip.pathway_color
-        });
-      }
-      if (chip.post_experience_id) {
-        const afterTime = calculateAfterTime(selectedTime, selectedExperience, chip.post_duration || 10);
-        newRows.push({
-          id: `combo-after-${Date.now()}`,
-          experience_id: chip.post_experience_id,
-          experience_name: chip.post_experience_name,
-          duration_minutes: chip.post_duration || 10,
-          selected_time: afterTime,
-          source: 'ai',
-          pathway_name: chip.pathway_name,
-          pathway_color: chip.pathway_color
-        });
-      }
-    }
-    
-    setBookingRows(prev => [...prev, ...newRows]);
-    setShowChipExplanation({chip: null, show: false});
-  };
-
-  // Helper functions for time calculations
-  const calculateBeforeTime = (mainTime: string, duration: number) => {
-    const main = new Date(`${selectedDate}T${mainTime}:00`);
-    const before = new Date(main.getTime() - (duration + 10) * 60000); // duration + 10min buffer
-    return before.toTimeString().slice(0, 5);
-  };
-
-  const calculateAfterTime = (mainTime: string, mainExperienceId: string, duration: number) => {
-    const mainExp = experiences.find((exp: Experience) => exp.id === mainExperienceId);
-    const main = new Date(`${selectedDate}T${mainTime}:00`);
-    const after = new Date(main.getTime() + ((mainExp?.duration_minutes || 30) + 10) * 60000);
-    return after.toTimeString().slice(0, 5);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
