@@ -40,7 +40,7 @@ export default function AOIBookingForm() {
   const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [bookingRows, setBookingRows] = useState<BookingRow[]>([]);
-  const [showChipExplanation, setShowChipExplanation] = useState<{chip: any, show: boolean}>({chip: null, show: false});
+  // const [showChipExplanation, setShowChipExplanation] = useState<{chip: Record<string, unknown> | null, show: boolean}>({chip: null, show: false});
 
   const supabase = createClient();
 
@@ -275,7 +275,7 @@ export default function AOIBookingForm() {
   }, [selectedExperience, selectedTime, experiences]);
 
   // Add booking rows from chip selection
-  const addBookingRowsFromChip = (chip: any) => {
+  /* const addBookingRowsFromChip = (chip: Record<string, unknown>) => {
     const newRows: BookingRow[] = [];
     
     if (chip.timing === 'before') {
@@ -336,7 +336,7 @@ export default function AOIBookingForm() {
     
     setBookingRows(prev => [...prev, ...newRows]);
     setShowChipExplanation({chip: null, show: false});
-  };
+  }; */
 
   // Helper functions for time calculations
   const calculateBeforeTime = (mainTime: string, duration: number) => {
@@ -345,7 +345,7 @@ export default function AOIBookingForm() {
     return before.toTimeString().slice(0, 5);
   };
 
-  const calculateAfterTime = (mainTime: string, mainExperienceId: string, duration: number) => {
+  const calculateAfterTime = (mainTime: string, mainExperienceId: string) => {
     const mainExp = experiences.find((exp: Experience) => exp.id === mainExperienceId);
     const main = new Date(`${selectedDate}T${mainTime}:00`);
     const after = new Date(main.getTime() + ((mainExp?.duration_minutes || 30) + 10) * 60000);
@@ -567,7 +567,7 @@ export default function AOIBookingForm() {
   };
 
   // BookingRow component
-  const BookingRowComponent = React.memo(({ row, index }: { row: BookingRow; index: number }) => {
+  /* const BookingRowComponent = React.memo(({ row, index }: { row: BookingRow; index: number }) => {
     const variants = getExperienceVariants(row.experience_name);
     const isUserRow = row.source === 'user';
     const filteredSlots = getFilteredTimeSlots(row.id, row.duration_minutes);
@@ -657,7 +657,7 @@ export default function AOIBookingForm() {
         </div>
       </div>
     );
-  });
+  }); */
 
   const selectedExp = experiences.find(exp => exp.id === selectedExperience);
 
@@ -825,7 +825,7 @@ export default function AOIBookingForm() {
                     <button
                       key={index}
                       type="button"
-                      onClick={() => setShowChipExplanation({chip: suggestion, show: true})}
+                      onClick={() => setSelectedSuggestion(index)}
                       className="w-full p-3 text-left border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg transition-all hover:scale-105"
                     >
                       <div className="font-medium">{String(suggestion.label)}</div>
