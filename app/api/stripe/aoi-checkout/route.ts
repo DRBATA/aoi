@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const { data: cartHeader, error: headerError } = await supabase
       .from("cart_headers")
       .select("id")
-      .eq("user_email", customer_email)
+      .eq("customer_email", customer_email)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
