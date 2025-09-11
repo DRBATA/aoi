@@ -200,7 +200,6 @@ export async function POST(req: Request) {
           // Pre-session suggestion (allow up to 2)
           if (experienceIndex > 0 && beforeCount < 2) {
             const preStep = sequence[experienceIndex - 1];
-            const pathwayReason = generatePathwayReason(pathway.display_name, 'before', preStep.experience_name);
             suggestions.push({
               kind: "experience_add",
               timing: "before",
@@ -208,7 +207,7 @@ export async function POST(req: Request) {
               experience_name: preStep.experience_name,
               duration: preStep.duration,
               label: `Add ${preStep.experience_name} before (${preStep.duration}min)`,
-              reason: preStep.reason || pathwayReason,
+              reason: "", // Will be filled by AI
               pathway_color: '#3B82F6',
               pathway_name: pathway.display_name,
               pathway_id: pathway.id,
@@ -220,7 +219,6 @@ export async function POST(req: Request) {
           // Post-session suggestion (allow up to 2)
           if (experienceIndex < sequence.length - 1 && afterCount < 2) {
             const postStep = sequence[experienceIndex + 1];
-            const pathwayReason = generatePathwayReason(pathway.display_name, 'after', postStep.experience_name);
             suggestions.push({
               kind: "experience_add",
               timing: "after",
@@ -228,7 +226,7 @@ export async function POST(req: Request) {
               experience_name: postStep.experience_name,
               duration: postStep.duration,
               label: `Add ${postStep.experience_name} after (${postStep.duration}min)`,
-              reason: postStep.reason || pathwayReason,
+              reason: "", // Will be filled by AI
               pathway_color: '#10B981',
               pathway_name: pathway.display_name,
               pathway_id: pathway.id,
@@ -275,8 +273,8 @@ export async function POST(req: Request) {
         }
       }
 
-      // AI enrichment if requested
-      if (ai_enrich && suggestions.length > 0) {
+      // Always use AI enrichment for better explanations
+      if (suggestions.length > 0) {
         const enrichedSuggestions = await enrichSuggestionsWithAI(suggestions.map((s: Record<string, unknown>) => ({
           ...s,
           pathway_id: s.pathway_id as string,
@@ -291,10 +289,10 @@ export async function POST(req: Request) {
         });
       }
 
-      console.log('Returning suggestions:', suggestions.length);
+      console.log('No suggestions found');
       return NextResponse.json({
         type: "experience_suggestions",
-        suggestions: suggestions.slice(0, 3) // Return max 3 suggestions
+        suggestions: []
       });
     }
 
