@@ -41,7 +41,6 @@ export default function AOIBookingForm() {
   const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [bookingRows, setBookingRows] = useState<BookingRow[]>([]);
-  const [showChipExplanation, setShowChipExplanation] = useState<{chip: Record<string, unknown> | null, show: boolean}>({chip: null, show: false});
 
   const supabase = createClient();
 
@@ -353,7 +352,6 @@ export default function AOIBookingForm() {
     }
     
     setBookingRows(prev => [...prev, ...newRows]);
-    setShowChipExplanation({chip: null, show: false});
   };
 
   // Generate available time slots when date/experience changes
