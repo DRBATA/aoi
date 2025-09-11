@@ -273,59 +273,20 @@ export default function StaffBookingsDashboard() {
 
   const completeSession = async (booking: Booking) => {
     try {
-      // Collect all drinks that should be added to cart
-      const allDrinks = [
-        ...(booking.pre_drinks || []),
-        ...(booking.during_drinks || []),
-        ...(booking.after_drinks || [])
-      ];
-
-      let addDrinks = false;
-      if (allDrinks.length > 0) {
-        addDrinks = confirm(`Add ${allDrinks.length} drinks to cart?\n${allDrinks.map(d => `• ${d.name}`).join('\n')}`);
-      }
-
       const response = await fetch('/api/booking/complete-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          bookingId: booking.id,
-          addDrinksToCart: addDrinks,
-          drinks: addDrinks ? allDrinks : []
+          bookingId: booking.id
         }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        alert(`✓ Session completed for ${booking.experience_name}${addDrinks ? ' + drinks added to cart' : ''}`);
-        // Check if customer has more sessions today
-        const otherSessions = bookings.filter(b => 
-          b.customer_email === booking.customer_email && 
-          b.id !== booking.id && 
-          b.booking_status === 'sessions_scheduled'
-        );
-        
-        if (otherSessions.length > 0) {
-          const proceed = confirm(`Customer has ${otherSessions.length} more sessions scheduled today. Go to cart now or continue with other sessions?`);
-          if (proceed) {
-            // Clear AI cache since cart contents just changed
-            setAiResults(null);
-            setShowAiSection(false);
-            setSelectedCustomerEmail(booking.customer_email);
-            setActiveTab('search');
-          }
-        } else {
-          // Auto-redirect to cart for payment
-          // Clear AI cache since cart contents just changed
-          setAiResults(null);
-          setShowAiSection(false);
-          setSelectedCustomerEmail(booking.customer_email);
-          setActiveTab('search');
-        }
-        
+        alert(`✓ Session completed for ${booking.experience_name}`);
         fetchBookingsCallback();
       } else {
         alert(`Error: ${result.error}`);
