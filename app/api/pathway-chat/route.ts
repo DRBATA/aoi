@@ -286,29 +286,11 @@ export async function POST(req: Request) {
       .lt('slot_time', `${today}T23:59:59`)
       .order('slot_time');
 
-    if (!existingBookings || existingBookings.length === 0) {
-      // If no bookings, show pathway options
-      const { data: pathways } = await supabase
-        .from('experience_pathways')
-        .select('*')
-        .order('duration_minutes');
-
-      return NextResponse.json({
-        title: "Choose Your Journey",
-        type: "pathway_selection",
-          choices: pathways?.map((pathway: {id: string, display_name: string, name: string, duration_minutes: number, sequence: unknown[]}) => ({
-            kind: "pathway",
-            id: pathway.id,
-            label: `${pathway.display_name} (${pathway.duration_minutes} mins)`,
-            pathway_name: pathway.name,
-            duration: pathway.duration_minutes,
-            sequence: pathway.sequence
-          })) || []
-      });
-    }
+    // Remove fallback to all pathways - we want to use the filtered suggestions above
+    // The suggestions array already contains the relevant before/after/combo options
 
     // If bookings exist, show drink recommendations based on pathway
-    const pathwayId = existingBookings[0]?.pathway_id;
+    const pathwayId = existingBookings?.[0]?.pathway_id;
     
     if (pathwayId) {
         const { data: pathway } = await supabase
@@ -329,7 +311,7 @@ export async function POST(req: Request) {
   }> = [];
           
           // Add drinks for each booking based on pathway sequence
-          existingBookings.forEach((booking: {id: string, experience_name: string}, index: number) => {
+          existingBookings?.forEach((booking: {id: string, experience_name: string}, index: number) => {
             const sequenceStep = pathway.sequence[index];
             if (sequenceStep) {
               // Pre drinks
@@ -357,7 +339,7 @@ export async function POST(req: Request) {
               });
 
               // After drinks (only for last booking)
-              if (index === existingBookings.length - 1) {
+              if (index === (existingBookings?.length || 0) - 1) {
                 sequenceStep.after_drinks?.forEach((drink: Record<string, unknown>) => {
                   recommendations.push({
                     kind: "drink",
@@ -389,14 +371,14 @@ export async function POST(req: Request) {
             title: `Drinks for your ${pathway.display_name} journey`,
             type: "drink_recommendations",
             pathway: pathway.display_name,
-            bookings: existingBookings.length,
+            bookings: existingBookings?.length || 0,
             choices: recommendations
           });
         }
       }
 
       // Fallback - show individual experience drinks
-      const bookingPromises = existingBookings.map(async (booking: {id: string, experience_name: string, slot_time: string}) => {
+      const bookingPromises = existingBookings?.map(async (booking: {id: string, experience_name: string, slot_time: string}) => {
         return {
           kind: "booking",
           id: booking.id,
@@ -404,7 +386,7 @@ export async function POST(req: Request) {
           experience: booking.experience_name,
           time: booking.slot_time
         }
-      });
+      }) || [];
       const bookingChoices = await Promise.all(bookingPromises);
       return NextResponse.json({
         title: "Add drinks to your bookings",
