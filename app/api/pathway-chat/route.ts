@@ -327,7 +327,7 @@ export async function POST(req: Request) {
       return NextResponse.json({
         title: "Choose Your Journey",
         type: "pathway_selection",
-          choices: pathways?.map(pathway => ({
+          choices: pathways?.map((pathway: any) => ({
             kind: "pathway",
             id: pathway.id,
             label: `${pathway.display_name} (${pathway.duration_minutes} mins)`,
@@ -360,7 +360,7 @@ export async function POST(req: Request) {
   }> = [];
           
           // Add drinks for each booking based on pathway sequence
-          existingBookings.forEach((booking, index) => {
+          existingBookings.forEach((booking: any, index: number) => {
             const sequenceStep = pathway.sequence[index];
             if (sequenceStep) {
               // Pre drinks
@@ -427,7 +427,7 @@ export async function POST(req: Request) {
       }
 
       // Fallback - show individual experience drinks
-      const bookingPromises = existingBookings.map(async (booking) => {
+      const bookingPromises = existingBookings.map(async (booking: any) => {
         return {
           kind: "booking",
           id: booking.id,

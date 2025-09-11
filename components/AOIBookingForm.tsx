@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Clock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -40,7 +41,7 @@ export default function AOIBookingForm() {
   const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [bookingRows, setBookingRows] = useState<BookingRow[]>([]);
-  // const [showChipExplanation, setShowChipExplanation] = useState<{chip: Record<string, unknown> | null, show: boolean}>({chip: null, show: false});
+  const [showChipExplanation, setShowChipExplanation] = useState<{chip: any, show: boolean}>({chip: null, show: false});
 
   const supabase = createClient();
 
@@ -252,7 +253,10 @@ export default function AOIBookingForm() {
       
       setAvailableTimeSlots(slots);
     } catch (error) {
-      console.error('Error generating time slots:', error);
+      console.error('Error generating available slots:', error);
+      setAvailableTimeSlots([]);
+    } finally {
+      setLoadingSlots(false);
     }
   }, [selectedDate, selectedExperience, experiences]);
 
@@ -275,30 +279,30 @@ export default function AOIBookingForm() {
   }, [selectedExperience, selectedTime, experiences]);
 
   // Add booking rows from chip selection
-  /* const addBookingRowsFromChip = (chip: Record<string, unknown>) => {
+  const addBookingRowsFromChip = (chip: any) => {
     const newRows: BookingRow[] = [];
     
     if (chip.timing === 'before') {
-      // Add single experience before - let user select duration
-      const beforeTime = calculateBeforeTime(selectedTime, 30); // Default 30min for calculation
+      // Add single experience before
+      const beforeTime = calculateBeforeTime(selectedTime, chip.duration || 30);
       newRows.push({
         id: `before-${Date.now()}`,
-        experience_id: '', // Will be selected by user from experience type
-        experience_name: chip.experience_type || 'Ice Bath', // Experience type from AI
-        duration_minutes: 30, // Default, user can change
+        experience_id: chip.experience_id,
+        experience_name: chip.experience_name,
+        duration_minutes: chip.duration || 30,
         selected_time: beforeTime,
         source: 'ai',
         pathway_name: chip.pathway_name,
         pathway_color: chip.pathway_color
       });
     } else if (chip.timing === 'after') {
-      // Add single experience after - let user select duration
-      const afterTime = calculateAfterTime(selectedTime, selectedExperience, 30);
+      // Add single experience after
+      const afterTime = calculateAfterTime(selectedTime, selectedExperience, chip.duration || 30);
       newRows.push({
         id: `after-${Date.now()}`,
-        experience_id: '', // Will be selected by user
-        experience_name: chip.experience_type || 'Air',
-        duration_minutes: 30, // Default, user can change
+        experience_id: chip.experience_id,
+        experience_name: chip.experience_name,
+        duration_minutes: chip.duration || 30,
         selected_time: afterTime,
         source: 'ai',
         pathway_name: chip.pathway_name,
@@ -306,26 +310,26 @@ export default function AOIBookingForm() {
       });
     } else if (chip.timing === 'combo') {
       // Add multiple experiences from combo
-      if (chip.pre_experience_type) {
-        const beforeTime = calculateBeforeTime(selectedTime, 10);
+      if (chip.pre_experience_id) {
+        const beforeTime = calculateBeforeTime(selectedTime, chip.pre_duration || 10);
         newRows.push({
           id: `combo-before-${Date.now()}`,
-          experience_id: '',
-          experience_name: chip.pre_experience_type,
-          duration_minutes: 10,
+          experience_id: chip.pre_experience_id,
+          experience_name: chip.pre_experience_name,
+          duration_minutes: chip.pre_duration || 10,
           selected_time: beforeTime,
           source: 'ai',
           pathway_name: chip.pathway_name,
           pathway_color: chip.pathway_color
         });
       }
-      if (chip.post_experience_type) {
-        const afterTime = calculateAfterTime(selectedTime, selectedExperience, 10);
+      if (chip.post_experience_id) {
+        const afterTime = calculateAfterTime(selectedTime, selectedExperience, chip.post_duration || 10);
         newRows.push({
           id: `combo-after-${Date.now()}`,
-          experience_id: '',
-          experience_name: chip.post_experience_type,
-          duration_minutes: 10,
+          experience_id: chip.post_experience_id,
+          experience_name: chip.post_experience_name,
+          duration_minutes: chip.post_duration || 10,
           selected_time: afterTime,
           source: 'ai',
           pathway_name: chip.pathway_name,
@@ -336,7 +340,7 @@ export default function AOIBookingForm() {
     
     setBookingRows(prev => [...prev, ...newRows]);
     setShowChipExplanation({chip: null, show: false});
-  }; */
+  };
 
   // Helper functions for time calculations
   const calculateBeforeTime = (mainTime: string, duration: number) => {
@@ -345,64 +349,23 @@ export default function AOIBookingForm() {
     return before.toTimeString().slice(0, 5);
   };
 
-  const calculateAfterTime = (mainTime: string, mainExperienceId: string) => {
+  const calculateAfterTime = (mainTime: string, mainExperienceId: string, duration: number) => {
     const mainExp = experiences.find((exp: Experience) => exp.id === mainExperienceId);
     const main = new Date(`${selectedDate}T${mainTime}:00`);
     const after = new Date(main.getTime() + ((mainExp?.duration_minutes || 30) + 10) * 60000);
     return after.toTimeString().slice(0, 5);
   };
 
-  // Get experience variants by type (e.g., all Air experiences)
-  const getExperienceVariants = (experienceType: string) => {
-    return experiences.filter(exp => 
-      exp.name.toLowerCase().includes(experienceType.toLowerCase())
-    );
-  };
-
-  // Update booking row
-  const updateBookingRow = (rowId: string, updates: Partial<BookingRow>) => {
-    setBookingRows(prev => prev.map(row => 
-      row.id === rowId ? { ...row, ...updates } : row
-    ));
-  };
-
-  // Remove booking row
-  const removeBookingRow = (rowId: string) => {
-    setBookingRows(prev => prev.filter(row => row.id !== rowId));
-  };
-
-  // Get available time slots excluding user's own booking conflicts
-  const getFilteredTimeSlots = (forRowId: string, experienceDuration: number) => {
-    const userBookings = bookingRows
-      .filter(row => row.id !== forRowId && row.experience_id && row.selected_time)
-      .map(row => ({
-        start: new Date(`${selectedDate}T${row.selected_time}:00`),
-        end: new Date(`${selectedDate}T${row.selected_time}:00`).getTime() + (row.duration_minutes + 10) * 60000
-      }));
-
-    return availableTimeSlots.filter(slot => {
-      const slotStart = new Date(`${selectedDate}T${slot}:00`);
-      const slotEnd = new Date(slotStart.getTime() + (experienceDuration + 10) * 60000);
-
-      // Check if this slot conflicts with any user booking
-      return !userBookings.some(booking => {
-        const bookingEnd = new Date(booking.end);
-        return (slotStart < bookingEnd && slotEnd > booking.start);
-      });
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setMessage('');
+  e.preventDefault();
+  setIsLoading(true);
+  setMessage('');
 
-    if (!selectedExperience || !selectedDate || !selectedTime || !customerName) {
-      setMessage('Please fill in all required fields');
-      setIsLoading(false);
-      return;
-    }
-    
+  if (!selectedExperience || !selectedDate || !selectedTime || !customerName) {
+    setMessage('Please fill in all required fields');
+    setIsLoading(false);
+    return;
+  }
     try {
       // Check if any suggestions are selected
       const selectedSuggestionsList = selectedSuggestion !== null ? [suggestions[selectedSuggestion]] : [];
@@ -480,21 +443,26 @@ export default function AOIBookingForm() {
           console.log('Creating bookings:', bookings);
           let allSuccess = true;
           let createdCount = 0;
-          const createdBookingIds: string[] = [];
           
           for (const booking of bookings) {
+            // For combo chips, use the selected chip for all bookings
+            // For individual chips, match by experience_id
+            const matchingSuggestion = selectedChip.timing === 'combo' 
+              ? selectedChip 
+              : selectedSuggestionsList.find(s => s.experience_id === booking.experience_id);
+            
             const bookingData = {
               venue_id: AOI_VENUE_ID,
               experience_id: booking.experience_id,
               slot_time: booking.slot_time,
               customer_email: customerEmail,
               customer_name: customerName,
-              booking_explanation: selectedChip ? 
-                `${selectedChip.pathway_name}: ${selectedChip.reason}. ${selectedChip.pathway_description || ''}` : 
-                null,
-              pre_drinks: selectedChip?.pre_drinks || [],
-              during_drinks: selectedChip?.during_drinks || [],
-              after_drinks: selectedChip?.after_drinks || []
+              pre_drinks: matchingSuggestion?.pre_drinks || [],
+              during_drinks: matchingSuggestion?.during_drinks || [],
+              after_drinks: matchingSuggestion?.after_drinks || [],
+              booking_explanation: matchingSuggestion ? 
+                `${matchingSuggestion.pathway_name}: ${matchingSuggestion.reason}. ${matchingSuggestion.pathway_description || ''}` : 
+                null
             };
             
             console.log(`Creating booking ${createdCount + 1}/${bookings.length}:`, bookingData);
@@ -511,50 +479,44 @@ export default function AOIBookingForm() {
               allSuccess = false;
               break;
             }
-            
-            const result = await response.json();
-            createdBookingIds.push(result.booking.id);
             createdCount++;
           }
           
           if (allSuccess) {
-            setMessage(`✅ All ${bookings.length} experiences booked successfully! Personalizing your drinks...`);
-            
-            // Drinks are now included in the initial booking creation
-            
+            setMessage(`✅ All ${bookings.length} experiences booked successfully!`);
             resetForm();
           } else {
             setMessage('❌ Some bookings failed. Please check availability.');
           }
-        } else {
-          // Single booking only
-          const response = await fetch('/api/booking/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              venue_id: AOI_VENUE_ID,
-              experience_id: selectedExperience,
-              slot_time: `${selectedDate}T${selectedTime}:00`,
-              customer_email: customerEmail,
-              customer_name: customerName
-            })
-          });
+      } else {
+        // Single booking only
+        const response = await fetch('/api/booking/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            venueId: AOI_VENUE_ID,
+            experienceId: selectedExperience,
+            slotTime: `${selectedDate}T${selectedTime}:00`,
+            customerEmail,
+            customerName
+          })
+        });
 
-          const result = await response.json();
-          if (response.ok) {
-            const selectedExp = experiences.find(exp => exp.id === selectedExperience);
-            setMessage(`✓ Booking confirmed! Your ${selectedExp?.name} session is scheduled for ${selectedDate} at ${selectedTime}.`);
-            resetForm();
-          } else {
-            setMessage(`Error: ${result.error}`);
-          }
+        const result = await response.json();
+        if (response.ok) {
+          const selectedExp = experiences.find(exp => exp.id === selectedExperience);
+          setMessage(`✓ Booking confirmed! Your ${selectedExp?.name} session is scheduled for ${selectedDate} at ${selectedTime}.`);
+          resetForm();
+        } else {
+          setMessage(`Error: ${result.error}`);
         }
-      } catch {
-        setMessage('There was an error processing your booking. Please try again.');
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch {
+      setMessage('There was an error processing your booking. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const resetForm = () => {
     setSelectedExperience('');
@@ -566,117 +528,33 @@ export default function AOIBookingForm() {
     setSelectedSuggestion(null);
   };
 
-  // BookingRow component
-  /* const BookingRowComponent = React.memo(({ row, index }: { row: BookingRow; index: number }) => {
-    const variants = getExperienceVariants(row.experience_name);
-    const isUserRow = row.source === 'user';
-    const filteredSlots = getFilteredTimeSlots(row.id, row.duration_minutes);
-    
-    return (
-      <div className={`p-4 border rounded-lg ${isUserRow ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`} 
-           style={row.pathway_color ? { borderLeftColor: row.pathway_color, borderLeftWidth: '4px' } : {}}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-gray-600">#{index + 1}</span>
-            {row.pathway_name && (
-              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-                {row.pathway_name}
-              </span>
-            )}
-            {isUserRow && <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-600">Your Selection</span>}
-          </div>
-          {!isUserRow && (
-            <button
-              type="button"
-              onClick={() => removeBookingRow(row.id)}
-              className="text-red-500 hover:text-red-700 text-sm"
-            >
-              Remove
-            </button>
-          )}
-        </div>
-        
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Experience</label>
-            <select
-              value={row.experience_id}
-              onChange={(e) => {
-                const selectedExp = experiences.find(exp => exp.id === e.target.value);
-                updateBookingRow(row.id, {
-                  experience_id: e.target.value,
-                  experience_name: selectedExp?.name || '',
-                  duration_minutes: selectedExp?.duration_minutes || 30
-                });
-              }}
-              className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-              disabled={isUserRow}
-            >
-              <option value="">Select...</option>
-              {variants.map((exp) => (
-                <option key={exp.id} value={exp.id}>
-                  {exp.name} ({exp.duration_minutes}min)
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Duration</label>
-            <div className="p-2 text-sm bg-gray-50 border border-gray-300 rounded">
-              {row.duration_minutes} min
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Time</label>
-            {isUserRow ? (
-              <div className="p-2 text-sm bg-gray-50 border border-gray-300 rounded">
-                {row.selected_time}
-              </div>
-            ) : (
-              <select
-                value={row.selected_time}
-                onChange={(e) => updateBookingRow(row.id, { selected_time: e.target.value })}
-                className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">Select time...</option>
-                {filteredSlots.map((slot) => (
-                  <option key={slot} value={slot}>
-                    {slot}
-                  </option>
-                ))}
-              </select>
-            )}
-            {!isUserRow && filteredSlots.length === 0 && (
-              <div className="text-xs text-red-500 mt-1">
-                No available slots (conflicts with other bookings)
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }); */
 
   const selectedExp = experiences.find(exp => exp.id === selectedExperience);
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-white/10">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+      className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-white/10"
+    >
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-2xl font-light text-white">Reserve Your Transformation</h3>
       </div>
       
       {message && (
-        <div
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
           className={`p-4 rounded-xl mb-6 ${
             message.includes('Error') || message.includes('error') 
-              ? 'bg-red-500/20 border border-red-500/30 text-red-100' 
-              : 'bg-green-500/20 border border-green-500/30 text-green-100'
+              ? 'bg-red-500/10 border border-red-500/20 text-red-300' 
+              : 'bg-green-500/10 border border-green-500/20 text-green-300'
           }`}
         >
           {message}
-        </div>
+        </motion.div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -715,7 +593,7 @@ export default function AOIBookingForm() {
           </div>
           <div>
             <label className="text-white/70 text-sm mb-2 block">
-              Time
+              Available Times
               {loadingSlots && <span className="text-purple-400 ml-2">Loading...</span>}
             </label>
             {availableTimeSlots.length > 0 ? (
@@ -771,7 +649,10 @@ export default function AOIBookingForm() {
 
         {/* Experience Details */}
         {selectedExp && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10"
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10"
           >
             <div className="flex items-center gap-3 mb-2">
               <Clock className="w-4 h-4 text-purple-400" />
@@ -787,7 +668,7 @@ export default function AOIBookingForm() {
                 <span className="text-white ml-2">AED {selectedExp.venue_price}</span>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {isAIControlled && (
@@ -818,53 +699,62 @@ export default function AOIBookingForm() {
                 </div>
               </div>
             ) : suggestions.length > 0 ? (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Suggested Combinations</h3>
-                <div className="space-y-2">
+              <>
+                <p className="text-white/70 text-sm">Enhance your experience:</p>
+                <div className="flex flex-col gap-2">
                   {suggestions.map((suggestion, index) => (
-                    <button
+                    <motion.button
                       key={index}
                       type="button"
-                      onClick={() => setSelectedSuggestion(index)}
-                      className="w-full p-3 text-left border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg transition-all hover:scale-105"
+                      className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                        selectedSuggestion === index
+                          ? 'border-blue-500 bg-blue-50'
+                          : selectedSuggestion !== null && selectedSuggestion !== index
+                          ? 'border-gray-200 opacity-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => {
+                        setSelectedSuggestion(selectedSuggestion === index ? null : index);
+                      }}
                     >
-                      <div className="font-medium">{String(suggestion.label)}</div>
-                      {suggestion.total_duration ? (
-                        <div className="text-sm text-gray-600 mt-1">
-                          Total duration: {String(suggestion.total_duration)} minutes
+                      <div className="text-left">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-white font-medium">{suggestion.label as string}</span>
+                          {selectedSuggestion === index && (
+                            <span className="text-green-400 text-sm ml-2">✓ Selected</span>
+                          )}
                         </div>
-                      ) : null}
-                      {suggestion.pathway_description ? (
-                        <div className="text-sm text-gray-600 mt-1">
-                          {String(suggestion.pathway_description).slice(0, 100)}...
-                        </div>
-                      ) : null}
-                    </button>
+                        <p className="text-white/60 text-sm">{suggestion.reason as string}</p>
+                        <p className="text-white/50 text-xs mt-1">From: {suggestion.pathway_name as string}</p>
+                      </div>
+                    </motion.button>
                   ))}
                 </div>
                 
-                {suggestions.length > 0 && selectedSuggestion !== null && (
-                  <div className="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
-                    <p className="text-green-400 text-sm">
-                      ✓ {String(suggestions[selectedSuggestion]?.label)} selected
-                    </p>
-                  </div>
-                )}
-              </div>
+                  {suggestions.length > 0 && selectedSuggestion !== null && (
+                    <div className="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+                      <p className="text-green-400 text-sm">
+                        ✓ {suggestions[selectedSuggestion]?.label as string} selected
+                      </p>
+                    </div>
+                  )}
+              </>
             ) : null}
           </div>
         )}
 
-        <button
+        <motion.button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 px-8 rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {isLoading ? 'Creating Booking...' : 
            selectedSuggestion !== null ? `Reserve ${suggestions[selectedSuggestion]?.timing === 'combo' ? 'Complete Journey' : '2 Experiences'}` : 'Reserve Your Session'}
-        </button>
+        </motion.button>
 
       </form>
-    </div>
+    </motion.div>
   );
 }

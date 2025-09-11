@@ -10,10 +10,10 @@ export async function POST(req: Request) {
         slot_time: slotTime,
         customer_email: customerEmail,
         customer_name: customerName,
-        booking_explanation: bookingExplanation = null,
         pre_drinks: preDrinks = [],
         during_drinks: duringDrinks = [],
-        after_drinks: afterDrinks = []
+        after_drinks: afterDrinks = [],
+        booking_explanation: bookingExplanation = null
     } = await req.json();
 
     if (!venueId || !experienceId || !slotTime || !customerEmail) {
@@ -90,10 +90,10 @@ export async function POST(req: Request) {
                 customer_email: customerEmail,
                 customer_name: customerName,
                 booking_status: 'sessions_scheduled',
-                booking_explanation: bookingExplanation,
-                pre_drinks: preDrinks || [],
-                during_drinks: duringDrinks || [],
-                after_drinks: afterDrinks || []
+                pre_drinks: preDrinks,
+                during_drinks: duringDrinks,
+                after_drinks: afterDrinks,
+                booking_explanation: bookingExplanation
             })
             .select()
             .single();
@@ -106,8 +106,34 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
-        // Send immediate booking confirmation email (without drinks)
+        // Send booking confirmation email with preflight menu
         try {
+            // Fetch the actual drink details from drinks table
+            const allDrinkIds = [...preDrinks, ...duringDrinks, ...afterDrinks];
+            let drinkDetails: Record<string, { name: string; description: string }> = {};
+            
+            if (allDrinkIds.length > 0) {
+                const { data: drinks } = await supabase
+                    .from('drinks')
+                    .select('id, name, description')
+                    .in('id', allDrinkIds);
+                
+                if (drinks) {
+                    drinkDetails = drinks.reduce((acc: Record<string, { name: string; description: string }>, drink: { id: string; name: string; description: string }) => {
+                        acc[drink.id] = drink;
+                        return acc;
+                    }, {});
+                }
+            }
+
+            // Format drinks for email
+            const formatDrinks = (drinkIds: string[]) => {
+                return drinkIds.map(id => ({
+                    name: drinkDetails[id]?.name || 'Specialty Drink',
+                    description: drinkDetails[id]?.description || 'Curated for your wellness journey'
+                }));
+            };
+
             const resend = new Resend(process.env.RESEND_API_KEY);
             
             await resend.emails.send({
@@ -122,21 +148,9 @@ export async function POST(req: Request) {
                     durationMinutes: venueExperience.duration_minutes,
                     venueName: venueExperience.venue_name || 'AOI Wellness Center',
                     preflightMenu: {
-                        preDrinks: preDrinks.map((drink: any) => ({
-                            name: drink.name,
-                            description: drink.description || '',
-                            reason: drink.reason || 'Curated for your wellness journey'
-                        })),
-                        duringDrinks: duringDrinks.map((drink: any) => ({
-                            name: drink.name,
-                            description: drink.description || '',
-                            reason: drink.reason || 'Optimal hydration during your experience'
-                        })),
-                        afterDrinks: afterDrinks.map((drink: any) => ({
-                            name: drink.name,
-                            description: drink.description || '',
-                            reason: drink.reason || 'Recovery and restoration'
-                        }))
+                        preDrinks: formatDrinks(preDrinks),
+                        duringDrinks: formatDrinks(duringDrinks),
+                        afterDrinks: formatDrinks(afterDrinks)
                     }
                 })
             });
