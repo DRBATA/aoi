@@ -376,8 +376,58 @@ export default function AOIBookingForm() {
     return;
   }
     try {
-      // Check if any suggestions are selected
-      const selectedSuggestionsList = selectedSuggestion !== null ? [suggestions[selectedSuggestion]] : [];
+      // Use booking rows if available, otherwise fall back to single experience
+      if (bookingRows.length > 0) {
+        // Create bookings from all booking rows
+        const bookings = bookingRows.map(row => ({
+          experience_id: row.experience_id,
+          slot_time: `${selectedDate}T${row.selected_time}:00`,
+          experience_name: row.experience_name
+        }));
+        
+        // Create all bookings
+        console.log('Creating bookings from booking rows:', bookings);
+        let allSuccess = true;
+        let createdCount = 0;
+        
+        for (const booking of bookings) {
+          const bookingData = {
+            venue_id: AOI_VENUE_ID,
+            experience_id: booking.experience_id,
+            slot_time: booking.slot_time,
+            customer_email: customerEmail,
+            customer_name: customerName,
+            booking_status: 'sessions_scheduled'
+          };
+
+          const { error } = await supabase
+            .from('bookings')
+            .insert([bookingData]);
+
+          if (error) {
+            console.error('Error creating booking:', error);
+            allSuccess = false;
+            break;
+          } else {
+            createdCount++;
+          }
+        }
+
+        if (allSuccess) {
+          setMessage(`Successfully created ${createdCount} booking${createdCount > 1 ? 's' : ''}! Check your email for confirmation.`);
+          // Reset form
+          setBookingRows([]);
+          setSelectedExperience('');
+          setSelectedDate('');
+          setSelectedTime('');
+          setCustomerName('');
+          setCustomerEmail('');
+        } else {
+          setMessage(`Error creating bookings. ${createdCount} of ${bookings.length} bookings were created.`);
+        }
+      } else if (selectedSuggestion !== null && suggestions.length > 0) {
+        // Fallback to old logic for single experience
+        const selectedSuggestionsList = [suggestions[selectedSuggestion]];
       
       if (selectedSuggestionsList.length > 0) {
           const selectedChip = selectedSuggestionsList[0];
@@ -520,7 +570,36 @@ export default function AOIBookingForm() {
           setMessage(`Error: ${result.error}`);
         }
       }
-    } catch {
+      } else {
+        // No booking rows and no selected suggestion - create single experience booking
+        const bookingData = {
+          venue_id: AOI_VENUE_ID,
+          experience_id: selectedExperience,
+          slot_time: `${selectedDate}T${selectedTime}:00`,
+          customer_email: customerEmail,
+          customer_name: customerName,
+          booking_status: 'sessions_scheduled'
+        };
+
+        const { error } = await supabase
+          .from('bookings')
+          .insert([bookingData]);
+
+        if (error) {
+          console.error('Error creating booking:', error);
+          setMessage('Error creating booking. Please try again.');
+        } else {
+          setMessage('Successfully created booking! Check your email for confirmation.');
+          // Reset form
+          setSelectedExperience('');
+          setSelectedDate('');
+          setSelectedTime('');
+          setCustomerName('');
+          setCustomerEmail('');
+        }
+      }
+    } catch (error) {
+      console.error('Booking error:', error);
       setMessage('There was an error processing your booking. Please try again.');
     } finally {
       setIsLoading(false);
