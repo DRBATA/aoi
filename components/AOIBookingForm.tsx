@@ -12,16 +12,6 @@ interface Experience {
   venue_price: number;
 }
 
-interface BookingRow {
-  id: string;
-  experience_id: string;
-  experience_name: string;
-  duration_minutes: number;
-  selected_time: string;
-  source: 'user' | 'ai';
-  pathway_name?: string;
-  pathway_color?: string;
-}
 
 
 export default function AOIBookingForm() {
@@ -206,69 +196,16 @@ export default function AOIBookingForm() {
     return () => window.removeEventListener('chatControlBooking' as keyof WindowEventMap, handleChatControl as EventListener);
   }, []);
 
-
-  const generateAvailableSlots = useCallback(async (date: string, experience: Experience) => {
-    setLoadingSlots(true);
-    try {
-      const { data: existingBookings, error } = await supabase
-        .from('bookings')
-        .select('slot_time, duration_minutes')
-        .eq('venue_id', AOI_VENUE_ID)
-        .gte('slot_time', `${date}T00:00:00`)
-        .lt('slot_time', `${date}T23:59:59`)
-        .in('booking_status', ['sessions_scheduled', 'in_session']);
-      
-      if (error) throw error;
-
-      const slots: string[] = [];
-      const startHour = 9;
-      const endHour = 21;
-      const slotInterval = 10;
-      const experienceDuration = experience.duration_minutes || 60;
-      const bufferTime = 10;
-
-      for (let hour = startHour; hour < endHour; hour++) {
-        for (let minute = 0; minute < 60; minute += slotInterval) {
-          const slotTime = new Date(`${date}T${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:00`);
-          const slotEndTime = new Date(slotTime.getTime() + experienceDuration * 60000);
-          
-          if (slotEndTime.getHours() > endHour) continue;
-          
-          const hasConflict = existingBookings?.some((booking: { slot_time: string; duration_minutes: number }) => {
-            const bookingStart = new Date(booking.slot_time);
-            const bookingEnd = new Date(bookingStart.getTime() + (booking.duration_minutes + bufferTime) * 60000);
-            const newSlotStart = slotTime;
-            const newSlotEnd = new Date(slotTime.getTime() + (experienceDuration + bufferTime) * 60000);
-            
-            return (newSlotStart < bookingEnd && newSlotEnd > bookingStart);
-          });
-          
-          if (!hasConflict) {
-            slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
-          }
-        }
-      }
-      
-      setAvailableTimeSlots(slots);
-    } catch (error) {
-      console.error('Error generating available slots:', error);
-      setAvailableTimeSlots([]);
-    } finally {
-      setLoadingSlots(false);
-    }
-  }, [selectedDate, selectedExperience, experiences, supabase]);
-
-
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsLoading(true);
-  setMessage('');
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage('');
 
-  if (!selectedExperience || !selectedDate || !selectedTime || !customerName) {
-    setMessage('Please fill in all required fields');
-    setIsLoading(false);
-    return;
-  }
+    if (!selectedExperience || !selectedDate || !selectedTime || !customerName) {
+      setMessage('Please fill in all required fields');
+      setIsLoading(false);
+      return;
+    }
     try {
       // Check if any suggestions are selected
       const selectedSuggestionsList = selectedSuggestion !== null ? [suggestions[selectedSuggestion]] : [];
