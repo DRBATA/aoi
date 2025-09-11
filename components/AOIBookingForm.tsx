@@ -285,7 +285,7 @@ export default function AOIBookingForm() {
     return before.toTimeString().slice(0, 5);
   };
 
-  const calculateAfterTime = (mainTime: string, mainExperienceId: string, duration: number) => {
+  const calculateAfterTime = (mainTime: string, mainExperienceId: string) => {
     const mainExp = experiences.find((exp: Experience) => exp.id === mainExperienceId);
     const main = new Date(`${selectedDate}T${mainTime}:00`);
     const after = new Date(main.getTime() + ((mainExp?.duration_minutes || 30) + 10) * 60000);
@@ -311,7 +311,7 @@ export default function AOIBookingForm() {
       });
     } else if (chip.timing === 'after') {
       // Add single experience after
-      const afterTime = calculateAfterTime(selectedTime, selectedExperience, (chip.duration as number) || 30);
+      const afterTime = calculateAfterTime(selectedTime, selectedExperience);
       newRows.push({
         id: `after-${Date.now()}`,
         experience_id: chip.experience_id as string,
@@ -338,7 +338,7 @@ export default function AOIBookingForm() {
         });
       }
       if (chip.post_experience_id) {
-        const afterTime = calculateAfterTime(selectedTime, selectedExperience, (chip.post_duration as number) || 10);
+        const afterTime = calculateAfterTime(selectedTime, selectedExperience);
         newRows.push({
           id: `combo-after-${Date.now()}`,
           experience_id: chip.post_experience_id as string,
@@ -801,7 +801,8 @@ export default function AOIBookingForm() {
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                       onClick={() => {
-                        setSelectedSuggestion(selectedSuggestion === index ? null : index);
+                        // Add the chip directly to booking rows
+                        addBookingRowsFromChip(suggestion);
                       }}
                     >
                       <div className="text-left">
