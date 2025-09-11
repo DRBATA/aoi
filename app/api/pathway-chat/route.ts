@@ -82,52 +82,12 @@ Return JSON: {"enriched_reasons": [{"chip_id": "string", "reason": "string"}]}`
   }
 }
 
-// Generate pathway reasoning from display name (fallback only)
-function generatePathwayReason(displayName: string, timing: 'before' | 'after', experienceName: string): string {
-  const name = displayName.toLowerCase();
-  
-  if (name.includes('activate')) {
-    return timing === 'before' ? 
-      `Prime your system for activation with ${experienceName}` : 
-      `Complete the activation sequence with ${experienceName}`;
-  }
-  
-  if (name.includes('integration')) {
-    return timing === 'before' ? 
-      `Prepare for deep integration with ${experienceName}` : 
-      `Seal the integration process with ${experienceName}`;
-  }
-  
-  if (name.includes('reset')) {
-    return timing === 'before' ? 
-      `Begin the reset protocol with ${experienceName}` : 
-      `Complete the reset cycle with ${experienceName}`;
-  }
-  
-  if (name.includes('implosion')) {
-    return timing === 'before' ? 
-      `Prepare for implosion therapy with ${experienceName}` : 
-      `Maximize implosion benefits with ${experienceName}`;
-  }
-  
-  if (name.includes('contrast')) {
-    return timing === 'before' ? 
-      `Set up contrast therapy with ${experienceName}` : 
-      `Complete the contrast cycle with ${experienceName}`;
-  }
-  
-  // Fallback
-  return timing === 'before' ? 
-    `Perfect preparation with ${experienceName}` : 
-    `Optimal recovery with ${experienceName}`;
-}
 
 export async function POST(req: Request) {
   try {
     const { 
       selected_experience_id, 
       selected_time, 
-      ai_enrich = false,
       customer_email,
       pathway_id,
       get_drinks_only = false

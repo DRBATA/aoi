@@ -257,7 +257,7 @@ export default function AOIBookingForm() {
     } finally {
       setLoadingSlots(false);
     }
-  }, [selectedDate, selectedExperience, experiences, supabase]);
+  }, [selectedDate, selectedExperience, supabase]);
 
   // Initialize booking rows with user's initial selection
   useEffect(() => {
