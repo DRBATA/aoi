@@ -671,7 +671,7 @@ export default function AOIBookingForm() {
             </h3>
             {bookingRows.map((row, index) => (
               <div key={row.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
                       {index + 1}
@@ -683,12 +683,50 @@ export default function AOIBookingForm() {
                       </span>
                     )}
                   </div>
-                  <span className="text-white/60 text-sm">{row.selected_time}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBookingRows(prev => prev.filter(r => r.id !== row.id));
+                    }}
+                    className="text-red-400 hover:text-red-300 text-xs"
+                  >
+                    Remove
+                  </button>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-xs text-white/60">
-                  <div>Duration: {row.duration_minutes} min</div>
+                
+                <div className="grid grid-cols-2 gap-4 mb-2">
+                  <div>
+                    <label className="text-white/60 text-xs mb-1 block">Time</label>
+                    <select
+                      value={row.selected_time}
+                      onChange={(e) => {
+                        setBookingRows(prev => prev.map(r => 
+                          r.id === row.id ? {...r, selected_time: e.target.value} : r
+                        ));
+                      }}
+                      className="w-full p-2 bg-white/10 border border-white/20 rounded text-white text-xs"
+                    >
+                      {availableTimeSlots.map((slot) => (
+                        <option key={slot} value={slot} className="bg-gray-900 text-white">
+                          {slot}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-white/60 text-xs mb-1 block">Duration</label>
+                    <div className="w-full p-2 bg-white/10 border border-white/20 rounded text-white text-xs">
+                      {(() => {
+                        const experience = experiences.find(exp => exp.id === row.experience_id);
+                        return experience ? `${experience.duration_minutes} min` : `${row.duration_minutes} min`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-xs text-white/60">
                   {row.pathway_name && (
-                    <div>From: {row.pathway_name}</div>
+                    <span>From: {row.pathway_name}</span>
                   )}
                 </div>
               </div>
