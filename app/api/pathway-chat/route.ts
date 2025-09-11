@@ -254,7 +254,7 @@ export async function POST(req: Request) {
                 pre_drinks: beforeStep?.pre_drinks || [],
                 during_drinks: sequence[experienceIndex]?.during_drinks || [],
                 after_drinks: afterStep?.after_drinks || [],
-                chip_id: `combo_${pathway.id}`
+                chip_id: `combo_-1_+1_${pathway.id}`
               });
               comboCount++;
             }
@@ -267,7 +267,10 @@ export async function POST(req: Request) {
       const enrichedSuggestions = await enrichSuggestionsWithAI(suggestions as Suggestion[], selectedExperienceName);
       console.log('AI enrichment complete');
       
-      return NextResponse.json(enrichedSuggestions);
+      return NextResponse.json({
+        type: 'experience_suggestions',
+        suggestions: enrichedSuggestions
+      });
     }
 
     // Original pathway/drink recommendation logic
