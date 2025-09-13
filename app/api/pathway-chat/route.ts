@@ -168,7 +168,27 @@ Return JSON: {
     const aiResult = JSON.parse(content);
     
     // Transform new AI structure to chip format for UI
-    const enrichedChips = aiResult.enriched_chips?.map((chip: any) => ({
+    interface AIChip {
+      chip_id: string;
+      summary: string;
+      experiences: Array<{
+        position: string;
+        experience_type: string;
+        available_experiences?: Array<{
+          experience_id: string;
+          experience_name: string;
+          duration_minutes: number;
+        }>;
+        explanation: string;
+        pre_drinks: Array<{ product_id: string; quantity: number }>;
+        during_drinks: Array<{ product_id: string; quantity: number }>;
+        after_drinks: Array<{ product_id: string; quantity: number }>;
+      }>;
+      pathway_name?: string;
+      pathway_color?: string;
+    }
+    
+    const enrichedChips = aiResult.enriched_chips?.map((chip: AIChip) => ({
       chip_id: chip.chip_id,
       summary: chip.summary,
       reason: chip.summary, // For backward compatibility
@@ -273,8 +293,23 @@ export async function POST(req: Request) {
       for (const pathway of relevantPathways || []) {
         const sequence = pathway.sequence;
         console.log('Checking pathway:', pathway.display_name, 'sequence:', JSON.stringify(sequence));
-        const experienceIndex = sequence.findIndex((step: { available_experiences: any[] }) => 
-          step.available_experiences?.some((exp: any) => exp.experience_id === selected_experience_id)
+        
+        interface PathwayStep {
+          available_experiences?: Array<{
+            experience_id: string;
+            experience_name: string;
+            duration_minutes: number;
+          }>;
+        }
+        
+        interface ExperienceOption {
+          experience_id: string;
+          experience_name: string;
+          duration_minutes: number;
+        }
+        
+        const experienceIndex = sequence.findIndex((step: PathwayStep) => 
+          step.available_experiences?.some((exp: ExperienceOption) => exp.experience_id === selected_experience_id)
         );
         console.log('Experience index in', pathway.display_name, ':', experienceIndex);
         

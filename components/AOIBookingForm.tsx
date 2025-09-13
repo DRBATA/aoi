@@ -193,7 +193,7 @@ export default function AOIBookingForm() {
     } finally {
       setLoadingSlots(false);
     }
-  }, [selectedDate, selectedExperience, supabase]);
+  }, [supabase]);
 
   // Initialize booking rows with user's initial selection
   useEffect(() => {
@@ -247,7 +247,7 @@ export default function AOIBookingForm() {
         after_drinks: Array<{product_id: string; quantity: number}>;
       }>;
       
-      experiences.forEach((exp, index) => {
+      experiences.forEach((exp) => {
         let experienceTime = selectedTime;
         
         // Calculate time based on position
