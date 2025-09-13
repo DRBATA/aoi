@@ -106,8 +106,8 @@ Example 2 - User selects "Infrared Sauna" and you suggest Activate Maxi sequence
       "available_experiences": [
         {"experience_id": "27e73652-e82f-4e65-9780-09ab73f299d2", "experience_name": "Ice Bath", "duration_minutes": 10}
       ],
-      "explanation": "Pre-sauna cold snaps your system into high alert. Brief cold spikes noradrenaline, tightens vessels, and clears mental fog - priming you for heat. Coconut water provides potassium for recovery from cold stress.",
-      "pre_drinks": [],
+      "explanation": "Pre-sauna cold snaps your system into high alert. Brief cold spikes noradrenaline, tightens vessels, and clears mental fog - priming you for heat. Ginger Shot warms the core and kicks circulation before cold exposure.",
+      "pre_drinks": [{"product_id": "e3567b15-1906-49b6-b912-dbce0fae0e8d", "quantity": 1}],
       "during_drinks": [{"product_id": "812b66cd-a911-4fd9-9fb7-980f432c14d9", "quantity": 1}],
       "after_drinks": []
     },
@@ -117,9 +117,9 @@ Example 2 - User selects "Infrared Sauna" and you suggest Activate Maxi sequence
       "available_experiences": [
         {"experience_id": "27e73652-e82f-4e65-9780-09ab73f299d2", "experience_name": "Ice Bath", "duration_minutes": 10}
       ],
-      "explanation": "Post-sauna cold locks the reset. Reconstricts vessels, dampens inflammation, and stabilizes the autonomic swing from heat exposure. Coconut water replenishes potassium depleted during the heat-cold contrast.",
+      "explanation": "Post-sauna cold locks the reset. Reconstricts vessels, dampens inflammation, and stabilizes the autonomic swing from heat exposure. Light Humantra electrolyte top-up maintains balance during second cold exposure.",
       "pre_drinks": [],
-      "during_drinks": [{"product_id": "812b66cd-a911-4fd9-9fb7-980f432c14d9", "quantity": 1}],
+      "during_drinks": [{"product_id": "44d55f80-5174-4938-90b8-02d46987e1f3", "quantity": 1}],
       "after_drinks": []
     },
     {
@@ -127,11 +127,12 @@ Example 2 - User selects "Infrared Sauna" and you suggest Activate Maxi sequence
       "experience_type": "AOI Air Implosion Dome PRO",
       "available_experiences": [
         {"experience_id": "7acac09d-a790-49d8-908c-5ebddd9a1ce7", "experience_name": "AOI Air Implosion Dome PRO (30-min)", "duration_minutes": 30},
-        {"experience_id": "f6507cf0-7757-439e-9d4e-f1f8f84c95b0", "experience_name": "AOI Air Implosion Dome PRO (50-min)", "duration_minutes": 50}
+        {"experience_id": "f6507cf0-7757-439e-9d4e-f1f8f84c95b0", "experience_name": "AOI Air Implosion Dome PRO (50-min)", "duration_minutes": 50},
+        {"experience_id": "ad77be13-e3f7-4acf-8535-82b6d22dd540", "experience_name": "AOI Air Implosion Dome PRO (20-min)", "duration_minutes": 20}
       ],
-      "explanation": "Turn arousal into flow. Immersive light-sound with free movement channels that alertness into coordinated focus and creative drive. Enhanced caffeine provides sustained cognitive lift for the premium experience.",
-      "pre_drinks": [],
-      "during_drinks": [{"product_id": "553cbf1e-a235-48cf-8568-0e23be17cabf", "quantity": 1}],
+      "explanation": "Turn arousal into flow. Immersive light-sound with free movement channels that alertness into coordinated focus and creative drive. METÉ provides clean cognitive lift for enhanced focus during the premium dome experience.",
+      "pre_drinks": [{"product_id": "e007abc9-3255-4484-91f2-162b354da398", "quantity": 1}],
+      "during_drinks": [],
       "after_drinks": []
     }
   ]

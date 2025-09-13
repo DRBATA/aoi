@@ -235,8 +235,12 @@ export default function AOIBookingForm() {
     if (chip.experiences && Array.isArray(chip.experiences)) {
       const experiences = chip.experiences as Array<{
         position: string;
-        experience_id: string;
-        experience_name: string;
+        experience_type: string;
+        available_experiences?: Array<{
+          experience_id: string;
+          experience_name: string;
+          duration_minutes: number;
+        }>;
         explanation: string;
         pre_drinks: Array<{product_id: string; quantity: number}>;
         during_drinks: Array<{product_id: string; quantity: number}>;
@@ -268,13 +272,13 @@ export default function AOIBookingForm() {
           experienceTime = thirdAfter.toTimeString().slice(0, 5);
         }
         
-        // Use first duration option as default
-        const defaultOption = (exp as any).available_experiences?.[0];
+        // Get default experience from available_experiences if present
+        const defaultOption = exp.available_experiences?.[0];
         
         newRows.push({
           id: `${chip.chip_id}-${exp.position}-${Date.now()}`,
-          experience_id: defaultOption?.experience_id || exp.experience_id,
-          experience_name: defaultOption?.experience_name || exp.experience_name,
+          experience_id: defaultOption?.experience_id || '',
+          experience_name: defaultOption?.experience_name || exp.experience_type,
           duration_minutes: defaultOption?.duration_minutes || 30,
           selected_time: experienceTime,
           source: 'ai',
@@ -284,7 +288,7 @@ export default function AOIBookingForm() {
           selected_during_drink: exp.during_drinks?.[0]?.product_id || undefined,
           selected_after_drink: exp.after_drinks?.[0]?.product_id || undefined,
           explanation: exp.explanation,
-          available_experiences: (exp as any).available_experiences // Store for dropdown population
+          available_experiences: exp.available_experiences // Store for dropdown population
         });
       });
     }
