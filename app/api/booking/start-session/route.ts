@@ -79,20 +79,6 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
-        // Update cart with booking reference
-        const { error: updateCartError } = await supabase
-            .from('cart_headers')
-            .update({ 
-                booking_id: bookingId
-            })
-            .eq('id', cartId);
-
-        if (updateCartError) {
-            return NextResponse.json({ 
-                error: "Failed to link booking to cart", 
-                details: updateCartError.message 
-            }, { status: 500 });
-        }
 
         // Check if experience is already in cart to prevent duplicates
         const { data: existingCartItem } = await supabase
