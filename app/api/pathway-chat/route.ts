@@ -53,15 +53,16 @@ When clicked, each chip adds ALL its experiences to booking state with position 
 CHIP SUMMARY (80 chars max): Explains why this specific sequence creates circumstances for transcendence/improved wellbeing.
 INDIVIDUAL EXPLANATIONS: Each experience booking gets its own explanation describing that specific experience at that position + drink rationale.
 DRINKS: Extract from pathway data using product_ids (not names) and assign to pre_drinks/during_drinks/after_drinks fields for each experience.
-Use ONLY experiences from venue_experiences table as matched through the pathway sequences provided.
-Same experience can appear in different combinations (e.g., ice+sauna+ice+air vs sauna+ice) creating different benefits.
+Use ONLY base experience types from the pathway sequences provided.
+Base experience types are: AOI Earth Bed, AOI Air Implosion Dome, AOI Air Implosion Dome PRO, AOI Float, Ice Bath, Infrared Sauna, Johny Dar Private Session.
+Same base type can appear in different combinations creating different benefits.
 Generate 3-4 diverse pathway options: pre-experience preparation, single follow-ups, 2-3 experience combinations, unique sequences.
 Each option explains the synergy/sequence benefit of all experiences together in the summary.
 Individual explanations include WHY that experience at that position matters + how the drinks support the journey.
 Never duplicate the exact same sequence from different pathways, but allow creative recombinations.
-Output enriched_chips array with chip_id (position-based), summary (for chip display), and explanations + drinks (for booking storage).
-Remember: User selects duration via dropdown, so focus on experience type and sequence logic, not specific timings.
-All suggestions must come from the pathways table data provided - no invented experiences like "breathwork" unless actually in venue_experiences.`
+Output enriched_chips array with chip_id, summary (for chip display), and experiences array with position-based explanations + drinks.
+Remember: User selects specific duration via dropdown after seeing the base experience type, so focus on experience type and sequence logic.
+All suggestions must use base experience types from the pathways table data provided.`
       }, {
         role: "user",
         content: `Selected Experience: ${selectedExperienceName}
@@ -69,20 +70,91 @@ All suggestions must come from the pathways table data provided - no invented ex
 Pathway Groups: ${JSON.stringify(pathwayGroups, null, 2)}
 
 Generate 3-4 diverse pathway combinations from the data provided.
-Each chip should explain the full sequence benefit in its summary.
-Each individual experience needs its own explanation with drink rationale.
-Use actual product_ids from the pathway data for all drinks.
-Focus on variety and unique sequences that create transcendent experiences.
+
+EXACT EXAMPLES:
+
+Example 1 - User selects "AOI Earth Bed" and you suggest Integration Mini:
+{
+  "chip_id": "integration_mini_pathway",
+  "summary": "Downshift stress fast, then warm to repair for calm clarity",
+  "experiences": [
+    {
+      "position": "+1",
+      "experience_type": "Infrared Sauna",
+      "available_experiences": [
+        {"experience_id": "a9270a4c-dc0b-4e72-bbad-1f01b7cef82e", "experience_name": "Infrared Sauna", "duration_minutes": 30}
+      ],
+      "explanation": "Following Earth Bed's parasympathetic activation, gentle heat raises core temperature and induces heat-shock proteins (HSPs) - your body's repair crew. Circulation increases, tissues soften, leaving you less stiff and clearer. Humantra Electrolytes replace sodium lost in sweat while spring water maintains hydration during heat exposure.",
+      "pre_drinks": [],
+      "during_drinks": [
+        {"product_id": "44d55f80-5174-4938-90b8-02d46987e1f3", "quantity": 1},
+        {"product_id": "87081f28-9b07-4a3c-a64f-086a711a9f32", "quantity": 1}
+      ],
+      "after_drinks": []
+    }
+  ]
+}
+
+Example 2 - User selects "Infrared Sauna" and you suggest Activate Maxi sequence:
+{
+  "chip_id": "activate_maxi_pathway",
+  "summary": "Shock → flush → lock → flow activation sequence",
+  "experiences": [
+    {
+      "position": "-1",
+      "experience_type": "Ice Bath",
+      "available_experiences": [
+        {"experience_id": "27e73652-e82f-4e65-9780-09ab73f299d2", "experience_name": "Ice Bath", "duration_minutes": 10}
+      ],
+      "explanation": "Pre-sauna cold snaps your system into high alert. Brief cold spikes noradrenaline, tightens vessels, and clears mental fog - priming you for heat. Coconut water provides potassium for recovery from cold stress.",
+      "pre_drinks": [],
+      "during_drinks": [{"product_id": "812b66cd-a911-4fd9-9fb7-980f432c14d9", "quantity": 1}],
+      "after_drinks": []
+    },
+    {
+      "position": "+1",
+      "experience_type": "Ice Bath",
+      "available_experiences": [
+        {"experience_id": "27e73652-e82f-4e65-9780-09ab73f299d2", "experience_name": "Ice Bath", "duration_minutes": 10}
+      ],
+      "explanation": "Post-sauna cold locks the reset. Reconstricts vessels, dampens inflammation, and stabilizes the autonomic swing from heat exposure. Coconut water replenishes potassium depleted during the heat-cold contrast.",
+      "pre_drinks": [],
+      "during_drinks": [{"product_id": "812b66cd-a911-4fd9-9fb7-980f432c14d9", "quantity": 1}],
+      "after_drinks": []
+    },
+    {
+      "position": "+2",
+      "experience_type": "AOI Air Implosion Dome PRO",
+      "available_experiences": [
+        {"experience_id": "7acac09d-a790-49d8-908c-5ebddd9a1ce7", "experience_name": "AOI Air Implosion Dome PRO (30-min)", "duration_minutes": 30},
+        {"experience_id": "f6507cf0-7757-439e-9d4e-f1f8f84c95b0", "experience_name": "AOI Air Implosion Dome PRO (50-min)", "duration_minutes": 50}
+      ],
+      "explanation": "Turn arousal into flow. Immersive light-sound with free movement channels that alertness into coordinated focus and creative drive. Enhanced caffeine provides sustained cognitive lift for the premium experience.",
+      "pre_drinks": [],
+      "during_drinks": [{"product_id": "553cbf1e-a235-48cf-8568-0e23be17cabf", "quantity": 1}],
+      "after_drinks": []
+    }
+  ]
+}
 
 Return JSON: {
   "enriched_chips": [
     {
-      "chip_id": "-1_experience_id or +1_experience_id or combo_experience_id",
-      "summary": "Brief summary for chip display",
-      "explanation": "Detailed explanation for email",
-      "selected_pre_drink": null,
-      "selected_during_drink": null, 
-      "selected_after_drink": null
+      "chip_id": "unique_pathway_identifier",
+      "summary": "80 char max explaining full sequence benefit",
+      "experiences": [
+        {
+          "position": "-1, +1, +2, +3 etc",
+          "experience_type": "base experience name without duration",
+          "available_experiences": [
+            {"experience_id": "actual_id", "experience_name": "Experience Name (duration)", "duration_minutes": 30}
+          ],
+          "explanation": "why THIS experience at THIS position with drinks",
+          "pre_drinks": [],
+          "during_drinks": [{"product_id": "actual_id", "quantity": 1}],
+          "after_drinks": []
+        }
+      ]
     }
   ]
 }`
@@ -94,28 +166,19 @@ Return JSON: {
 
     const aiResult = JSON.parse(content);
     
-    // Merge AI enrichment back into suggestions
-    suggestions.forEach(suggestion => {
-      // Create position-based chip ID
-      let position = '';
-      if (suggestion.timing === 'before') position = '-1';
-      else if (suggestion.timing === 'after') position = '+1';
-      else if (suggestion.timing === 'combo') position = 'combo';
-      
-      const chipId = `${position}_${suggestion.experience_id}`;
-      const enrichedChip = aiResult.enriched_chips?.find((c: { chip_id: string; summary?: string; explanation?: string; selected_pre_drink?: string; selected_during_drink?: string; selected_after_drink?: string }) => c.chip_id === chipId);
-      
-      if (enrichedChip) {
-        suggestion.summary = enrichedChip.summary || suggestion.reason;
-        suggestion.explanation = enrichedChip.explanation || suggestion.reason;
-        suggestion.reason = enrichedChip.summary || suggestion.reason; // Keep for backward compatibility
-        suggestion.selected_pre_drink = enrichedChip.selected_pre_drink;
-        suggestion.selected_during_drink = enrichedChip.selected_during_drink;
-        suggestion.selected_after_drink = enrichedChip.selected_after_drink;
-      }
-    });
+    // Transform new AI structure to chip format for UI
+    const enrichedChips = aiResult.enriched_chips?.map((chip: any) => ({
+      chip_id: chip.chip_id,
+      summary: chip.summary,
+      reason: chip.summary, // For backward compatibility
+      experiences: chip.experiences,
+      // Additional metadata from original pathway
+      pathway_id: pathwayGroups[Object.keys(pathwayGroups)[0]]?.chips[0]?.pathway_id,
+      pathway_name: pathwayGroups[Object.keys(pathwayGroups)[0]]?.chips[0]?.pathway_name,
+      pathway_color: pathwayGroups[Object.keys(pathwayGroups)[0]]?.chips[0]?.pathway_color
+    })) || [];
 
-    return suggestions;
+    return enrichedChips;
   } catch (error) {
     console.error('[pathway-chat] AI enrichment error:', error);
     return suggestions; // Return original suggestions if AI fails
@@ -169,11 +232,34 @@ export async function POST(req: Request) {
     if (selected_experience_id) {
       console.log('Fetching suggestions for experience:', selected_experience_id, 'at time:', selected_time);
       
+      // Get the selected experience to find its base type
+      const { data: selectedExp } = await supabase
+        .from('venue_experiences')
+        .select('experience_name')
+        .eq('experience_id', selected_experience_id)
+        .single();
+      
+      // Extract base experience type (remove duration info)
+      const getBaseExperienceType = (name: string) => {
+        if (name.includes('AOI Air Implosion Dome PRO')) return 'AOI Air Implosion Dome PRO';
+        if (name.includes('AOI Air Implosion Dome')) return 'AOI Air Implosion Dome';
+        if (name.includes('AOI Earth Bed')) return 'AOI Earth Bed';
+        if (name.includes('AOI (art of implosion by the johny dar brand) Float')) return 'AOI Float';
+        if (name.includes('Johny Dar Private Session')) return 'Johny Dar Private Session';
+        return name; // For Ice Bath, Infrared Sauna
+      };
+      
+      const baseExperienceType = getBaseExperienceType(selectedExp?.experience_name || '');
+      
+      // Fetch pathways that contain the selected experience ID at database level
       const { data: pathways } = await supabase
         .from('experience_pathways')
-        .select('id, display_name, name, Description, sequence, duration_minutes, venue_id');
+        .select('id, display_name, name, Description, sequence, duration_minutes, venue_id')
+        .contains('sequence', [{ available_experiences: [{ experience_id: selected_experience_id }] }]);
+      
+      const relevantPathways = pathways || [];
 
-      console.log('Found pathways:', pathways?.length);
+      console.log('Found relevant pathways:', relevantPathways?.length);
       const suggestions: Record<string, unknown>[] = [];
       let beforeCount = 0;
       let afterCount = 0;
@@ -183,18 +269,20 @@ export async function POST(req: Request) {
       let selectedExperienceName = '';
       
       // Find pathways containing this experience (allow multiple suggestions)
-      for (const pathway of pathways || []) {
+      for (const pathway of relevantPathways || []) {
         const sequence = pathway.sequence;
         console.log('Checking pathway:', pathway.display_name, 'sequence:', JSON.stringify(sequence));
-        const experienceIndex = sequence.findIndex((step: { experience_id: string }) => step.experience_id === selected_experience_id);
+        const experienceIndex = sequence.findIndex((step: { available_experiences: any[] }) => 
+          step.available_experiences?.some((exp: any) => exp.experience_id === selected_experience_id)
+        );
         console.log('Experience index in', pathway.display_name, ':', experienceIndex);
         
         if (experienceIndex !== -1) {
           console.log('Found experience in pathway:', pathway.display_name);
           
-          // Get selected experience name
+          // Get selected experience base type for AI
           if (!selectedExperienceName) {
-            selectedExperienceName = sequence[experienceIndex].experience_name;
+            selectedExperienceName = baseExperienceType;
           }
           
           // Pre-session suggestion (allow up to 2)
@@ -203,16 +291,18 @@ export async function POST(req: Request) {
             suggestions.push({
               kind: "experience_add",
               timing: "before",
-              experience_id: preStep.experience_id,
-              experience_name: preStep.experience_name,
-              duration: preStep.duration,
-              label: `Add ${preStep.experience_name} before (${preStep.duration}min)`,
+              experience_type: preStep.experience_type,
+              available_experiences: preStep.available_experiences,
+              pre_drinks: preStep.pre_drinks || [],
+              during_drinks: preStep.during_drinks || [],
+              after_drinks: preStep.after_drinks || [],
+              label: `Add ${preStep.experience_type} before`,
               reason: "", // Will be filled by AI
               pathway_color: '#3B82F6',
               pathway_name: pathway.display_name,
               pathway_id: pathway.id,
               pathway_description: pathway.Description,
-              chip_id: `-1_${preStep.experience_id}`
+              chip_id: `-1_${preStep.experience_type.replace(/\s+/g, '_')}`
             });
             beforeCount++;
           }
@@ -223,16 +313,18 @@ export async function POST(req: Request) {
             suggestions.push({
               kind: "experience_add",
               timing: "after",
-              experience_id: postStep.experience_id,
-              experience_name: postStep.experience_name,
-              duration: postStep.duration,
-              label: `Add ${postStep.experience_name} after (${postStep.duration}min)`,
+              experience_type: postStep.experience_type,
+              available_experiences: postStep.available_experiences,
+              pre_drinks: postStep.pre_drinks || [],
+              during_drinks: postStep.during_drinks || [],
+              after_drinks: postStep.after_drinks || [],
+              label: `Add ${postStep.experience_type} after`,
               reason: "", // Will be filled by AI
               pathway_color: '#10B981',
               pathway_name: pathway.display_name,
               pathway_id: pathway.id,
               pathway_description: pathway.Description,
-              chip_id: `+${afterCount + 1}_${postStep.experience_id}`
+              chip_id: `+${afterCount + 1}_${postStep.experience_type.replace(/\s+/g, '_')}`
             });
             afterCount++;
           }

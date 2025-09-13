@@ -25,6 +25,11 @@ interface BookingRow {
   selected_during_drink?: string;
   selected_after_drink?: string;
   explanation?: string;
+  available_experiences?: Array<{
+    experience_id: string;
+    experience_name: string;
+    duration_minutes: number;
+  }>;
 }
 
 
@@ -226,76 +231,62 @@ export default function AOIBookingForm() {
   const addBookingRowsFromChip = (chip: Record<string, unknown>) => {
     const newRows: BookingRow[] = [];
     
-    if (chip.timing === 'before') {
-      // Add single experience before
-      const beforeTime = calculateBeforeTime(selectedTime, (chip.duration as number) || 30);
-      newRows.push({
-        id: `before-${Date.now()}`,
-        experience_id: chip.experience_id as string,
-        experience_name: chip.experience_name as string,
-        duration_minutes: (chip.duration as number) || 30,
-        selected_time: beforeTime,
-        source: 'ai',
-        pathway_name: chip.pathway_name as string,
-        pathway_color: chip.pathway_color as string,
-        selected_pre_drink: chip.selected_pre_drink as string,
-        selected_during_drink: chip.selected_during_drink as string,
-        selected_after_drink: chip.selected_after_drink as string,
-        explanation: chip.explanation as string
-      });
-    } else if (chip.timing === 'after') {
-      // Add single experience after
-      const afterTime = calculateAfterTime(selectedTime, selectedExperience);
-      newRows.push({
-        id: `after-${Date.now()}`,
-        experience_id: chip.experience_id as string,
-        experience_name: chip.experience_name as string,
-        duration_minutes: (chip.duration as number) || 30,
-        selected_time: afterTime,
-        source: 'ai',
-        pathway_name: chip.pathway_name as string,
-        pathway_color: chip.pathway_color as string,
-        selected_pre_drink: chip.selected_pre_drink as string,
-        selected_during_drink: chip.selected_during_drink as string,
-        selected_after_drink: chip.selected_after_drink as string,
-        explanation: chip.explanation as string
-      });
-    } else if (chip.timing === 'combo') {
-      // Add multiple experiences from combo
-      if (chip.pre_experience_id) {
-        const beforeTime = calculateBeforeTime(selectedTime, (chip.pre_duration as number) || 10);
+    // Handle new structure with experiences array
+    if (chip.experiences && Array.isArray(chip.experiences)) {
+      const experiences = chip.experiences as Array<{
+        position: string;
+        experience_id: string;
+        experience_name: string;
+        explanation: string;
+        pre_drinks: Array<{product_id: string; quantity: number}>;
+        during_drinks: Array<{product_id: string; quantity: number}>;
+        after_drinks: Array<{product_id: string; quantity: number}>;
+      }>;
+      
+      experiences.forEach((exp, index) => {
+        let experienceTime = selectedTime;
+        
+        // Calculate time based on position
+        if (exp.position === '-1') {
+          experienceTime = calculateBeforeTime(selectedTime, 30);
+        } else if (exp.position === '+1') {
+          experienceTime = calculateAfterTime(selectedTime, selectedExperience);
+        } else if (exp.position === '+2') {
+          // Calculate time after first follow-up
+          const firstAfterTime = calculateAfterTime(selectedTime, selectedExperience);
+          const firstAfterExp = experiences.find(e => e.position === '+1');
+          if (firstAfterExp) {
+            const main = new Date(`${selectedDate}T${firstAfterTime}:00`);
+            const secondAfter = new Date(main.getTime() + 40 * 60000); // 30min + 10min gap
+            experienceTime = secondAfter.toTimeString().slice(0, 5);
+          }
+        } else if (exp.position === '+3') {
+          // Calculate time after second follow-up
+          const firstAfterTime = calculateAfterTime(selectedTime, selectedExperience);
+          const main = new Date(`${selectedDate}T${firstAfterTime}:00`);
+          const thirdAfter = new Date(main.getTime() + 80 * 60000); // 70min + 10min gap
+          experienceTime = thirdAfter.toTimeString().slice(0, 5);
+        }
+        
+        // Use first duration option as default
+        const defaultOption = (exp as any).available_experiences?.[0];
+        
         newRows.push({
-          id: `combo-before-${Date.now()}`,
-          experience_id: chip.pre_experience_id as string,
-          experience_name: chip.pre_experience_name as string,
-          duration_minutes: (chip.pre_duration as number) || 10,
-          selected_time: beforeTime,
+          id: `${chip.chip_id}-${exp.position}-${Date.now()}`,
+          experience_id: defaultOption?.experience_id || exp.experience_id,
+          experience_name: defaultOption?.experience_name || exp.experience_name,
+          duration_minutes: defaultOption?.duration_minutes || 30,
+          selected_time: experienceTime,
           source: 'ai',
           pathway_name: chip.pathway_name as string,
           pathway_color: chip.pathway_color as string,
-          selected_pre_drink: chip.selected_pre_drink as string,
-          selected_during_drink: chip.selected_during_drink as string,
-          selected_after_drink: chip.selected_after_drink as string,
-          explanation: chip.explanation as string
+          selected_pre_drink: exp.pre_drinks?.[0]?.product_id || undefined,
+          selected_during_drink: exp.during_drinks?.[0]?.product_id || undefined,
+          selected_after_drink: exp.after_drinks?.[0]?.product_id || undefined,
+          explanation: exp.explanation,
+          available_experiences: (exp as any).available_experiences // Store for dropdown population
         });
-      }
-      if (chip.post_experience_id) {
-        const afterTime = calculateAfterTime(selectedTime, selectedExperience);
-        newRows.push({
-          id: `combo-after-${Date.now()}`,
-          experience_id: chip.post_experience_id as string,
-          experience_name: chip.post_experience_name as string,
-          duration_minutes: (chip.post_duration as number) || 10,
-          selected_time: afterTime,
-          source: 'ai',
-          pathway_name: chip.pathway_name as string,
-          pathway_color: chip.pathway_color as string,
-          selected_pre_drink: chip.selected_pre_drink as string,
-          selected_during_drink: chip.selected_during_drink as string,
-          selected_after_drink: chip.selected_after_drink as string,
-          explanation: chip.explanation as string
-        });
-      }
+      });
     }
     
     setBookingRows(prev => [...prev, ...newRows]);
