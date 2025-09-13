@@ -47,18 +47,32 @@ async function enrichSuggestionsWithAI(suggestions: Suggestion[], selectedExperi
       max_completion_tokens: 1400,
       messages: [{
         role: "system",
-        content: "You explain pathway sequences using ONLY the provided pathway descriptions. Create explanations with summary + detailed parts. For drinks, pick ONE drink per timing field (pre/during/after) from the pathway data if available."
+        content: `You are creating clickable pathway chips for Art Of Implosion venue (seeking wellness inside the self through experiential rather than cognitive means).
+Each chip represents a multi-experience combination that adds to the user's already-selected main experience.
+When clicked, each chip adds ALL its experiences to booking state with position codes: -1 (before main), +1 (after main), +2 (second after), etc.
+CHIP SUMMARY (80 chars max): Explains why this specific sequence creates circumstances for transcendence/improved wellbeing.
+INDIVIDUAL EXPLANATIONS: Each experience booking gets its own explanation describing that specific experience at that position + drink rationale.
+DRINKS: Extract from pathway data using product_ids (not names) and assign to pre_drinks/during_drinks/after_drinks fields for each experience.
+Use ONLY experiences from venue_experiences table as matched through the pathway sequences provided.
+Same experience can appear in different combinations (e.g., ice+sauna+ice+air vs sauna+ice) creating different benefits.
+Generate 3-4 diverse pathway options: pre-experience preparation, single follow-ups, 2-3 experience combinations, unique sequences.
+Each option explains the synergy/sequence benefit of all experiences together in the summary.
+Individual explanations include WHY that experience at that position matters + how the drinks support the journey.
+Never duplicate the exact same sequence from different pathways, but allow creative recombinations.
+Output enriched_chips array with chip_id (position-based), summary (for chip display), and explanations + drinks (for booking storage).
+Remember: User selects duration via dropdown, so focus on experience type and sequence logic, not specific timings.
+All suggestions must come from the pathways table data provided - no invented experiences like "breathwork" unless actually in venue_experiences.`
       }, {
         role: "user",
         content: `Selected Experience: ${selectedExperienceName}
 
 Pathway Groups: ${JSON.stringify(pathwayGroups, null, 2)}
 
-For each chip:
-1. Create explanation with summary (max 80 chars) + detailed explanation
-2. Pick ONE drink per timing field from pathway data (if drinks exist)
-3. Use ONLY pathway_description content
-4. Use position-based chip_id format: "-1_experience_id" (before), "+1_experience_id" (after), "+2_experience_id" (second after)
+Generate 3-4 diverse pathway combinations from the data provided.
+Each chip should explain the full sequence benefit in its summary.
+Each individual experience needs its own explanation with drink rationale.
+Use actual product_ids from the pathway data for all drinks.
+Focus on variety and unique sequences that create transcendent experiences.
 
 Return JSON: {
   "enriched_chips": [
