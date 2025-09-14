@@ -279,7 +279,16 @@ export async function POST(req: Request) {
         const sequence = pathway.sequence;
         console.log('Checking pathway:', pathway.display_name, 'sequence:', JSON.stringify(sequence));
         
-        const experienceIndex = sequence.findIndex((step: any) => 
+        interface PathwayStep {
+          experience_id: string;
+          experience_name: string;
+          duration: number;
+          pre_drinks?: unknown[];
+          during_drinks?: unknown[];
+          after_drinks?: unknown[];
+        }
+        
+        const experienceIndex = sequence.findIndex((step: PathwayStep) => 
           step.experience_id === selected_experience_id
         );
         console.log('Experience index in', pathway.display_name, ':', experienceIndex);
