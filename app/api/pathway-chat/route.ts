@@ -287,27 +287,13 @@ export async function POST(req: Request) {
       // Get selected experience name for AI
       let selectedExperienceName = '';
       
-      // Find pathways containing this experience (allow multiple suggestions)
+      // Generate complete pathway suggestions for AI enrichment
       for (const pathway of relevantPathways || []) {
         const sequence = pathway.sequence;
         console.log('Checking pathway:', pathway.display_name, 'sequence:', JSON.stringify(sequence));
         
-        interface PathwayStep {
-          available_experiences?: Array<{
-            experience_id: string;
-            experience_name: string;
-            duration_minutes: number;
-          }>;
-        }
-        
-        interface ExperienceOption {
-          experience_id: string;
-          experience_name: string;
-          duration_minutes: number;
-        }
-        
-        const experienceIndex = sequence.findIndex((step: PathwayStep) => 
-          step.available_experiences?.some((exp: ExperienceOption) => exp.experience_id === selected_experience_id)
+        const experienceIndex = sequence.findIndex((step: any) => 
+          step.experience_id === selected_experience_id
         );
         console.log('Experience index in', pathway.display_name, ':', experienceIndex);
         
@@ -319,88 +305,59 @@ export async function POST(req: Request) {
             selectedExperienceName = baseExperienceType;
           }
           
-          // Pre-session suggestion (allow up to 2)
-          if (experienceIndex > 0 && beforeCount < 2) {
-            const preStep = sequence[experienceIndex - 1];
+          // Build the complete pathway with positions relative to selected experience
+          const pathwayExperiences = [];
+          
+          // Add experiences before the selected one
+          for (let i = 0; i < experienceIndex; i++) {
+            const step = sequence[i];
+            const position = i - experienceIndex; // Will be negative (-1, -2, etc)
+            pathwayExperiences.push({
+              position: position.toString(),
+              experience_type: step.experience_name,
+              available_experiences: [{
+                experience_id: step.experience_id,
+                experience_name: step.experience_name,
+                duration_minutes: step.duration
+              }],
+              pre_drinks: step.pre_drinks || [],
+              during_drinks: step.during_drinks || [],
+              after_drinks: step.after_drinks || []
+            });
+          }
+          
+          // Add experiences after the selected one
+          for (let i = experienceIndex + 1; i < sequence.length; i++) {
+            const step = sequence[i];
+            const position = i - experienceIndex; // Will be positive (+1, +2, etc)
+            pathwayExperiences.push({
+              position: `+${position}`,
+              experience_type: step.experience_name,
+              available_experiences: [{
+                experience_id: step.experience_id,
+                experience_name: step.experience_name,
+                duration_minutes: step.duration
+              }],
+              pre_drinks: step.pre_drinks || [],
+              during_drinks: step.during_drinks || [],
+              after_drinks: step.after_drinks || []
+            });
+          }
+          
+          // Only add if there are additional experiences in this pathway
+          if (pathwayExperiences.length > 0) {
             suggestions.push({
-              kind: "experience_add",
-              timing: "before",
-              experience_type: preStep.experience_type,
-              available_experiences: preStep.available_experiences,
-              pre_drinks: preStep.pre_drinks || [],
-              during_drinks: preStep.during_drinks || [],
-              after_drinks: preStep.after_drinks || [],
-              label: `Add ${preStep.experience_type} before`,
-              reason: "", // Will be filled by AI
-              pathway_color: '#3B82F6',
+              kind: "pathway_combination",
               pathway_name: pathway.display_name,
               pathway_id: pathway.id,
               pathway_description: pathway.Description,
-              chip_id: `-1_${preStep.experience_type.replace(/\s+/g, '_')}`
+              chip_id: `${pathway.name}_pathway`,
+              experiences: pathwayExperiences
             });
-            beforeCount++;
-          }
-
-          // Post-session suggestion (allow up to 2)
-          if (experienceIndex < sequence.length - 1 && afterCount < 2) {
-            const postStep = sequence[experienceIndex + 1];
-            suggestions.push({
-              kind: "experience_add",
-              timing: "after",
-              experience_type: postStep.experience_type,
-              available_experiences: postStep.available_experiences,
-              pre_drinks: postStep.pre_drinks || [],
-              during_drinks: postStep.during_drinks || [],
-              after_drinks: postStep.after_drinks || [],
-              label: `Add ${postStep.experience_type} after`,
-              reason: "", // Will be filled by AI
-              pathway_color: '#10B981',
-              pathway_name: pathway.display_name,
-              pathway_id: pathway.id,
-              pathway_description: pathway.Description,
-              chip_id: `+${afterCount + 1}_${postStep.experience_type.replace(/\s+/g, '_')}`
-            });
-            afterCount++;
-          }
-
-          // Combo suggestion - generate if we have both before and after options
-          if (beforeCount > 0 && afterCount > 0 && comboCount === 0) {
-            // Find the most recent before and after suggestions for this pathway
-            const beforeSuggestion = suggestions.find(s => 
-              s.timing === 'before' && s.pathway_id === pathway.id
-            );
-            const afterSuggestion = suggestions.find(s => 
-              s.timing === 'after' && s.pathway_id === pathway.id
-            );
-            
-            if (beforeSuggestion && afterSuggestion) {
-              // For Activate Maxi pathway, get the actual before/after from sequence
-              const beforeStep = sequence[experienceIndex - 1];
-              const afterStep = sequence[experienceIndex + 1];
-              
-              suggestions.push({
-                kind: "experience_combo",
-                timing: "combo",
-                pre_experience_id: beforeStep ? beforeStep.experience_id : beforeSuggestion.experience_id,
-                pre_experience_name: beforeStep ? (await getExperienceName(beforeStep.experience_id, supabase)) : beforeSuggestion.experience_name,
-                post_experience_id: afterStep ? afterStep.experience_id : afterSuggestion.experience_id,
-                post_experience_name: afterStep ? (await getExperienceName(afterStep.experience_id, supabase)) : afterSuggestion.experience_name,
-                label: `Complete ${pathway.display_name}: ${beforeStep ? (await getExperienceName(beforeStep.experience_id, supabase)) : beforeSuggestion.experience_name} + ${afterStep ? (await getExperienceName(afterStep.experience_id, supabase)) : afterSuggestion.experience_name}`,
-                total_duration: (beforeStep ? beforeStep.duration : (beforeSuggestion.duration as number)) + sequence[experienceIndex].duration + (afterStep ? afterStep.duration : (afterSuggestion.duration as number)),
-                pathway_color: '#F59E0B',
-                pathway_name: pathway.display_name,
-                pathway_id: pathway.id,
-                pathway_description: pathway.Description,
-                pre_drinks: beforeStep?.pre_drinks || [],
-                during_drinks: sequence[experienceIndex]?.during_drinks || [],
-                after_drinks: afterStep?.after_drinks || [],
-                chip_id: `combo_-1_+1_${pathway.id}`
-              });
-              comboCount++;
-            }
           }
         }
       }
+
 
       // Always use AI enrichment for better explanations
       console.log('Enriching suggestions with AI...');
