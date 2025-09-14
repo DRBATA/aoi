@@ -128,13 +128,13 @@ export default function StaffBookingsDashboard() {
         `)
         .gte('slot_time', `${selectedDate}T00:00:00`)
         .lt('slot_time', `${selectedDate}T23:59:59`)
-        .order('slot_time');
+        .order('slot_time', { ascending: true });
 
       if (error) throw error;
 
       console.log('Raw booking data from DB:', data);
 
-      // Fetch experience details for each booking
+      // Fetch experience details and resolve drink names for each booking
       const formattedBookings = await Promise.all(data?.map(async (booking) => {
         const { data: expData } = await supabase
           .from('venue_experiences')
@@ -142,6 +142,31 @@ export default function StaffBookingsDashboard() {
           .eq('venue_id', booking.venue_id)
           .eq('experience_id', booking.experience_id)
           .single();
+
+        // Resolve drink names from product IDs
+        const resolveDrinks = async (drinkIds: string[]) => {
+          if (!drinkIds || drinkIds.length === 0) return [];
+          
+          const { data: products } = await supabase
+            .from('products')
+            .select('id, name')
+            .in('id', drinkIds);
+          
+          return drinkIds.map(id => {
+            const product = products?.find(p => p.id === id);
+            return {
+              product_id: id,
+              name: product?.name || 'Unknown Drink',
+              quantity: 1
+            };
+          });
+        };
+
+        const [resolvedPreDrinks, resolvedDuringDrinks, resolvedAfterDrinks] = await Promise.all([
+          resolveDrinks(booking.pre_drinks || []),
+          resolveDrinks(booking.during_drinks || []),
+          resolveDrinks(booking.after_drinks || [])
+        ]);
 
           return {
             id: booking.id,
@@ -154,9 +179,9 @@ export default function StaffBookingsDashboard() {
             booking_status: booking.booking_status,
             venue_price: parseFloat(expData?.venue_price || '0'),
             cart_id: booking.cart_id,
-            pre_drinks: booking.pre_drinks,
-            during_drinks: booking.during_drinks,
-            after_drinks: booking.after_drinks,
+            pre_drinks: resolvedPreDrinks,
+            during_drinks: resolvedDuringDrinks,
+            after_drinks: resolvedAfterDrinks,
             drinks_consumed: booking.drinks_consumed,
             pathway_id: booking.pathway_id
           };
@@ -606,46 +631,37 @@ export default function StaffBookingsDashboard() {
                               
                               {/* Pre-session drinks (only when sessions_scheduled) */}
                               {booking.booking_status === 'sessions_scheduled' && booking.pre_drinks?.map((drink, idx) => (
-                                <div key={`pre-${idx}`} className="flex items-center justify-between text-xs">
-                                  <span className="text-blue-600">🥤 Pre: {drink.name}</span>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
+                                <div key={`pre-${idx}`} className="text-xs">
+                                  <button
                                     onClick={() => addDrinkToCart(drink, booking.id)}
-                                    className="h-6 px-2 text-xs"
+                                    className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                                   >
-                                    Add to Cart
-                                  </Button>
+                                    🥤 Pre: {drink.name}
+                                  </button>
                                 </div>
                               ))}
 
                               {/* During-session drinks (only when in_session) */}
                               {booking.booking_status === 'in_session' && booking.during_drinks?.map((drink, idx) => (
-                                <div key={`during-${idx}`} className="flex items-center justify-between text-xs">
-                                  <span className="text-green-600">🍹 During: {drink.name}</span>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
+                                <div key={`during-${idx}`} className="text-xs">
+                                  <button
                                     onClick={() => addDrinkToCart(drink, booking.id)}
-                                    className="h-6 px-2 text-xs"
+                                    className="text-green-600 hover:text-green-800 hover:underline cursor-pointer"
                                   >
-                                    Add to Cart
-                                  </Button>
+                                    🍹 During: {drink.name}
+                                  </button>
                                 </div>
                               ))}
 
                               {/* After-session drinks (only when session_completed) */}
                               {booking.booking_status === 'session_completed' && booking.after_drinks?.map((drink, idx) => (
-                                <div key={`after-${idx}`} className="flex items-center justify-between text-xs">
-                                  <span className="text-purple-600">🥛 After: {drink.name}</span>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
+                                <div key={`after-${idx}`} className="text-xs">
+                                  <button
                                     onClick={() => addDrinkToCart(drink, booking.id)}
-                                    className="h-6 px-2 text-xs"
+                                    className="text-purple-600 hover:text-purple-800 hover:underline cursor-pointer"
                                   >
-                                    Add to Cart
-                                  </Button>
+                                    🥛 After: {drink.name}
+                                  </button>
                                 </div>
                               ))}
 
