@@ -76,8 +76,6 @@ export default function AOIBookingForm() {
   }, [supabase]);
 
   const generateSuggestions = useCallback(async () => {
-    if (!selectedExperience) return;
-    
     setLoadingSuggestions(true);
     try {
       // Single call with AI enrichment
@@ -99,7 +97,7 @@ export default function AOIBookingForm() {
     } finally {
       setLoadingSuggestions(false);
     }
-  }, [selectedExperience, selectedTime]);
+  }, [selectedExperience]);
 
   useEffect(() => {
     fetchExperiencesCallback();
