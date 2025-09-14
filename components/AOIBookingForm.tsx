@@ -83,8 +83,7 @@ export default function AOIBookingForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          selected_experience_id: selectedExperience,
-          selected_time: selectedTime || null
+          selected_experience_id: selectedExperience
         })
       });
 

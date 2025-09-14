@@ -199,68 +199,35 @@ Return JSON: {
 
 export async function POST(req: Request) {
   try {
-    const { 
-      selected_experience_id, 
-      selected_time, 
-      customer_email,
-      pathway_id,
-      get_drinks_only = false
-    } = await req.json();
+    const { selected_experience_id } = await req.json();
     
-    const supabase = await createClient();
-
-    // Handle drinks-only request for specific pathway
-    if (get_drinks_only && pathway_id) {
-      const { data: pathway } = await supabase
-        .from('experience_pathways')
-        .select('sequence')
-        .eq('id', pathway_id)
-        .single();
-
-      if (pathway && pathway.sequence) {
-        // Find the step that matches the selected experience
-        const step = pathway.sequence.find((s: { experience_id: string }) => 
-          s.experience_id === selected_experience_id
-        );
-        
-        if (step) {
-          return NextResponse.json({
-            pre_drinks: step.pre_drinks || [],
-            during_drinks: step.during_drinks || [],
-            after_drinks: step.after_drinks || []
-          });
-        }
-      }
-      
-      return NextResponse.json({
-        pre_drinks: [],
-        during_drinks: [],
-        after_drinks: []
-      });
+    if (!selected_experience_id) {
+      return NextResponse.json({ error: 'Missing selected_experience_id' }, { status: 400 });
     }
 
-    // If an experience is selected, return suggestion chips
-    if (selected_experience_id) {
-      console.log('Fetching suggestions for experience:', selected_experience_id, 'at time:', selected_time);
+    const supabase = await createClient();
+
+    console.log('Fetching suggestions for experience:', selected_experience_id);
       
-      // Get the selected experience to find its base type
-      const { data: selectedExp } = await supabase
-        .from('venue_experiences')
-        .select('experience_name')
-        .eq('experience_id', selected_experience_id)
-        .single();
+    // Get the selected experience to find its base type
+    const { data: selectedExp } = await supabase
+      .from('venue_experiences')
+      .select('experience_name')
+      .eq('experience_id', selected_experience_id)
+      .single();
       
-      // Extract base experience type (remove duration info)
-      const getBaseExperienceType = (name: string) => {
-        if (name.includes('AOI Air Implosion Dome PRO')) return 'AOI Air Implosion Dome PRO';
-        if (name.includes('AOI Air Implosion Dome')) return 'AOI Air Implosion Dome';
-        if (name.includes('AOI Earth Bed')) return 'AOI Earth Bed';
-        if (name.includes('AOI (art of implosion by the johny dar brand) Float')) return 'AOI Float';
-        if (name.includes('Johny Dar Private Session')) return 'Johny Dar Private Session';
-        return name; // For Ice Bath, Infrared Sauna
-      };
-      
-      const baseExperienceType = getBaseExperienceType(selectedExp?.experience_name || '');
+    // Extract base experience type (remove duration info)
+    const getBaseExperienceType = (name: string) => {
+      if (name.includes('AOI Air Implosion Dome PRO')) return 'AOI Air Implosion Dome PRO';
+      if (name.includes('AOI Air Implosion Dome')) return 'AOI Air Implosion Dome';
+      if (name.includes('AOI Earth Bed')) return 'AOI Earth Bed';
+      if (name.includes('AOI (art of implosion by the johny dar brand) Float')) return 'AOI Float';
+      if (name.includes('Johny Dar Private Session')) return 'Johny Dar Private Session';
+      if (name.includes('Ice Bath')) return 'Ice Bath';
+      return name;
+    };
+    
+    const baseExperienceType = getBaseExperienceType(selectedExp?.experience_name || '');
       
       // Fetch pathways that contain the selected experience ID using raw SQL
       const { data: pathways } = await supabase
@@ -364,139 +331,6 @@ export async function POST(req: Request) {
         type: 'experience_suggestions',
         suggestions: enrichedSuggestions
       });
-    }
-
-    // Original pathway/drink recommendation logic
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Check existing bookings for this customer today
-    const { data: existingBookings } = await supabase
-      .from('bookings')
-      .select(`
-        id,
-        experience_id,
-        slot_time,
-        experience_name,
-        booking_status,
-        pathway_id
-      `)
-      .eq('customer_email', customer_email)
-      .gte('slot_time', `${today}T00:00:00`)
-      .lt('slot_time', `${today}T23:59:59`)
-      .order('slot_time');
-
-    // Remove fallback to all pathways - we want to use the filtered suggestions above
-    // The suggestions array already contains the relevant before/after/combo options
-
-    // If bookings exist, show drink recommendations based on pathway
-    const pathwayId = existingBookings?.[0]?.pathway_id;
-    
-    if (pathwayId) {
-        const { data: pathway } = await supabase
-          .from('experience_pathways')
-          .select('*')
-          .eq('id', pathwayId)
-          .single();
-
-        if (pathway) {
-          const recommendations: Array<{
-    kind: string;
-    id: string;
-    label: string;
-    booking_id?: string;
-    timing?: string;
-    reason?: string;
-    quantity?: number;
-  }> = [];
-          
-          // Add drinks for each booking based on pathway sequence
-          existingBookings?.forEach((booking: {id: string, experience_name: string}, index: number) => {
-            const sequenceStep = pathway.sequence[index];
-            if (sequenceStep) {
-              // Pre drinks
-              sequenceStep.pre_drinks?.forEach((drink: Record<string, unknown>) => {
-                recommendations.push({
-                  kind: "drink",
-                  id: drink.product_id as string,
-                  label: `${drink.name as string} (before ${booking.experience_name})`,
-                  booking_id: booking.id,
-                  timing: "pre",
-                  reason: (drink.reason as string) || `Optimal before ${booking.experience_name}`
-                });
-              });
-
-              // During drinks
-              sequenceStep.during_drinks?.forEach((drink: Record<string, unknown>) => {
-                recommendations.push({
-                  kind: "drink",
-                  id: drink.product_id as string,
-                  label: `${drink.name as string} (during ${booking.experience_name})`,
-                  booking_id: booking.id,
-                  timing: "during",
-                  reason: `Perfect companion for ${booking.experience_name}`
-                });
-              });
-
-              // After drinks (only for last booking)
-              if (index === (existingBookings?.length || 0) - 1) {
-                sequenceStep.after_drinks?.forEach((drink: Record<string, unknown>) => {
-                  recommendations.push({
-                    kind: "drink",
-                    id: drink.product_id as string,
-                    label: `${drink.name as string} (after session)`,
-                    booking_id: booking.id,
-                    timing: "after",
-                    reason: "Perfect recovery drink"
-                  });
-                });
-
-                // Add takeaway drinks
-                pathway.takeaway?.forEach((drink: Record<string, unknown>) => {
-                  recommendations.push({
-                    kind: "takeaway",
-                    id: drink.product_id as string,
-                    label: `${drink.name as string} x${drink.quantity as number} (take home)`,
-                    booking_id: booking.id,
-                    timing: "takeaway",
-                    quantity: drink.quantity as number,
-                    reason: "Continue your journey at home"
-                  });
-                });
-              }
-            }
-          });
-
-          return NextResponse.json({
-            title: `Drinks for your ${pathway.display_name} journey`,
-            type: "drink_recommendations",
-            pathway: pathway.display_name,
-            bookings: existingBookings?.length || 0,
-            choices: recommendations
-          });
-        }
-      }
-
-      // Fallback - show individual experience drinks
-      const bookingPromises = existingBookings?.map(async (booking: {id: string, experience_name: string, slot_time: string}) => {
-        return {
-          kind: "booking",
-          id: booking.id,
-          label: `Add drinks to ${booking.experience_name} (${new Date(booking.slot_time).toLocaleTimeString()})`,
-          experience: booking.experience_name,
-          time: booking.slot_time
-        }
-      }) || [];
-      const bookingChoices = await Promise.all(bookingPromises);
-      return NextResponse.json({
-        title: "Add drinks to your bookings",
-        type: "individual_drinks",
-        choices: bookingChoices
-      });
-
-    return NextResponse.json({
-      title: "No recommendations available",
-      choices: []
-    });
 
   } catch (error) {
     console.error('Pathway chat error:', error);
