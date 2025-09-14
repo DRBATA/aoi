@@ -27,7 +27,6 @@ interface RawCartData {
   customer_email: string;
   customer_name: string | null;
   created_at: string;
-  booking_id: string | null;
 }
 
 interface RawCartItem {
@@ -43,7 +42,6 @@ interface Cart {
   customer_email: string;
   customer_name: string | null;
   created_at: string;
-  booking_id: string | null;
   venue_name: string;
   items_count: number;
   cart_items: CartItem[];
@@ -106,8 +104,7 @@ export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitch
           id,
           customer_email,
           customer_name,
-          created_at,
-          booking_id
+          created_at
         `)
         .eq('customer_email', searchEmail);
 
@@ -226,7 +223,6 @@ export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitch
             customer_email: cart.customer_email,
             customer_name: cart.customer_name,
             created_at: cart.created_at,
-            booking_id: cart.booking_id,
             venue_name: 'No venue',
             items_count: formattedItems.length,
             cart_items: formattedItems as Array<{
