@@ -56,18 +56,18 @@ export async function POST(req: Request) {
       baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     }
 
-    // Fetch stripe_price_ids from products and experiences
+    // Fetch stripe_price_ids from products and venue_experiences (venue-specific pricing)
     const { data: productsData } = await supabase
       .from("products")
       .select("id, stripe_price_id");
 
-    const { data: experiencesData } = await supabase
-      .from("experiences")
-      .select("id, stripe_price_id");
+    const { data: venueExperiencesData } = await supabase
+      .from("venue_experiences")
+      .select("experience_id, stripe_price_id");
 
     const priceIdLookup: Record<string, string | null> = {};
     (productsData || []).forEach(p => { priceIdLookup[p.id] = p.stripe_price_id; });
-    (experiencesData || []).forEach(e => { priceIdLookup[e.id] = e.stripe_price_id; });
+    (venueExperiencesData || []).forEach(ve => { priceIdLookup[ve.experience_id] = ve.stripe_price_id; });
 
     // Build line items
     const lineItems = cartRows.map((row) => {
