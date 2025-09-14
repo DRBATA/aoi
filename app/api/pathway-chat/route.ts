@@ -272,11 +272,9 @@ export async function POST(req: Request) {
       
       const baseExperienceType = getBaseExperienceType(selectedExp?.experience_name || '');
       
-      // Fetch pathways that contain the selected experience ID at database level
+      // Fetch pathways that contain the selected experience ID using raw SQL
       const { data: pathways } = await supabase
-        .from('experience_pathways')
-        .select('id, display_name, name, Description, sequence, duration_minutes, venue_id')
-        .contains('sequence', [{ available_experiences: [{ experience_id: selected_experience_id }] }]);
+        .rpc('search_pathways_by_experience', { exp_id: selected_experience_id });
       
       const relevantPathways = pathways || [];
 
