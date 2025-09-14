@@ -2,16 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { OpenAI } from 'openai';
 
-// Helper function to get experience name
-async function getExperienceName(experienceId: string, supabase: Awaited<ReturnType<typeof createClient>>): Promise<string> {
-  const { data } = await supabase
-    .from('experiences')
-    .select('name')
-    .eq('id', experienceId)
-    .single();
-  return data?.name || 'Experience';
-}
-
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 // AI enrichment function using pathway descriptions
@@ -280,9 +270,6 @@ export async function POST(req: Request) {
 
       console.log('Found relevant pathways:', relevantPathways?.length);
       const suggestions: Record<string, unknown>[] = [];
-      let beforeCount = 0;
-      let afterCount = 0;
-      let comboCount = 0;
       
       // Get selected experience name for AI
       let selectedExperienceName = '';
