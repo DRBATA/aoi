@@ -275,14 +275,11 @@ export async function POST(req: Request) {
           for (let i = 0; i < experienceIndex; i++) {
             const step = sequence[i];
             const position = i - experienceIndex; // Will be negative (-1, -2, etc)
+            
             pathwayExperiences.push({
               position: position.toString(),
-              experience_type: step.experience_name,
-              available_experiences: [{
-                experience_id: step.experience_id,
-                experience_name: step.experience_name,
-                duration_minutes: step.duration
-              }],
+              experience_type: step.experience_type,
+              available_experiences: step.available_experiences,
               pre_drinks: step.pre_drinks || [],
               during_drinks: step.during_drinks || [],
               after_drinks: step.after_drinks || []
@@ -293,14 +290,11 @@ export async function POST(req: Request) {
           for (let i = experienceIndex + 1; i < sequence.length; i++) {
             const step = sequence[i];
             const position = i - experienceIndex; // Will be positive (+1, +2, etc)
+            
             pathwayExperiences.push({
               position: `+${position}`,
-              experience_type: step.experience_name,
-              available_experiences: [{
-                experience_id: step.experience_id,
-                experience_name: step.experience_name,
-                duration_minutes: step.duration
-              }],
+              experience_type: step.experience_type,
+              available_experiences: step.available_experiences,
               pre_drinks: step.pre_drinks || [],
               during_drinks: step.during_drinks || [],
               after_drinks: step.after_drinks || []
