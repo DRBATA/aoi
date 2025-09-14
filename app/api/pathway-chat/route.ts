@@ -40,16 +40,19 @@ async function enrichSuggestionsWithAI(suggestions: Suggestion[], selectedExperi
         content: `You are creating clickable pathway chips for Art Of Implosion venue (seeking wellness inside the self through experiential rather than cognitive means).
 Each chip represents a multi-experience combination that adds to the user's already-selected main experience.
 When clicked, each chip adds ALL its experiences to booking state with position codes: -1 (before main), +1 (after main), +2 (second after), etc.
-CHIP SUMMARY (80 chars max): Explains why this specific sequence creates circumstances for transcendence/improved wellbeing.
-INDIVIDUAL EXPLANATIONS: Each experience booking gets its own explanation describing that specific experience at that position + drink rationale.
+
+CHIP SUMMARY (80 chars max): Be creative and descriptive! Use format "Add [Experience] before/after for [benefit]" or "Add [Exp1] before + [Exp2] after for [benefit]". 
+Examples: "Add Ice Bath before for cold-shock clarity", "Add Sauna after for heat integration", "Add Ice + Air PRO after for contrast stillness"
+Be specific with experience names like "Ice Bath", "Air PRO", "Sauna", "Earth Bed", "Float" etc.
+DO NOT use generic pathway names like "Activate Maxi" - create your own descriptive summaries that explain the actual benefit.
+
+INDIVIDUAL EXPLANATIONS: Use ONLY the specific research-based descriptions from the pathway data provided. These are carefully researched physiological concepts - do not make up generic wellness descriptions. Extract the exact explanations from the pathway descriptions for why each experience works at that position.
 DRINKS: Extract from pathway data using product_ids (not names) and assign to pre_drinks/during_drinks/after_drinks fields for each experience.
-Use ONLY base experience types from the pathway sequences provided.
+Use ONLY base experience types from the pathway sequences provided AND their specific research-based rationales from the pathway descriptions.
 Base experience types are: AOI Earth Bed, AOI Air Implosion Dome, AOI Air Implosion Dome PRO, AOI Float, Ice Bath, Infrared Sauna, Johny Dar Private Session.
-Same base type can appear in different combinations creating different benefits.
-Generate 3-4 diverse pathway options: pre-experience preparation, single follow-ups, 2-3 experience combinations, unique sequences.
-Each option explains the synergy/sequence benefit of all experiences together in the summary.
-Individual explanations include WHY that experience at that position matters + how the drinks support the journey.
-Never duplicate the exact same sequence from different pathways, but allow creative recombinations.
+Generate 3-4 diverse pathway options using the provided pathway descriptions as your source of truth for physiological mechanisms.
+Each explanation must reference the specific research concepts from the pathway descriptions (parasympathetic activation, heat-shock proteins, noradrenaline response, etc.).
+Never make up generic wellness concepts - only use the researched mechanisms described in the pathway data.
 Output enriched_chips array with chip_id, summary (for chip display), and experiences array with position-based explanations + drinks.
 Remember: User selects specific duration via dropdown after seeing the base experience type, so focus on experience type and sequence logic.
 All suggestions must use base experience types from the pathways table data provided.`
@@ -63,10 +66,10 @@ Generate 3-4 diverse pathway combinations from the data provided.
 
 EXACT EXAMPLES:
 
-Example 1 - User selects "AOI Earth Bed" and you suggest Integration Mini:
+Example 1 - User selects "AOI Earth Bed":
 {
-  "chip_id": "integration_mini_pathway",
-  "summary": "Downshift stress fast, then warm to repair for calm clarity",
+  "chip_id": "earth_bed_sauna_combo",
+  "summary": "Add Sauna after for deep tissue repair",
   "experiences": [
     {
       "position": "+1",
@@ -85,10 +88,10 @@ Example 1 - User selects "AOI Earth Bed" and you suggest Integration Mini:
   ]
 }
 
-Example 2 - User selects "Infrared Sauna" and you suggest Activate Maxi sequence:
+Example 2 - User selects "Infrared Sauna":
 {
-  "chip_id": "activate_maxi_pathway",
-  "summary": "Shock → flush → lock → flow activation sequence",
+  "chip_id": "ice_sauna_air_combo",
+  "summary": "Add Ice before + Air PRO after for contrast activation",
   "experiences": [
     {
       "position": "-1",
@@ -181,12 +184,7 @@ Return JSON: {
     const enrichedChips = aiResult.enriched_chips?.map((chip: AIChip) => ({
       chip_id: chip.chip_id,
       summary: chip.summary,
-      reason: chip.summary, // For backward compatibility
-      experiences: chip.experiences,
-      // Additional metadata from original pathway
-      pathway_id: pathwayGroups[Object.keys(pathwayGroups)[0]]?.chips[0]?.pathway_id,
-      pathway_name: pathwayGroups[Object.keys(pathwayGroups)[0]]?.chips[0]?.pathway_name,
-      pathway_color: pathwayGroups[Object.keys(pathwayGroups)[0]]?.chips[0]?.pathway_color
+      experiences: chip.experiences
     })) || [];
 
     return enrichedChips;

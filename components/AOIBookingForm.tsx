@@ -291,6 +291,8 @@ export default function AOIBookingForm() {
     }
     
     setBookingRows(prev => [...prev, ...newRows]);
+    // Clear suggestions after adding to prevent multiple clicks
+    setSuggestions([]);
   };
 
   // Generate available time slots when date/experience changes
@@ -850,13 +852,11 @@ export default function AOIBookingForm() {
                     >
                       <div className="text-left">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-white font-medium">{suggestion.label as string}</span>
+                          <span className="text-white font-medium">{suggestion.summary as string || suggestion.label as string}</span>
                           {selectedSuggestion === index && (
                             <span className="text-green-400 text-sm ml-2">✓ Selected</span>
                           )}
                         </div>
-                        <p className="text-white/60 text-sm">{suggestion.reason as string}</p>
-                        <p className="text-white/50 text-xs mt-1">From: {suggestion.pathway_name as string}</p>
                       </div>
                     </motion.button>
                   ))}
@@ -865,7 +865,7 @@ export default function AOIBookingForm() {
                   {suggestions.length > 0 && selectedSuggestion !== null && (
                     <div className="mt-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
                       <p className="text-green-400 text-sm">
-                        ✓ {suggestions[selectedSuggestion]?.label as string} selected
+                        ✓ {suggestions[selectedSuggestion]?.summary as string || suggestions[selectedSuggestion]?.label as string} selected
                       </p>
                     </div>
                   )}
