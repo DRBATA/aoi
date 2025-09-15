@@ -110,17 +110,16 @@ export default function AddDrinkTab({ customerEmail }: AddDrinkTabProps) {
       alert('Please enter an email address')
       return
     }
-
     try {
       setAddingToCart(product.id)
-      const response = await fetch('/api/cart/add', {
+      const response = await fetch('/api/cart/add-drink', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email.trim(),
-          product_id: product.id,
-          quantity: 1,
-          venue_name: 'Art of Implosion x Johny Dar Experience'
+          id: product.id,
+          qty: 1,
+          where: 'here',
+          customerEmail: email.trim()
         })
       })
 
@@ -157,8 +156,8 @@ export default function AddDrinkTab({ customerEmail }: AddDrinkTabProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email.trim(),
-          product_id: productId
+          id: productId,
+          customerEmail: email.trim()
         })
       })
 
