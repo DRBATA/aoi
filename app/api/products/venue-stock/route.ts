@@ -17,6 +17,7 @@ export async function POST() {
         description, 
         price_aed, 
         image_url,
+        faqs,
         tags, 
         category,
         venue_stock(
@@ -54,7 +55,8 @@ export async function POST() {
         category: product.category,
         price: product.price_aed,
         qty_on_hand: venueStock.qty_on_hand,
-        image: product.image_url
+        image: product.image_url,
+        faqs: product.faqs
       };
     }).filter(Boolean) || [];
 
