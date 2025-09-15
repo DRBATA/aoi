@@ -5,11 +5,11 @@ import { AOIBookingConfirmationEmail } from '@/emails/aoi-booking-confirmation';
 
 export async function POST(req: Request) {
     const { 
-        venue_id: venueId,
-        experience_id: experienceId, 
-        slot_time: slotTime,
-        customer_email: customerEmail,
-        customer_name: customerName,
+        venueId,
+        experienceId, 
+        slotTime,
+        customerEmail,
+        customerName,
         pre_drinks: preDrinks = [],
         during_drinks: duringDrinks = [],
         after_drinks: afterDrinks = [],
