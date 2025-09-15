@@ -55,7 +55,7 @@ export async function POST() {
         category: product.category,
         price: product.price_aed,
         qty_on_hand: venueStock.qty_on_hand,
-        image: product.image_url,
+        image: product.image_url ? `/${product.image_url}` : null,
         faqs: product.faqs
       };
     }).filter(Boolean) || [];
