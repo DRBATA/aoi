@@ -16,6 +16,7 @@ export async function POST() {
         name, 
         description, 
         price_aed, 
+        image_url,
         tags, 
         category,
         venue_stock(
@@ -45,9 +46,6 @@ export async function POST() {
 
       if (!venueStock) return null;
 
-      // Construct image path pointing to thewater.bar public directory
-      const imagePath = `https://thewater.bar/${product.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}.png`;
-
       return {
         id: product.id,
         name: product.name,
@@ -56,7 +54,7 @@ export async function POST() {
         category: product.category,
         price: product.price_aed,
         qty_on_hand: venueStock.qty_on_hand,
-        image: imagePath
+        image: product.image_url
       };
     }).filter(Boolean) || [];
 
