@@ -54,7 +54,8 @@ export default function AOIBookingForm() {
   const supabase = createClient();
 
   const fetchExperiencesCallback = useCallback(async () => {
-    const { data } = await supabase
+    console.log('🔍 Fetching experiences for venue:', AOI_VENUE_ID);
+    const { data, error } = await supabase
       .from('venue_experiences')
       .select(`
         experience_id,
@@ -64,6 +65,13 @@ export default function AOIBookingForm() {
       `)
       .eq('venue_id', AOI_VENUE_ID);
 
+    console.log('📊 Supabase response:', { data, error });
+
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return;
+    }
+
     if (data) {
       const formattedExperiences = data.map((item: { experience_id: string; experience_name: string; duration_minutes: number; venue_price: string }) => ({
         id: item.experience_id,
@@ -71,7 +79,10 @@ export default function AOIBookingForm() {
         duration_minutes: item.duration_minutes,
         venue_price: parseFloat(item.venue_price)
       }));
+      console.log('✅ Formatted experiences:', formattedExperiences);
       setExperiences(formattedExperiences);
+    } else {
+      console.warn('⚠️ No experiences data returned');
     }
   }, [supabase]);
 
@@ -620,12 +631,18 @@ export default function AOIBookingForm() {
           <label className="text-white/70 text-sm mb-3 block">Select Experience</label>
           <select 
             value={selectedExperience}
-            onChange={(e) => setSelectedExperience(e.target.value)}
+            onChange={(e) => {
+              console.log('🎯 Experience selected:', e.target.value);
+              setSelectedExperience(e.target.value);
+            }}
             className="w-full p-4 bg-white/20 border border-white/30 rounded-xl text-white focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
             style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
             required
           >
             <option value="">Choose an experience...</option>
+            {experiences.length === 0 && (
+              <option value="" disabled>Loading experiences...</option>
+            )}
             {experiences.map(exp => (
               <option key={exp.id} value={exp.id}>
                 {exp.name} - {exp.duration_minutes}min - AED {exp.venue_price}
