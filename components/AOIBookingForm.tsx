@@ -621,12 +621,13 @@ export default function AOIBookingForm() {
           <select 
             value={selectedExperience}
             onChange={(e) => setSelectedExperience(e.target.value)}
-            className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white appearance-none cursor-pointer focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
+            className="w-full p-4 bg-white/20 border border-white/30 rounded-xl text-white focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
+            style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
             required
           >
-            <option value="" className="bg-gray-900 text-white">Choose an experience...</option>
+            <option value="">Choose an experience...</option>
             {experiences.map(exp => (
-              <option key={exp.id} value={exp.id} className="bg-gray-900 text-white">
+              <option key={exp.id} value={exp.id}>
                 {exp.name} - {exp.duration_minutes}min - AED {exp.venue_price}
               </option>
             ))}
@@ -656,12 +657,13 @@ export default function AOIBookingForm() {
               <select
                 value={selectedTime}
                 onChange={(e) => setSelectedTime(e.target.value)}
-                className="w-full p-4 bg-white/10 border border-white/20 rounded-xl text-white appearance-none cursor-pointer focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
+                className="w-full p-4 bg-white/20 border border-white/30 rounded-xl text-white focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
+                style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
                 required
               >
-                <option value="" className="bg-gray-900 text-white">Select available time...</option>
+                <option value="">Select available time...</option>
                 {availableTimeSlots.map((slot) => (
-                  <option key={slot} value={slot} className="bg-gray-900 text-white">
+                  <option key={slot} value={slot}>
                     {slot}
                   </option>
                 ))}
@@ -749,10 +751,11 @@ export default function AOIBookingForm() {
                           r.id === row.id ? {...r, selected_time: e.target.value} : r
                         ));
                       }}
-                      className="w-full p-2 bg-white/10 border border-white/20 rounded text-white text-xs"
+                      className="w-full p-2 bg-white/20 border border-white/30 rounded text-white text-xs"
+                      style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
                     >
                       {availableTimeSlots.map((slot) => (
-                        <option key={slot} value={slot} className="bg-gray-900 text-white">
+                        <option key={slot} value={slot}>
                           {slot}
                         </option>
                       ))}
