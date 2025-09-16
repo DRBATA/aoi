@@ -10,62 +10,89 @@ import AOIBookingForm from '@/components/AOIBookingForm'
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('philosophy')
+  const [activeTab, setActiveTab] = useState('how-it-works')
+
+  // Neon palette
+  const palette = {
+    bg0: "#00B4D8",
+    bg1: "#90E0EF",
+    aqua: "#48CAE4",
+    brightBlue: "#33FFFF",
+    electricBlue: "#00BFFF",
+    lime: "#ECFF17",
+    softOrange: "#FFD580",
+    hotPink: "#FF2BC2",
+    purple: "#A020F0",
+    neonGreen: "#00FF85",
+    grayText: "#374151",
+    card: "#FDFEFF",
+    cardEdge: "#CDE9F1"
+  }
 
 
   const experiences = [
     {
       id: "aoi",
       name: "AOI",
-      description: "The core light & sound machine experience - immersive frequencies for cellular transformation",
+      description: "Immersive light & sound machine – cellular transformation.",
       icon: "✨",
-      duration: "20 min",
+      duration: "20",
       benefits: ["Cellular activation", "Frequency healing", "Energy alignment"],
-      color: "from-purple-400 to-pink-400"
+      feel: "Breathing deepens naturally. Shoulders drop. Mental chatter quiets as coherent frequencies entrain your system.",
+      color: "from-purple-400 to-pink-400",
+      image: "/aa.png"
     },
     {
       id: "aoi-earth",
       name: "AOI EARTH",
-      description: "Horizontal lying bed version - grounding light & sound therapy for deep relaxation",
+      description: "Grounding bed version – deep relaxation.",
       icon: "🌍",
-      duration: "45 min",
+      duration: "45",
       benefits: ["Deep grounding", "Stress relief", "Restorative healing"],
-      color: "from-green-400 to-emerald-400"
+      feel: "Gravity releases its hold. Micro-tensions in hands and feet dissolve. The body finds itself in horizontal stillness.",
+      color: "from-green-400 to-emerald-400",
+      image: "/e.png"
     },
     {
       id: "aoi-air",
       name: "AOI AIR",
-      description: "Standing light & sound experience for physical unwinding and movement-based release",
-      icon: "🌬️",
-      duration: "20 min",
-      benefits: ["Physical unwinding", "Movement therapy", "Postural alignment"],
-      color: "from-cyan-400 to-blue-400"
+      description: "Standing version – physical unwinding.",
+      icon: "🫧",
+      duration: "20",
+      benefits: ["Physical release", "Movement therapy", "Postural alignment"],
+      feel: "Fascia unwinds in spirals. Movement becomes liquid. The body remembers how to stand without holding.",
+      color: "from-cyan-400 to-blue-400",
+      image: "/dg.png"
     },
     {
       id: "aoi-air-pro",
       name: "AOI AIR PRO",
-      description: "Intense version of AOI AIR with advanced protocols for deeper transformation",
+      description: "Advanced protocols – deeper transformation.",
       icon: "⭐",
-      duration: "30 min",
-      benefits: ["Advanced healing", "Peak performance", "Intensive unwinding"],
-      color: "from-purple-500 to-pink-500"
+      duration: "30",
+      benefits: ["Advanced", "Deeper reset", "Nervous system"],
+      feel: "Deeper layers release. The nervous system recalibrates. Old patterns dissolve as new pathways emerge.",
+      color: "from-purple-500 to-pink-500",
+      image: "/dg.png"
     },
     {
       id: "ice-bath",
       name: "Ice Bath",
-      description: "Cold immersion therapy for mental clarity, circulation boost and resilience training",
+      description: "Cold immersion for clarity, circulation, resilience.",
       icon: "❄️",
-      duration: "6 min",
-      benefits: ["Mental clarity", "Circulation boost", "Resilience training"],
+      duration: "6",
+      benefits: ["Circulation", "Clarity", "Resilience"],
+      feel: "Attention snaps to the present. Breath sharpens, then lengthens. As you re-warm, vessels reopen and tension melts.",
       color: "from-blue-500 to-cyan-300"
     },
     {
       id: "infrared-sauna",
       name: "Infrared Sauna",
-      description: "Deep heat therapy for detoxification, cardiovascular stimulation and recovery",
+      description: "Deep heat for detox, cardio, recovery.",
       icon: "🔥",
-      duration: "30 min",
-      benefits: ["Deep detox", "Cardiovascular boost", "Recovery"],
+      duration: "30",
+      benefits: ["Detox", "Cardio support", "Recovery"],
+      feel: "Heat loosens from the inside out. Jaw unhooks, shoulders drop. Mental noise quiets as warmth holds steady.",
       color: "from-red-400 to-orange-400"
     }
   ]
@@ -297,6 +324,11 @@ export default function LandingPage() {
                     Humans have become addicted to exploding - constantly reacting, consuming, and pushing outward. 
                     We&apos;ve lost our connection to nature and how creation really takes its highest form: through implosion.
                   </p>
+                  <p className="text-white/60 mb-3">
+                    By "implosion," we don&apos;t mean collapse. We mean folding energy back to center—letting the nervous 
+                    system reach a still-point where it can reorganize itself. Your exhale gets longer. Vision steadies. 
+                    The forehead softens; the jaw releases without trying.
+                  </p>
                   <p className="text-white/60">
                     AOI invites you to turn inward, to implode your true potential onto the world without needing 
                     to destroy your surroundings to grow.
@@ -487,34 +519,95 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: index * 0.05 }}
                 viewport={{ once: true }}
-                onClick={() => {
-                  // Scroll to booking section when experience is clicked
-                  const bookingSection = document.getElementById('booking')
-                  if (bookingSection) {
-                    bookingSection.scrollIntoView({ behavior: 'smooth' })
-                  }
-                }}
-                data-experience={exp.id}
-                className="relative bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer group"
+                className="relative rounded-3xl"
+                style={{ filter: `drop-shadow(0 10px 24px ${palette.brightBlue}55) drop-shadow(0 0 54px ${palette.electricBlue}44)` }}
               >
-                <div 
-                  className={`absolute inset-0 bg-gradient-to-br ${exp.color} opacity-0 group-hover:opacity-10 transition-opacity rounded-2xl`}
+                {/* Neon glow ring */}
+                <div
+                  className="absolute -inset-[1.5px] rounded-3xl"
+                  style={{
+                    background: `linear-gradient(90deg, ${palette.brightBlue}, ${palette.hotPink})`,
+                    filter: "blur(12px)",
+                    opacity: 0.65
+                  }}
                 />
-                
-                <div className="relative z-10">
-                  <div className="text-4xl mb-4">{exp.icon}</div>
-                  <h3 className="text-xl font-medium text-white mb-2">{exp.name}</h3>
-                  <p className="text-white/60 text-sm mb-4">{exp.description}</p>
-                  
-                  <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-4 h-4 text-white/40" />
-                    <span className="text-white/40 text-sm">{exp.duration}</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {exp.benefits.map((benefit) => (
-                      <span key={benefit} className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/70">{benefit}</span>
-                    ))}
+
+                {/* Card */}
+                <div
+                  className="relative rounded-3xl p-5 md:p-6 border overflow-hidden cursor-pointer group"
+                  style={{
+                    background: palette.card,
+                    borderColor: palette.cardEdge
+                  }}
+                  onClick={() => {
+                    const bookingSection = document.getElementById('booking')
+                    if (bookingSection) {
+                      bookingSection.scrollIntoView({ behavior: 'smooth' })
+                    }
+                  }}
+                >
+                  {/* Neon texture overlay */}
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      background: `conic-gradient(from 200deg at 110% -10%, ${palette.lime}22, ${palette.softOrange}11, ${palette.hotPink}14, ${palette.brightBlue}14, ${palette.neonGreen}11, transparent 70%)`
+                    }}
+                  />
+
+                  <div className="relative">
+                    <div className="flex items-center gap-3 text-lg font-semibold text-gray-900">
+                      <span className="text-2xl">{exp.icon}</span>
+                      {exp.name}
+                    </div>
+                    <p className="mt-2 text-sm leading-6" style={{ color: palette.grayText }}>{exp.description}</p>
+                    
+                    {/* What you'll feel section */}
+                    <p className="mt-3 text-sm leading-5 italic" style={{ color: '#6B7280' }}>
+                      "{exp.feel}"
+                    </p>
+
+                    <div className="mt-3 flex items-center gap-2 text-xs" style={{ color: palette.grayText }}>
+                      <span className="opacity-80">🕒</span>
+                      {exp.duration} min
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {exp.benefits.map((t) => (
+                        <span
+                          key={t}
+                          className="px-3 py-1 rounded-full border text-xs backdrop-blur"
+                          style={{
+                            borderColor: palette.cardEdge,
+                            background: `linear-gradient(90deg, ${palette.brightBlue}18, ${palette.purple}10)`,
+                            color: "#1F2937"
+                          }}
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="mt-5 flex gap-3">
+                      <button
+                        className="rounded-full px-4 py-2 font-medium shadow transition hover:scale-[1.02] text-white"
+                        style={{ 
+                          background: `linear-gradient(90deg, ${palette.hotPink}, ${palette.electricBlue})`, 
+                          boxShadow: `0 0 24px ${palette.electricBlue}55` 
+                        }}
+                      >
+                        Book Your Session
+                      </button>
+                      <button
+                        className="rounded-full px-4 py-2 font-medium border backdrop-blur"
+                        style={{
+                          borderColor: `${palette.brightBlue}70`,
+                          color: "#111827",
+                          background: `linear-gradient(90deg, ${palette.aqua}20, ${palette.electricBlue}12)`
+                        }}
+                      >
+                        Learn More
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
