@@ -11,8 +11,8 @@
     }
   ],
   "functions": {
-    "app/**": {
-      "regions": ["sin1", "fra1"]
+    "app/api/**/*": {
+      "maxDuration": 60
     }
   }
 }
