@@ -51,9 +51,10 @@ interface CartSearchByEmailProps {
   onEmailChange?: (email: string) => void;
   onCartClick?: () => void;
   onSwitchToBooking?: (email: string, cartId: string) => void;
+  onReceiveTransfer?: (cartId: string, bookingId: string) => void;
 }
 
-export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitchToBooking }: CartSearchByEmailProps) {
+export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitchToBooking, onReceiveTransfer }: CartSearchByEmailProps) {
   const [searchEmail, setSearchEmail] = useState('');
   const [carts, setCarts] = useState<Cart[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,6 +63,9 @@ export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitch
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferCode, setTransferCode] = useState('');
+  const [processing, setProcessing] = useState(false);
 
   const supabase = createClient();
 
@@ -252,6 +256,61 @@ export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitch
     } else {
       // Handle drink additions (future implementation)
       alert(`Add ${itemType} to cart ${cartId}`);
+    }
+  };
+
+  const receiveCartTransfer = async () => {
+    if (!selectedCart || !transferCode) {
+      alert('Please select a cart and enter transfer code');
+      return;
+    }
+    
+    setProcessing(true);
+    
+    try {
+      // Extract transfer ID from QR code URL or use direct code
+      const transferId = transferCode.includes('transfer=') 
+        ? transferCode.split('transfer=')[1]
+        : transferCode;
+      
+      // Get bookings for this customer email (not cart_id since they may have multiple bookings)
+      const { data: bookings } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('customer_email', searchEmail)
+        .eq('booking_status', 'sessions_scheduled');
+      
+      if (!bookings || bookings.length === 0) {
+        alert('No active bookings found for this customer');
+        setProcessing(false);
+        return;
+      }
+      
+      // Call the cart-receive API to process transfer
+      const response = await fetch('/api/cart-receive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transferId,
+          bookingId: bookings[0].id, // Use first booking or implement selection
+          staffId: 'staff_user' // TODO: Get from auth context
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`✅ Successfully added ${result.itemsAdded} items to booking`);
+        setShowTransferModal(false);
+        setTransferCode('');
+        searchCarts(); // Refresh
+      } else {
+        alert(`❌ ${result.error}`);
+      }
+    } catch (error) {
+      alert('Failed to process transfer');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -454,25 +513,42 @@ export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitch
                 </div>
                 
                 <div className="flex gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addItemToCart(cart.id, 'booking');
-                    }}
-                    className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
-                  >
-                    + Booking
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addItemToCart(cart.id, 'drink');
-                    }}
-                    className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
-                  >
-                    + Drink
-                  </button>
-                  <PaymentButton customerEmail={cart.customer_email} />
+                  <p className="text-sm text-gray-600">
+                    {cart.items_count} item(s)
+                  </p>
+                  
+                  {/* Add Booking and Receive Transfer Buttons */}
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addItemToCart(cart.id, 'booking');
+                      }}
+                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      + Add Booking
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCart(cart.id);
+                        setShowTransferModal(true);
+                      }}
+                      className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
+                    >
+                      📥 Receive Transfer
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addItemToCart(cart.id, 'drink');
+                      }}
+                      className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                    >
+                      + Add Drink
+                    </button>
+                    <PaymentButton customerEmail={cart.customer_email} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -495,6 +571,52 @@ export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitch
 
       {searchEmail && carts.length === 0 && !isLoading && hasSearched && (
         <p className="text-gray-500 text-center py-8">No carts found for this email</p>
+      )}
+
+      {/* Transfer Modal */}
+      {showTransferModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4">Receive Cart Transfer</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Scan QR code or enter transfer code from Water Bar
+            </p>
+            
+            <input
+              type="text"
+              placeholder="Enter transfer code or QR URL..."
+              value={transferCode}
+              onChange={(e) => setTransferCode(e.target.value)}
+              className="w-full p-3 border rounded-md mb-4"
+              autoFocus
+            />
+            
+            <div className="flex gap-2">
+              <button
+                onClick={receiveCartTransfer}
+                disabled={processing || !transferCode}
+                className="flex-1 bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 disabled:opacity-50"
+              >
+                {processing ? '⏳ Processing...' : '✅ Receive Items'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowTransferModal(false);
+                  setTransferCode('');
+                }}
+                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+            
+            <div className="mt-4 text-xs text-gray-500">
+              <p>• Items will be intelligently distributed across bookings</p>
+              <p>• Celery → before sauna, Coconut → after heat activities</p>
+              <p>• Protein drinks → post-workout recovery</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

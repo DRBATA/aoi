@@ -37,6 +37,7 @@ export default function AOIBookingForm() {
   const AOI_VENUE_ID = '20c2f440-9133-42ec-a8d6-6336e649ec4b';
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [selectedExperience, setSelectedExperience] = useState('');
+  const [experienceChips, setExperienceChips] = useState<{category: string, items: Experience[]}[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -57,12 +58,7 @@ export default function AOIBookingForm() {
     console.log('🔍 Fetching experiences for venue:', AOI_VENUE_ID);
     const { data, error } = await supabase
       .from('venue_experiences')
-      .select(`
-        experience_id,
-        experience_name,
-        duration_minutes,
-        venue_price
-      `)
+      .select('*, experiences(*)')
       .eq('venue_id', AOI_VENUE_ID);
 
     console.log('📊 Supabase response:', { data, error });
@@ -73,18 +69,45 @@ export default function AOIBookingForm() {
     }
 
     if (data) {
-      const formattedExperiences = data.map((item: { experience_id: string; experience_name: string; duration_minutes: number; venue_price: string }) => ({
-        id: item.experience_id,
-        name: item.experience_name,
-        duration_minutes: item.duration_minutes,
-        venue_price: parseFloat(item.venue_price)
+      const formattedExperiences: Experience[] = data.map((item: any) => ({
+        id: item.experiences.id,
+        name: item.experiences.name,
+        duration_minutes: item.experiences.duration_minutes || 0,
+        venue_price: item.venue_price || 0
       }));
-      console.log('✅ Formatted experiences:', formattedExperiences);
       setExperiences(formattedExperiences);
+      
+      // Group experiences into chips
+      const grouped = formattedExperiences.reduce((acc: any, exp) => {
+        // Extract the base name (e.g., "AOI Air", "AOI Earth")
+        let baseName = exp.name;
+        if (exp.name.includes('AOI Air Implosion Dome PRO')) {
+          baseName = 'AOI Air PRO';
+        } else if (exp.name.includes('AOI Air Implosion Dome')) {
+          baseName = 'AOI Air';
+        } else if (exp.name.includes('AOI Earth Bed')) {
+          baseName = 'AOI Earth';
+        } else if (exp.name.includes('AOI Float')) {
+          baseName = 'AOI Float';
+        }
+        
+        if (!acc[baseName]) {
+          acc[baseName] = [];
+        }
+        acc[baseName].push(exp);
+        return acc;
+      }, {});
+      
+      const chips = Object.entries(grouped).map(([category, items]) => ({
+        category,
+        items: items as Experience[]
+      }));
+      
+      setExperienceChips(chips);
     } else {
       console.warn('⚠️ No experiences data returned');
     }
-  }, [supabase]);
+  }, [AOI_VENUE_ID]);
 
   const generateSuggestions = useCallback(async () => {
     setLoadingSuggestions(true);
@@ -626,29 +649,35 @@ export default function AOIBookingForm() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Experience Selector */}
+        {/* Experience Chips Selector */}
         <div>
           <label className="text-white/70 text-sm mb-3 block">Select Experience</label>
-          <select 
-            value={selectedExperience}
-            onChange={(e) => {
-              console.log('🎯 Experience selected:', e.target.value);
-              setSelectedExperience(e.target.value);
-            }}
-            className="w-full p-4 bg-white/20 border border-white/30 rounded-xl text-white focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
-            style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
-            required
-          >
-            <option value="">Choose an experience...</option>
-            {experiences.length === 0 && (
-              <option value="" disabled>Loading experiences...</option>
-            )}
-            {experiences.map(exp => (
-              <option key={exp.id} value={exp.id}>
-                {exp.name} - {exp.duration_minutes}min - AED {exp.venue_price}
-              </option>
+          <div className="space-y-3">
+            {experienceChips.map((group) => (
+              <div key={group.category}>
+                <p className="text-white/50 text-xs mb-2">{group.category}</p>
+                <div className="flex flex-wrap gap-2">
+                  {group.items.map((exp) => (
+                    <button
+                      key={exp.id}
+                      type="button"
+                      onClick={() => {
+                        console.log('🎯 Experience chip clicked:', exp.name);
+                        setSelectedExperience(exp.id);
+                      }}
+                      className={`px-4 py-2 rounded-full text-sm transition-all ${
+                        selectedExperience === exp.id
+                          ? 'bg-purple-500 text-white border-2 border-purple-400'
+                          : 'bg-white/10 text-white/70 border border-white/20 hover:bg-white/20'
+                      }`}
+                    >
+                      {exp.name.replace(/AOI (Air|Earth|Float).*?(\d+)/, '$1 $2')}min - AED {exp.venue_price}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
-          </select>
+          </div>
         </div>
 
         {/* Date & Time */}

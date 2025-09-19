@@ -10,10 +10,10 @@ import { Plus, Minus, Loader2 } from "lucide-react"
 
 // Simple currency formatter
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-AE', {
     style: 'currency',
-    currency: 'USD'
-  }).format(amount)
+    currency: 'AED'
+  }).format(amount).replace('AED', 'DHS')
 }
 
 interface Product {
