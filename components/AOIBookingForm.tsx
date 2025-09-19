@@ -769,7 +769,6 @@ export default function AOIBookingForm() {
                     <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded">
                       {index + 1}
                     </span>
-                    <span className="text-white font-medium">{row.experience_name}</span>
                     {row.source === 'ai' && (
                       <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded">
                         AI Added
@@ -786,6 +785,44 @@ export default function AOIBookingForm() {
                     Remove
                   </button>
                 </div>
+                
+                {/* Experience Selection - Chips if multiple options, single name if not */}
+                {row.available_experiences && row.available_experiences.length > 1 ? (
+                  <div className="mb-3">
+                    <label className="text-white/60 text-xs mb-2 block">Select Experience:</label>
+                    <div className="flex flex-wrap gap-2">
+                      {row.available_experiences.map((exp) => (
+                        <button
+                          key={exp.experience_id}
+                          type="button"
+                          onClick={() => {
+                            setBookingRows(prev => prev.map(r => 
+                              r.id === row.id 
+                                ? {
+                                    ...r, 
+                                    experience_id: exp.experience_id,
+                                    experience_name: exp.experience_name,
+                                    duration_minutes: exp.duration_minutes
+                                  }
+                                : r
+                            ));
+                          }}
+                          className={`px-3 py-1 rounded-full text-xs transition-all ${
+                            row.experience_id === exp.experience_id
+                              ? 'bg-purple-500 text-white border border-purple-400'
+                              : 'bg-white/10 text-white/70 border border-white/20 hover:bg-white/20'
+                          }`}
+                        >
+                          {exp.experience_name} ({exp.duration_minutes}min)
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-3">
+                    <span className="text-white font-medium">{row.experience_name}</span>
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-2 gap-4 mb-2">
                   <div>
