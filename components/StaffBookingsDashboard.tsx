@@ -66,6 +66,10 @@ export default function StaffBookingsDashboard() {
   } | null>(null);
   const [showAiSection, setShowAiSection] = useState(false);
   const [previousTab, setPreviousTab] = useState<'dashboard' | 'create' | 'search' | 'drinks'>('dashboard');
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [selectedBookingForQR, setSelectedBookingForQR] = useState<Booking | null>(null);
+  const [qrCode, setQrCode] = useState('');
+  const [processingQR, setProcessingQR] = useState(false);
 
   const supabase = createClient();
 
@@ -318,6 +322,55 @@ export default function StaffBookingsDashboard() {
       }
     } catch (err: unknown) {
       console.error('Error completing session:', err);
+    }
+  };
+
+  const scanQRAssessment = (booking: Booking) => {
+    setSelectedBookingForQR(booking);
+    setShowQRModal(true);
+  };
+
+  const processQRAssessment = async () => {
+    if (!selectedBookingForQR || !qrCode) {
+      alert('Please select a booking and enter QR code');
+      return;
+    }
+    
+    setProcessingQR(true);
+    
+    try {
+      // Extract transfer ID from QR code URL or use direct code
+      const transferId = qrCode.includes('transfer=') 
+        ? qrCode.split('transfer=')[1]
+        : qrCode;
+      
+      // Call the new booking-receive-assessment API
+      const response = await fetch('/api/booking-receive-assessment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transferId,
+          bookingId: selectedBookingForQR.id,
+          customerEmail: selectedBookingForQR.customer_email,
+          staffId: 'staff_user'
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`✅ Successfully redistributed ${result.itemsAdded} drinks across ${result.bookingsUpdated} bookings`);
+        setShowQRModal(false);
+        setQrCode('');
+        setSelectedBookingForQR(null);
+        fetchBookingsCallback(); // Refresh bookings to show new drinks
+      } else {
+        alert(`❌ ${result.error}`);
+      }
+    } catch (error) {
+      alert('Failed to process assessment');
+    } finally {
+      setProcessingQR(false);
     }
   };
 
@@ -591,6 +644,13 @@ export default function StaffBookingsDashboard() {
                           </div>
                           
                           <div className="flex gap-2">
+                            <Button
+                              onClick={() => scanQRAssessment(booking)}
+                              size="sm"
+                              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                            >
+                              📱 Scan Assessment
+                            </Button>
                             {(() => {
                               const buttonState = getButtonState(booking);
                               return (
@@ -724,6 +784,56 @@ export default function StaffBookingsDashboard() {
                 Add Drinks to Cart
               </h2>
               <AddDrinkTab customerEmail={selectedCustomerEmail} />
+            </div>
+          </div>
+        )}
+
+        {/* QR Assessment Modal */}
+        {showQRModal && selectedBookingForQR && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <h3 className="text-lg font-semibold mb-4">Scan QR Assessment</h3>
+              <p className="text-sm text-gray-600 mb-2">
+                Customer: {selectedBookingForQR.customer_name}
+              </p>
+              <p className="text-sm text-gray-600 mb-4">
+                Experience: {selectedBookingForQR.experience_name}
+              </p>
+              
+              <input
+                type="text"
+                placeholder="Scan QR code or enter transfer code..."
+                value={qrCode}
+                onChange={(e) => setQrCode(e.target.value)}
+                className="w-full p-3 border rounded-md mb-4"
+                autoFocus
+              />
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={processQRAssessment}
+                  disabled={processingQR || !qrCode}
+                  className="flex-1 bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {processingQR ? '⏳ Processing...' : '✅ Apply Assessment'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowQRModal(false);
+                    setQrCode('');
+                    setSelectedBookingForQR(null);
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
+              
+              <div className="mt-4 text-xs text-gray-500">
+                <p>• AI will analyze all customer bookings for the day</p>
+                <p>• Drinks will be intelligently distributed across experiences</p>
+                <p>• Existing booking explanations will be considered</p>
+              </div>
             </div>
           </div>
         )}

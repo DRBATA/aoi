@@ -54,7 +54,7 @@ interface CartSearchByEmailProps {
   onReceiveTransfer?: (cartId: string, bookingId: string) => void;
 }
 
-export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitchToBooking, onReceiveTransfer }: CartSearchByEmailProps) {
+export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitchToBooking }: CartSearchByEmailProps) {
   const [searchEmail, setSearchEmail] = useState('');
   const [carts, setCarts] = useState<Cart[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -292,7 +292,8 @@ export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitch
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           transferId,
-          bookingId: bookings[0].id, // Use first booking or implement selection
+          bookings: bookings, // Send all bookings, backend won't need to query again
+          customerEmail: searchEmail,
           staffId: 'staff_user' // TODO: Get from auth context
         })
       });

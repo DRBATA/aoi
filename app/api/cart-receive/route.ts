@@ -3,44 +3,38 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { transferId, bookingId, staffId, customerEmail } = await request.json()
+    const { cart_id, session_id, customer_email, items, assessment_data } = await request.json()
     const supabase = await createClient()
     
-    // Fetch the transfer record
-    const { data: transfer, error: transferError } = await supabase
-      .from('cart_transfers')
-      .select('*')
-      .eq('id', transferId)
-      .eq('status', 'pending')
-      .single()
+    // Directly use the cart data passed in QR code
+    // No need for cart_transfers table
     
-    if (transferError || !transfer) {
-      return NextResponse.json({ error: 'Invalid or expired transfer' }, { status: 400 })
+    if (!cart_id || !items || items.length === 0) {
+      return NextResponse.json({ error: 'Invalid cart data' }, { status: 400 })
     }
     
-    // Get ALL bookings for this customer to distribute items intelligently
-    const { data: bookings, error: bookingsError } = await supabase
+    // Find customer's bookings at AOI venue
+    const { data: bookings, error: bookingError } = await supabase
       .from('bookings')
-      .select(`
-        *,
-        experiences (
-          name,
-          category
-        )
-      `)
-      .eq('customer_email', customerEmail || transfer.customer_email)
-      .eq('booking_status', 'sessions_scheduled')
-      .order('slot_time', { ascending: true })
+      .select('*')
+      .eq('customer_email', customer_email)
+      .eq('venue_id', '20c2f440-9133-42ec-a8d6-6336e649ec4b') // AOI venue ID
+      .in('booking_status', ['sessions_scheduled', 'in_session'])
     
-    if (bookingsError || !bookings || bookings.length === 0) {
-      return NextResponse.json({ error: 'No active bookings found' }, { status: 404 })
+    if (bookingError || !bookings || bookings.length === 0) {
+      return NextResponse.json({ error: 'No active bookings found for customer' }, { status: 404 })
+    }
+    
+    // Validate bookings exist
+    if (!bookings || bookings.length === 0) {
+      return NextResponse.json({ error: 'No active bookings provided' }, { status: 404 })
     }
     
     // AI redistribution of drinks across all bookings
     const redistributedItems = await redistributeDrinks(
-      transfer.cart_items,
+      items,
       bookings,
-      transfer.assessment_data
+      assessment_data
     )
     
     // Update each booking with new items, checking existing drinks
@@ -87,15 +81,14 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Mark transfer as completed
+    // Log the cart processing (optional - could track in cart_headers)
     await supabase
-      .from('cart_transfers')
+      .from('cart_headers')
       .update({ 
-        status: 'completed',
-        processed_by: staffId,
-        processed_at: new Date().toISOString()
+        venue_claimed_at: new Date().toISOString(),
+        venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b'
       })
-      .eq('id', transferId)
+      .eq('id', cart_id)
     
     return NextResponse.json({
       success: true,
