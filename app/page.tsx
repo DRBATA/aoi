@@ -243,223 +243,251 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 px-4 bg-gradient-to-b from-black to-purple-950/20">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
-              The Art of <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Implosion</span>
-            </h2>
-            <p className="text-white/70 max-w-2xl mx-auto">
-              Stop exploding onto the world. Turn inward to access your original code.
+<section id="how-it-works" className="py-24 px-4 bg-gradient-to-b from-black to-purple-950/20">
+  <div className="max-w-6xl mx-auto">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+      className="text-center mb-16"
+    >
+      <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
+        Not forcing anything. <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-pink-400 bg-clip-text text-transparent">Just creating conditions.</span>
+      </h2>
+      <p className="text-white/70 max-w-2xl mx-auto">
+        Light, sound, and temperature create space for your body to do what it already knows.
+      </p>
+    </motion.div>
+
+    {/* Tab Navigation */}
+    <div className="flex flex-wrap justify-center gap-2 mb-12">
+      {[
+        { id: 'how-it-works', label: 'How It Works', icon: <Sparkles className="w-4 h-4" /> },
+        { id: 'social', label: 'The Vibe', icon: <Users className="w-4 h-4" /> },
+        { id: 'philosophy', label: 'Philosophy', icon: <Brain className="w-4 h-4" /> },
+        { id: 'founder', label: 'Creator', icon: <Zap className="w-4 h-4" /> }
+      ].map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
+            activeTab === tab.id
+              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+              : 'bg-white/10 text-white/70 hover:bg-white/20'
+          }`}
+        >
+          {tab.icon}
+          {tab.label}
+        </button>
+      ))}
+    </div>
+
+    {/* Tab Content */}
+    <div className="max-w-4xl mx-auto">
+      {activeTab === 'how-it-works' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">🎨</span>
+              <h3 className="text-xl font-medium text-white">Art-Built Containers</h3>
+            </div>
+            <p className="text-white/60 mb-3">
+              Each AOI experience is an artisanal state-changer. Immersive light and sound create a ritual container where your nervous system can find its own steadier set point.
             </p>
-          </motion.div>
-
-          {/* Tab Navigation */}
-          <div className="flex flex-wrap justify-center gap-2 mb-12">
-            {[
-              { id: 'philosophy', label: 'The Philosophy', icon: <Brain className="w-4 h-4" /> },
-              { id: 'how-it-works', label: 'How It Works', icon: <Sparkles className="w-4 h-4" /> },
-              { id: 'technology', label: 'Technology', icon: <Zap className="w-4 h-4" /> },
-              { id: 'founder', label: 'Creator', icon: <Users className="w-4 h-4" /> }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                    : 'bg-white/10 text-white/70 hover:bg-white/20'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
+            <p className="text-white/60">
+              It's not about forcing anything — it's about giving your body the right conditions to do what it already knows.
+            </p>
           </div>
-
-          {/* Tab Content */}
-          <div className="max-w-4xl mx-auto">
-            {activeTab === 'philosophy' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-medium text-white mb-4">Implosion vs Explosion</h3>
-                  <p className="text-white/60 mb-3">
-                    Humans have become addicted to exploding - constantly reacting, consuming, and pushing outward. 
-                    We&apos;ve lost our connection to nature and how creation really takes its highest form: through implosion.
-                  </p>
-                  <p className="text-white/60">
-                    AOI invites you to turn inward, to implode your true potential onto the world without needing 
-                    to destroy your surroundings to grow.
-                  </p>
-                </div>
-                
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-medium text-white mb-4">The 1% vs 99% Within</h3>
-                  <p className="text-white/60">
-                    Just as 1% controls 99% in the world, within you, 1% of your conscious mind tries to overcome 
-                    99% of contradicting information stored in your cells. Your &quot;yes&quot; fights against millions of 
-                    ancestral &quot;nos&quot;. AOI helps clear this internal conflict.
-                  </p>
-                </div>
-                
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-medium text-white mb-4">Beyond Replicas</h3>
-                  <p className="text-white/60">
-                    Most people are replicas - mimicking their ancestors or environment. It&apos;s hard to meet an original 
-                    expression because we&apos;re all copies in the same traffic jam. AOI helps you break free from being 
-                    just another copy and access your true originality.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'how-it-works' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl">🧬</span>
-                    <h3 className="text-xl font-medium text-white">DNA as the Receiver of Creation</h3>
-                  </div>
-                  <p className="text-white/60 mb-3">
-                    Science tells us DNA is more than just a code for building the body. The truth is, most of DNA&apos;s function is not about proteins at all — it is about receiving and transmitting the subtle information of life itself.
-                  </p>
-                  <p className="text-white/60">
-                    Research reveals DNA functions as an antenna — tuned to light and sound — the fundamental carriers of creation.
-                  </p>
-                </div>
-                
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl">🌊</span>
-                    <h3 className="text-xl font-medium text-white">Light and Sound: The Fabric of the Physical World</h3>
-                  </div>
-                  <p className="text-white/60 mb-3">
-                    Everything we touch, taste, and see is born of vibration. Sound and light are the primal forces that come together to create reality.
-                  </p>
-                  <p className="text-white/60">
-                    The binary code of creation operates through simple &quot;yes&quot; and &quot;no&quot; signals, like a cosmic computer program. When these signals align properly, they create coherence in your system.
-                  </p>
-                </div>
-                
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl">🌿</span>
-                    <h3 className="text-xl font-medium text-white">Resonance With All That is Living</h3>
-                  </div>
-                  <p className="text-white/60">
-                    Because this code underlies all of life, AOI doesn&apos;t only touch humans — it works on plants, water, coffee, even perfume, because everything organic carries this vibrational memory. The same universal patterns resonate through every living thing.
-                  </p>
-                </div>
-                
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl">⚡</span>
-                    <h3 className="text-xl font-medium text-white">Binary Code and the Dance of Duality</h3>
-                  </div>
-                  <p className="text-white/60">
-                    In the yin and yang of space — light and dark, vibration and stillness — lies the binary code of creation. AOI translates that hidden binary into an experience you can feel with your body.
-                  </p>
-                </div>
-                
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl">🪞</span>
-                    <h3 className="text-xl font-medium text-white">The Mirror Effect</h3>
-                  </div>
-                  <p className="text-white/60">
-                    When AOI surrounds you with harmonic light and sound, your body naturally mirrors it back. Just like a greeting — &quot;hello&quot; answered with &quot;hello&quot; — your cells respond in kind, releasing what does not belong, remembering what does. This mirroring is the gateway to healing and transformation.
-                  </p>
-                </div>
-                
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl">✨</span>
-                    <h3 className="text-xl font-medium text-white">Simplicity at the Core</h3>
-                  </div>
-                  <p className="text-white/60">
-                    It is not complicated. Just as a child learns by mirroring what is around them, you do not need to study AOI. You only need to experience it. In the simplicity of that exchange lies its power.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'technology' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-                  <Award className="w-8 h-8 text-yellow-400 mb-4" />
-                  <h3 className="text-xl font-medium text-white mb-4">Nobel Prize Science</h3>
-                  <p className="text-white/60 mb-4">Low Level Light Therapy (LLLT) - Nobel Prize 1903 Niels Ryberg Finsen for treating diseases with concentrated light. Over 4,000 scientific studies since 1967.</p>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10">
-                    <h4 className="text-lg font-medium text-white mb-2">Mental Health</h4>
-                    <p className="text-white/60 text-sm">Treats depression, anxiety, PTSD, substance abuse, traumatic brain injury</p>
-                  </div>
-                  <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10">
-                    <h4 className="text-lg font-medium text-white mb-2">Brain Function</h4>
-                    <p className="text-white/60 text-sm">Boosts brain function, improves mental health, enhances cognitive performance</p>
-                  </div>
-                  <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10">
-                    <h4 className="text-lg font-medium text-white mb-2">Physical Recovery</h4>
-                    <p className="text-white/60 text-sm">Enhanced muscle recovery, improved circulation, cellular rejuvenation</p>
-                  </div>
-                  <div className="bg-white/5 backdrop-blur-lg rounded-xl p-4 border border-white/10">
-                    <h4 className="text-lg font-medium text-white mb-2">Overall Wellness</h4>
-                    <p className="text-white/60 text-sm">Stress relief, improved sleep, enhanced mood, increased energy</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'founder' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10"
-              >
-                <div className="flex flex-col md:flex-row gap-6 items-center">
-                  <div className="w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-                    <Users className="w-16 h-16 text-white" />
-                  </div>
-                  <div className="flex-1 text-center md:text-left">
-                    <h3 className="text-2xl font-medium text-white mb-2">Johny Dar</h3>
-                    <p className="text-purple-400 mb-4">Founder & Creator of AOI</p>
-                    <p className="text-white/60 mb-4">
-                      Multi-talented artist, designer, musician, philanthropist, and inventor. 
-                      Fashion designer since 1999, launched Johny Wonder label. 
-                      Driven to chase dreams and passionate about realization.
-                    </p>
-                    <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Artist</span>
-                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Designer</span>
-                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Inventor</span>
-                      <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Philanthropist</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
+          
+          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">🌊</span>
+              <h3 className="text-xl font-medium text-white">How Position Changes Everything</h3>
+            </div>
+            <div className="space-y-3 text-white/60">
+              <p><strong className="text-white">Standing (AIR):</strong> Movement permission. Your fascia unwinds through micro-movements. Shoulders drop without trying.</p>
+              <p><strong className="text-white">Lying (EARTH):</strong> Load off. Subtraction lets your spine lengthen, breath deepen, thoughts settle.</p>
+              <p><strong className="text-white">Floating:</strong> Maximum subtraction. Boundaries dissolve then reform clearer. Spontaneous reorganization.</p>
+            </div>
           </div>
-        </div>
-      </section>
+          
+          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">🔥❄️</span>
+              <h3 className="text-xl font-medium text-white">Temperature as Teacher</h3>
+            </div>
+            <p className="text-white/60 mb-3">
+              <strong className="text-white">Ice:</strong> Brief cold creates focus then release. Your system learns to find calm in intensity. Mind sharpens, body rebounds.
+            </p>
+            <p className="text-white/60">
+              <strong className="text-white">Heat:</strong> Gentle warmth opens circulation, lengthens breath. Muscles soften, you're ready for what's next.
+            </p>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">✨</span>
+              <h3 className="text-xl font-medium text-white">What You'll Actually Feel</h3>
+            </div>
+            <ul className="space-y-2 text-white/60">
+              <li>• "Jaw unhooks, breath lengthens, movements feel smoother"</li>
+              <li>• "Attention snaps clear, then softens into steady focus"</li>
+              <li>• "Feet find the ground differently"</li>
+              <li>• "Spine lengthens without effort"</li>
+              <li>• "Mental chatter goes quiet"</li>
+            </ul>
+          </div>
+        </motion.div>
+      )}
+
+      {activeTab === 'social' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-light text-white mb-2">Where Dubai's Creative Community Gathers</h3>
+            <p className="text-white/60">Art gallery meets wellness lounge meets social club</p>
+          </div>
+          
+          {/* Gallery Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/party.jpg" alt="Community celebrations" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Celebrations</p>
+              </div>
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/movement.jpg" alt="Dance & movement" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Movement</p>
+              </div>
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/connection.jpg" alt="Deep connections" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Connection</p>
+              </div>
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/community.jpg" alt="Water Bar gatherings" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Water Bar</p>
+              </div>
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/conversation.jpg" alt="Lounge vibes" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Lounge Vibes</p>
+              </div>
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/shop.jpg" alt="Fashion x Wellness" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Johny Dar Fashion</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 mt-8">
+            <div className="text-center">
+              <h4 className="text-xl font-medium text-white mb-3">Book Together</h4>
+              <p className="text-white/60 mb-4">
+                AOI is best experienced with friends. Book 3-4 experiences back-to-back for your complete wellness journey. 
+                Dance between sessions, share signature drinks, create memories.
+              </p>
+              <div className="flex justify-center gap-8 text-center">
+                <div>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">500+</p>
+                  <p className="text-white/50 text-sm">Weekly Visitors</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">70%</p>
+                  <p className="text-white/50 text-sm">Come in Groups</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">3-4</p>
+                  <p className="text-white/50 text-sm">Avg Experiences</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {activeTab === 'philosophy' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {/* Keep existing philosophy content */}
+          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <h3 className="text-xl font-medium text-white mb-4">Implosion vs Explosion</h3>
+            <p className="text-white/60 mb-3">
+              Humans have become addicted to exploding - constantly reacting, consuming, and pushing outward. 
+              We've lost our connection to nature and how creation really takes its highest form: through implosion.
+            </p>
+            <p className="text-white/60">
+              AOI invites you to turn inward, to implode your true potential onto the world without needing 
+              to destroy your surroundings to grow.
+            </p>
+          </div>
+          
+          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+            <h3 className="text-xl font-medium text-white mb-4">Beyond Replicas</h3>
+            <p className="text-white/60">
+              Most people are replicas - mimicking their ancestors or environment. It's hard to meet an original 
+              expression because we're all copies in the same traffic jam. AOI helps you break free from being 
+              just another copy and access your true originality.
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+{activeTab === 'founder' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10"
+        >
+          <div className="flex flex-col md:flex-row gap-6 items-center">
+            <div className="w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+              <Users className="w-16 h-16 text-white" />
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <h3 className="text-2xl font-medium text-white mb-2">Johny Dar</h3>
+              <p className="text-purple-400 mb-4">Founder & Creator of AOI</p>
+              <p className="text-white/60 mb-4">
+                Multi-talented artist, designer, musician, philanthropist, and inventor. 
+                Fashion designer since 1999, launched Johny Wonder label. 
+                Driven to chase dreams and passionate about realization.
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Artist</span>
+                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Designer</span>
+                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Inventor</span>
+                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Philanthropist</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  </div>
+</section>
 
       {/* Experiences Section */}
       <section id="experiences" className="py-24 px-4 bg-gradient-to-b from-purple-950/20 to-black">
