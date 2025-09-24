@@ -1,9 +1,47 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
+interface EnrichedProduct {
+  item_id: string
+  product_name: string
+  qty: number
+  na_mg?: number
+  protein_g?: number
+  water_content_ml?: number
+}
+
+async function convertCartItemsToProducts(cartItems: any[], supabase: any): Promise<EnrichedProduct[]> {
+  const productItems: EnrichedProduct[] = []
+  
+  for (const cartItem of cartItems) {
+    // Only process products (skip experiences)
+    if (!cartItem.product_name) continue
+    
+    // Fetch full product data including nutritional info
+    const { data: product } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', cartItem.item_id)
+      .single()
+    
+    if (product) {
+      productItems.push({
+        item_id: product.id,
+        product_name: product.name,
+        qty: cartItem.qty,
+        na_mg: product.sodium_mg,
+        protein_g: product.protein_g,
+        water_content_ml: product.water_content_ml
+      })
+    }
+  }
+  
+  return productItems
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { cart_id, session_id, customer_email, items, assessment_data } = await request.json()
+    const { cart_id, customer_email, items } = await request.json()
     const supabase = await createClient()
     
     // Directly use the cart data passed in QR code
@@ -31,10 +69,10 @@ export async function POST(request: NextRequest) {
     }
     
     // AI redistribution of drinks across all bookings
+    // Pass the ORIGINAL cart items with their AI explanations
     const redistributedItems = await redistributeDrinks(
-      items,
-      bookings,
-      assessment_data
+      items,  // Keep original cart items with AI context
+      bookings
     )
     
     // Update each booking with new items, checking existing drinks
@@ -44,9 +82,9 @@ export async function POST(request: NextRequest) {
       if (!targetBooking) continue
       
       // Check if item already exists in pre/during/after drinks
-      const existingPre = targetBooking.pre_drinks?.some((d: any) => d.product_id === item.product_id)
-      const existingDuring = targetBooking.during_drinks?.some((d: any) => d.product_id === item.product_id)
-      const existingAfter = targetBooking.after_drinks?.some((d: any) => d.product_id === item.product_id)
+      const existingPre = targetBooking.pre_drinks?.some((d: { product_id: string }) => d.product_id === item.product_id)
+      const existingDuring = targetBooking.during_drinks?.some((d: { product_id: string }) => d.product_id === item.product_id)
+      const existingAfter = targetBooking.after_drinks?.some((d: { product_id: string }) => d.product_id === item.product_id)
       
       if (!existingPre && !existingDuring && !existingAfter) {
         // Add to appropriate drinks array based on timing
@@ -102,90 +140,120 @@ export async function POST(request: NextRequest) {
   }
 }
 
+interface RedistributedItem {
+  booking_id: string
+  timing: string
+  rationale: string
+  product_id: string
+  name: string
+  quantity: number
+}
+
+interface CartItem {
+  item_id: string  // This is the product.id or experience.id
+  product_name?: string
+  experience_name?: string
+  qty: number
+  booking_id?: string
+  // Product nutritional data (when it's a product)
+  na_mg?: number
+  protein_g?: number
+  water_content_ml?: number
+}
+
+interface Booking {
+  id: string
+  customer_email: string
+  slot_time: string
+  duration_minutes?: number
+  experience_id?: string
+  experiences?: { name: string }
+  pre_drinks?: any[]
+  during_drinks?: any[]
+  after_drinks?: any[]
+  booking_explanation?: string  // This could contain pathway context!
+}
+
+import OpenAI from 'openai'
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+})
+
 async function redistributeDrinks(
-  cartItems: any[],
-  bookings: any[],
-  assessmentData: any
-): Promise<any[]> {
-  // Sort bookings by time
-  const sortedBookings = bookings.sort((a, b) => 
-    new Date(a.slot_time).getTime() - new Date(b.slot_time).getTime()
-  )
+  cartItems: any[], // Keep original cart items with their AI explanations
+  bookings: Booking[]
+): Promise<RedistributedItem[]> {
+  // CRITICAL INSIGHTS:
+  // 1. Drinks come with AI explanations of WHY they were selected
+  // 2. Multiple bookings = ONE session (check same email, same day)
+  // 3. Look at booking pathway explanations for drink placement guidance
+  // 4. Trust the original AI's reasoning, just distribute timing
   
-  const redistributed = []
+  const totalHours = bookings.reduce((sum, b) => sum + (b.duration_minutes || 30) / 60, 0)
+  const maxDrinksToDistribute = Math.floor(totalHours * 2)
   
-  for (const item of cartItems) {
-    // Determine optimal timing based on product type and experience
-    let bestPlacement = null
-    
-    // High sodium (celery) → before sauna/heat experiences
-    if (item.name?.includes('Celery') || item.name?.includes('SoSodium') || item.na_mg > 100) {
-      const heatExperience = sortedBookings.find(b => 
-        b.experiences?.name?.toLowerCase().includes('sauna') ||
-        b.experiences?.name?.toLowerCase().includes('float') ||
-        b.experiences?.name?.toLowerCase().includes('air')
-      )
-      if (heatExperience) {
-        bestPlacement = {
-          booking_id: heatExperience.id,
-          timing: 'before',
-          rationale: 'Sodium pre-loading for heat experience'
-        }
-      }
-    }
-    
-    // Coconut water → after hot activities
-    else if (item.name?.includes('Coconut') || item.name?.includes('Once Upon')) {
-      const heatExperience = sortedBookings.find(b => 
-        b.experiences?.name?.toLowerCase().includes('sauna') ||
-        b.experiences?.name?.toLowerCase().includes('float') ||
-        b.experiences?.name?.toLowerCase().includes('earth')
-      )
-      if (heatExperience) {
-        bestPlacement = {
-          booking_id: heatExperience.id,
-          timing: 'after',
-          rationale: 'Potassium replenishment post-heat'
-        }
-      }
-    }
-    
-    // Protein (kefir) → post-workout or any intensive experience
-    else if (item.protein_g > 5 || item.name?.includes('Kefir')) {
-      const intensiveExperience = sortedBookings.find(b => 
-        b.experiences?.name?.toLowerCase().includes('hiit') ||
-        b.experiences?.name?.toLowerCase().includes('gym') ||
-        b.experiences?.name?.toLowerCase().includes('air')
-      )
-      if (intensiveExperience) {
-        bestPlacement = {
-          booking_id: intensiveExperience.id,
-          timing: 'after',
-          rationale: 'Protein for recovery'
-        }
-      }
-    }
-    
-    // Default: distribute evenly across bookings
-    if (!bestPlacement) {
-      const bookingIndex = redistributed.filter(r => 
-        r.product_id === item.id
-      ).length % sortedBookings.length
+  const params: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
+    model: "gpt-4-turbo-preview",
+    messages: [{
+      role: "system" as const,
+      content: `You are distributing drinks that were ALREADY scientifically selected for this customer's deficits.
       
-      bestPlacement = {
-        booking_id: sortedBookings[bookingIndex].id,
-        timing: 'during',
-        rationale: 'Balanced hydration throughout experience'
-      }
-    }
-    
-    redistributed.push({
-      ...bestPlacement,
-      product_id: item.id,
-      name: item.name,
-      quantity: item.quantity || 1
-    })
+      CRITICAL: These are likely MULTIPLE bookings for ONE continuous session.
+      Look at the timeline - if bookings are consecutive (30-60min apart), treat as one session.
+      
+      Each drink comes with its ORIGINAL AI explanation of why it was selected.
+      RESPECT that reasoning when placing drinks.
+      
+      RULES:
+      - Total session time: ${totalHours} hours (max ${maxDrinksToDistribute} drinks @ 2/hour)
+      - Sachets (Rite/Humantra) can be takeaway if excess
+      - If bookings already have drinks with explanations, READ those explanations
+      - Distribute to maintain steady hydration across the ENTIRE session
+      
+      DO NOT reassess nutritional needs - trust the original AI selection.
+      Just optimize WHEN each drink should be consumed.
+      
+      Return JSON: {items: [{booking_id, timing: "before|during|after|takeaway", product_id, rationale}]}`
+    }, {
+      role: "user" as const,
+      content: JSON.stringify({
+        drinks_to_distribute: cartItems.filter(i => i.product_name).map(i => ({
+          id: i.item_id,
+          name: i.product_name,
+          original_ai_reason: i.ai_recommendation?.reason || i.reason,  // Keep original explanation!
+          type: i.product_name?.includes('Rite') || i.product_name?.includes('Humantra') ? 'sachet' : 'drink'
+        })),
+        session_timeline: {
+          customer_email: bookings[0]?.customer_email,
+          total_duration_hours: totalHours,
+          bookings: bookings.sort((a,b) => new Date(a.slot_time).getTime() - new Date(b.slot_time).getTime()).map(b => ({
+            booking_id: b.id,
+            slot_time: b.slot_time,
+            experience: b.experiences?.name,
+            duration_minutes: b.duration_minutes || 30,
+            existing_drinks_with_explanations: {
+              pre: b.pre_drinks || [],
+              during: b.during_drinks || [],
+              after: b.after_drinks || []
+            }
+          }))
+        }
+      })
+    }],
+    response_format: { type: "json_object" as const }
   }
   
-  return redistributed
+  const response = await openai.chat.completions.create(params)
+  const result = JSON.parse(response.choices[0]?.message?.content || '{}')
+  
+  // Map the AI response to our RedistributedItem format
+  return (result.items || []).map((item: any) => ({
+    booking_id: item.booking_id,
+    timing: item.timing,
+    product_id: item.product_id,  // This will be the product.id
+    name: cartItems.find(i => i.item_id === item.product_id)?.product_name || '',
+    quantity: cartItems.find(i => i.item_id === item.product_id)?.qty || 1,
+    rationale: item.rationale
+  }))
 }
