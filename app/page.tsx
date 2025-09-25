@@ -14,8 +14,8 @@ export default function LandingPage() {
   const [activeTab, setActiveTab] = useState('how-it-works')
   const experiences = [
     {
-      id: "aoi",
-      name: "AOI",
+      id: "aoi-air",
+      name: "AOI AIR",
       description: "Stand in light and sound. Your fascia unwinds, shoulders drop, breath naturally lengthens.",
       icon: "✨",
       duration: "20 min",
@@ -49,7 +49,7 @@ export default function LandingPage() {
       description: "Gentle heat opens circulation, lengthens breath. Finish with our signature electrolyte drinks.",
       icon: "🔥",
       duration: "30 min",
-      benefits: ["Muscles soften", "Breath flows easier", "Ready for what&apos;s next"],
+      benefits: ["Muscles soften", "Breath flows easier", "Ready for what's next"],
       color: "from-orange-400 via-pink-400 to-purple-400",
       image: "/experiences/sauna.png"
     },
@@ -61,17 +61,7 @@ export default function LandingPage() {
       duration: "3-6 min",
       benefits: ["Mind sharpens", "Body rebounds", "Confidence builds"],
       color: "from-cyan-400 via-teal-400 to-blue-400",
-      image: "/experiences/float.png"
-    },
-    {
-      id: "aoi-air-pro",
-      name: "AOI AIR PRO",
-      description: "Extended standing session with near-infrared warmth. More time to unwind deeply.",
-      icon: "⭐",
-      duration: "30-50 min",
-      benefits: ["Complete unwinding", "Full-body integration", "Ready to move"],
-      color: "from-purple-500 via-pink-500 to-orange-500",
-      image: "/experiences/aoi_(art_of_implosion).png"
+      image: "/experiences/ice-bath.png"
     }
   ]
 
@@ -519,7 +509,7 @@ export default function LandingPage() {
       </p>
     </motion.div>
 
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
       {experiences.map((exp, index) => (
         <motion.div
           key={exp.id}
@@ -541,7 +531,7 @@ export default function LandingPage() {
             <img 
               src={exp.image} 
               alt={exp.name}
-              className="w-full h-full object-cover opacity-50"
+              className="w-full h-full object-cover object-center opacity-50"
             />
             <div className={`absolute inset-0 bg-gradient-to-br ${exp.color} opacity-70 mix-blend-multiply`} />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
@@ -564,7 +554,7 @@ export default function LandingPage() {
             {/* Bottom Content - Always Visible */}
             <div className="space-y-3">
               <div>
-              <h4 className="text-white font-medium text-xs uppercase tracking-wide mb-2 opacity-90">What You&apos;ll Feel:</h4>
+                <h4 className="text-white font-medium text-xs uppercase tracking-wide mb-2 opacity-90">What You'll Feel:</h4>
                 <div className="flex flex-wrap gap-1.5">
                   {exp.benefits.map((benefit) => (
                     <span 
@@ -587,8 +577,8 @@ export default function LandingPage() {
           </div>
 
           {/* Glow Effect - Always Visible */}
-          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r ${exp.color} opacity-80" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r ${exp.color} opacity-40" />
+          <div className={`absolute inset-x-0 bottom-0 h-px bg-gradient-to-r ${exp.color} opacity-80`} />
+          <div className={`absolute inset-x-0 top-0 h-px bg-gradient-to-r ${exp.color} opacity-40`} />
         </motion.div>
       ))}
     </div>
