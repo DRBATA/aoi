@@ -90,9 +90,9 @@ export async function POST(request: NextRequest) {
     
     // Group updates by booking for efficiency
     const bookingUpdates = new Map<string, {
-      pre: any[]
-      during: any[]
-      after: any[]
+      pre: Array<{product_id: string; name: string; quantity: number}>
+      during: Array<{product_id: string; name: string; quantity: number}>
+      after: Array<{product_id: string; name: string; quantity: number}>
     }>()
     
     // Process each redistributed item
@@ -105,9 +105,9 @@ export async function POST(request: NextRequest) {
       
       // CHECK FOR DUPLICATES - don't add if product already exists
       const isDuplicate = 
-        targetBooking.pre_drinks?.some((d: any) => d.product_id === item.product_id) ||
-        targetBooking.during_drinks?.some((d: any) => d.product_id === item.product_id) ||
-        targetBooking.after_drinks?.some((d: any) => d.product_id === item.product_id)
+      targetBooking.pre_drinks?.some((d: {product_id: string}) => d.product_id === item.product_id) ||
+      targetBooking.during_drinks?.some((d: {product_id: string}) => d.product_id === item.product_id) ||
+      targetBooking.after_drinks?.some((d: {product_id: string}) => d.product_id === item.product_id)
       
       if (isDuplicate) {
         skippedCount++
@@ -265,7 +265,7 @@ async function redistributeDrinks(
   const result = JSON.parse(response.choices[0]?.message?.content || '{"items":[]}')
   
   // Map AI response to our clean format
-  return (result.items || []).map((item: any) => ({
+  return (result.items || []).map((item: {booking_id: string; timing: string; product_id: string}) => ({
     booking_id: item.booking_id,
     timing: item.timing,
     product_id: item.product_id,
