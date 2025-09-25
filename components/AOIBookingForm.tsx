@@ -69,7 +69,7 @@ export default function AOIBookingForm() {
     }
 
     if (data) {
-      const formattedExperiences: Experience[] = data.map((item: any) => ({
+      const formattedExperiences: Experience[] = data.map((item: {experiences: any, venue_price: number}) => ({
         id: item.experiences.id,
         name: item.experiences.name,
         duration_minutes: item.experiences.duration_minutes || 0,
@@ -78,7 +78,7 @@ export default function AOIBookingForm() {
       setExperiences(formattedExperiences);
       
       // Group experiences into chips
-      const grouped = formattedExperiences.reduce((acc: any, exp) => {
+      const grouped = formattedExperiences.reduce((acc: Record<string, Experience[]>, exp) => {
         // Extract the base name (e.g., "AOI Air", "AOI Earth")
         let baseName = exp.name;
         if (exp.name.includes('AOI Air Implosion Dome PRO')) {

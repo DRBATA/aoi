@@ -339,20 +339,16 @@ export default function StaffBookingsDashboard() {
     setProcessingQR(true);
     
     try {
-      // Extract transfer ID from QR code URL or use direct code
-      const transferId = qrCode.includes('transfer=') 
-        ? qrCode.split('transfer=')[1]
-        : qrCode;
-      
-      // Call the new booking-receive-assessment API
-      const response = await fetch('/api/booking-receive-assessment', {
+      // Parse the QR data (should contain cart items)
+      const qrData = JSON.parse(qrCode);
+    
+      const response = await fetch('/api/cart-receive', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          transferId,
-          bookingId: selectedBookingForQR.id,
-          customerEmail: selectedBookingForQR.customer_email,
-          staffId: 'staff_user'
+          cart_id: qrData.cart_id || `qr_${Date.now()}`,
+          customer_email: selectedBookingForQR.customer_email,
+          items: qrData.items || []
         })
       });
       
@@ -363,11 +359,11 @@ export default function StaffBookingsDashboard() {
         setShowQRModal(false);
         setQrCode('');
         setSelectedBookingForQR(null);
-        fetchBookingsCallback(); // Refresh bookings to show new drinks
+        fetchBookingsCallback();
       } else {
         alert(`❌ ${result.error}`);
       }
-    } catch (error) {
+    } catch {
       alert('Failed to process assessment');
     } finally {
       setProcessingQR(false);

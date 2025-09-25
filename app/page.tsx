@@ -391,7 +391,7 @@ export default function LandingPage() {
             {/* Bottom Content - Always Visible */}
             <div className="space-y-3">
               <div>
-                <h4 className="text-white font-medium text-xs uppercase tracking-wide mb-2 opacity-90">What You'll Feel:</h4>
+              <h4 className="text-white font-medium text-xs uppercase tracking-wide mb-2 opacity-90">What You&apos;ll Feel:</h4>
                 <div className="flex flex-wrap gap-1.5">
                   {exp.benefits.map((benefit) => (
                     <span 

@@ -308,7 +308,7 @@ export default function CartSearchByEmail({ onEmailChange, onCartClick, onSwitch
       } else {
         alert(`❌ ${result.error}`);
       }
-    } catch (error) {
+    } catch {
       alert('Failed to process transfer');
     } finally {
       setProcessing(false);
