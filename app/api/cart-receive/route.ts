@@ -7,13 +7,10 @@ const openai = new OpenAI({
 })
 
 // ============= INTERFACES =============
-// Clean, purposeful data structures
-
 interface CartItem {
   item_id: string
-  product_name?: string
+  product_name: string
   qty: number
-  assessment_reason?: string  // From Water Bar: "15% Mg deficit"
 }
 
 interface RedistributedItem {
@@ -22,7 +19,7 @@ interface RedistributedItem {
   product_id: string
   name: string
   quantity: number
-  // NO individual rationale - that goes in booking_explanation
+  // NO rationale - explanations go in booking_explanation only
 }
 
 interface Booking {
@@ -35,25 +32,47 @@ interface Booking {
   pre_drinks: Array<{product_id: string; name: string; quantity: number}>
   during_drinks: Array<{product_id: string; name: string; quantity: number}>
   after_drinks: Array<{product_id: string; name: string; quantity: number}>
-  booking_explanation?: string  // Contains pathway reasoning
+  booking_explanation?: string
 }
 
 // ============= MAIN HANDLER =============
 export async function POST(request: NextRequest) {
   try {
-    // Expected from Water Bar QR scan
-    const { cart_id, customer_email, items, assessment_summary } = await request.json()
+    // Get cart_id and customer_email from QR scan + staff selection
+    const { cart_id, customer_email } = await request.json()
     const supabase = await createClient()
     
-    // Validate incoming data
-    if (!cart_id || !items || items.length === 0) {
-      return NextResponse.json({ error: 'Invalid cart data' }, { status: 400 })
+    // Validate inputs
+    if (!cart_id || !customer_email) {
+      return NextResponse.json({ 
+        error: 'Cart ID and customer email required' 
+      }, { status: 400 })
     }
+    
+    // Get cart items from database (not from request!)
+    const { data: cartItems, error: cartError } = await supabase
+      .from('cart_items')
+      .select('*, products(name)')
+      .eq('cart_id', cart_id)
+    
+    if (cartError || !cartItems?.length) {
+      return NextResponse.json({ 
+        error: 'Cart not found or empty',
+        details: cartError?.message 
+      }, { status: 404 })
+    }
+    
+    // Format cart items for processing
+    const items: CartItem[] = cartItems.map(item => ({
+      item_id: item.product_id,
+      product_name: item.products?.name || 'Unknown Product',
+      qty: item.quantity
+    }))
     
     // Find customer's active bookings at AOI
     const { data: bookings, error: bookingError } = await supabase
       .from('bookings')
-      .select('*, experiences(name)')  // Get experience names too
+      .select('*, experiences(name)')
       .eq('customer_email', customer_email)
       .eq('venue_id', '20c2f440-9133-42ec-a8d6-6336e649ec4b') // AOI venue
       .in('booking_status', ['sessions_scheduled', 'in_session'])
@@ -74,7 +93,6 @@ export async function POST(request: NextRequest) {
       pre: any[]
       during: any[]
       after: any[]
-      explanation_append: string
     }>()
     
     // Process each redistributed item
@@ -101,8 +119,7 @@ export async function POST(request: NextRequest) {
         bookingUpdates.set(item.booking_id, {
           pre: [...(targetBooking.pre_drinks || [])],
           during: [...(targetBooking.during_drinks || [])],
-          after: [...(targetBooking.after_drinks || [])],
-          explanation_append: ''
+          after: [...(targetBooking.after_drinks || [])]
         })
       }
       
@@ -112,7 +129,7 @@ export async function POST(request: NextRequest) {
         product_id: item.product_id,
         name: item.name,
         quantity: item.quantity
-        // NO reason/rationale here - goes in booking_explanation
+        // NO reason/rationale here!
       }
       
       if (item.timing === 'pre') bookingUpdate.pre.push(drinkToAdd)
@@ -126,9 +143,8 @@ export async function POST(request: NextRequest) {
       const targetBooking = bookings.find(b => b.id === bookingId)
       
       // Build updated explanation
-      const updatedExplanation = assessment_summary 
-        ? `${targetBooking?.booking_explanation || ''}\n\n📊 Hydration Assessment Integration:\n${assessment_summary}`
-        : targetBooking?.booking_explanation
+      const assessmentNote = `\n\n📊 Hydration Assessment: Added ${items.length} personalized drinks based on micronutrient analysis.`
+      const updatedExplanation = `${targetBooking?.booking_explanation || ''}${assessmentNote}`
       
       const { error: updateError } = await supabase
         .from('bookings')
@@ -143,13 +159,12 @@ export async function POST(request: NextRequest) {
       if (!updateError) successCount++
     }
     
-    // Log cart processing for tracking
+    // Mark cart as claimed
     await supabase
       .from('cart_headers')
       .update({ 
         venue_claimed_at: new Date().toISOString(),
-        venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b',
-        processing_notes: `Added ${successCount} items, skipped ${skippedCount} duplicates`
+        venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b'
       })
       .eq('id', cart_id)
     
@@ -158,7 +173,7 @@ export async function POST(request: NextRequest) {
       itemsAdded: successCount,
       duplicatesSkipped: skippedCount,
       bookingsUpdated: bookingUpdates.size,
-      message: `Successfully integrated assessment drinks`
+      message: `Successfully integrated ${items.length} assessment drinks`
     })
     
   } catch (error) {
@@ -219,10 +234,10 @@ async function redistributeDrinks(
       content: JSON.stringify({
         assessment_drinks: cartItems.map(item => ({
           id: item.item_id,
-          name: item.product_name || 'Unknown',
+          name: item.product_name,
           quantity: item.qty,
-          type: item.product_name?.includes('Rite') || 
-                item.product_name?.includes('Humantra') ? 'sachet' : 'drink'
+          type: item.product_name.includes('Rite') || 
+                item.product_name.includes('Humantra') ? 'sachet' : 'drink'
         })),
         existing_products: Array.from(existingProducts),
         session_info: {
