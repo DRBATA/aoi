@@ -11,6 +11,9 @@ interface CartItem {
   item_id: string
   product_name: string
   qty: number
+  description?: string
+  tags?: string[]
+  category?: string
 }
 
 interface RedistributedItem {
@@ -19,7 +22,6 @@ interface RedistributedItem {
   product_id: string
   name: string
   quantity: number
-  // NO rationale - explanations go in booking_explanation only
 }
 
 interface Booking {
@@ -28,7 +30,13 @@ interface Booking {
   slot_time: string
   duration_minutes?: number
   experience_id?: string
-  experiences?: { name: string }
+  experiences?: {
+    name: string
+    description?: string
+    tags?: string[]
+    duration_minutes?: number
+    pairings?: any
+  }
   pre_drinks: Array<{product_id: string; name: string; quantity: number}>
   during_drinks: Array<{product_id: string; name: string; quantity: number}>
   after_drinks: Array<{product_id: string; name: string; quantity: number}>
@@ -49,10 +57,18 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    // Get cart items from database (not from request!)
+    // Get cart items WITH product details for AI context
     const { data: cartItems, error: cartError } = await supabase
       .from('cart_items')
-      .select('*, products(name)')
+      .select(`
+        *,
+        products (
+          name,
+          description,
+          tags,
+          category
+        )
+      `)
       .eq('cart_id', cart_id)
     
     if (cartError || !cartItems?.length) {
@@ -62,17 +78,29 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
     
-    // Format cart items for processing
+    // Format cart items with rich product context
     const items: CartItem[] = cartItems.map(item => ({
       item_id: item.product_id,
       product_name: item.products?.name || 'Unknown Product',
-      qty: item.quantity
+      qty: item.quantity,
+      description: item.products?.description,
+      tags: item.products?.tags,
+      category: item.products?.category
     }))
     
-    // Find customer's active bookings at AOI
+    // Find customer's active bookings WITH experience details
     const { data: bookings, error: bookingError } = await supabase
       .from('bookings')
-      .select('*, experiences(name)')
+      .select(`
+        *,
+        experiences (
+          name,
+          description,
+          tags,
+          duration_minutes,
+          pairings
+        )
+      `)
       .eq('customer_email', customer_email)
       .eq('venue_id', '20c2f440-9133-42ec-a8d6-6336e649ec4b') // AOI venue
       .in('booking_status', ['sessions_scheduled', 'in_session'])
@@ -85,7 +113,7 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
     
-    // AI decides WHERE to place assessment drinks
+    // AI decides WHERE to place assessment drinks with full context
     const redistributedItems = await redistributeDrinks(items, bookings)
     
     // Group updates by booking for efficiency
@@ -105,9 +133,9 @@ export async function POST(request: NextRequest) {
       
       // CHECK FOR DUPLICATES - don't add if product already exists
       const isDuplicate = 
-      targetBooking.pre_drinks?.some((d: {product_id: string}) => d.product_id === item.product_id) ||
-      targetBooking.during_drinks?.some((d: {product_id: string}) => d.product_id === item.product_id) ||
-      targetBooking.after_drinks?.some((d: {product_id: string}) => d.product_id === item.product_id)
+        targetBooking.pre_drinks?.some((d: {product_id: string}) => d.product_id === item.product_id) ||
+        targetBooking.during_drinks?.some((d: {product_id: string}) => d.product_id === item.product_id) ||
+        targetBooking.after_drinks?.some((d: {product_id: string}) => d.product_id === item.product_id)
       
       if (isDuplicate) {
         skippedCount++
@@ -137,13 +165,22 @@ export async function POST(request: NextRequest) {
       else if (item.timing === 'after') bookingUpdate.after.push(drinkToAdd)
     }
     
-    // Execute all booking updates
+    // Execute all booking updates with enhanced explanations
     let successCount = 0
     for (const [bookingId, updates] of bookingUpdates) {
       const targetBooking = bookings.find(b => b.id === bookingId)
       
-      // Build updated explanation
-      const assessmentNote = `\n\n📊 Hydration Assessment: Added ${items.length} personalized drinks based on micronutrient analysis.`
+      // Build intelligent explanation based on what was added
+      const addedDrinks = items.filter(item => 
+        redistributedItems.some(ri => ri.product_id === item.item_id && ri.booking_id === bookingId)
+      )
+      
+      const drinkSummary = addedDrinks.map(drink => {
+        const timing = redistributedItems.find(ri => ri.product_id === drink.item_id)?.timing
+        return `${drink.product_name} (${timing})`
+      }).join(', ')
+      
+      const assessmentNote = `\n\n📊 Hydration Assessment: Added ${drinkSummary} based on micronutrient analysis and ${targetBooking?.experiences?.name} experience requirements.`
       const updatedExplanation = `${targetBooking?.booking_explanation || ''}${assessmentNote}`
       
       const { error: updateError } = await supabase
@@ -173,7 +210,7 @@ export async function POST(request: NextRequest) {
       itemsAdded: successCount,
       duplicatesSkipped: skippedCount,
       bookingsUpdated: bookingUpdates.size,
-      message: `Successfully integrated ${items.length} assessment drinks`
+      message: `Successfully integrated ${items.length} assessment drinks with intelligent placement`
     })
     
   } catch (error) {
@@ -185,7 +222,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ============= AI REDISTRIBUTION LOGIC =============
+// ============= ENHANCED AI REDISTRIBUTION =============
 async function redistributeDrinks(
   cartItems: CartItem[],
   bookings: Booking[]
@@ -208,17 +245,22 @@ async function redistributeDrinks(
     model: "gpt-4-turbo-preview",
     messages: [{
       role: "system" as const,
-      content: `You are a logistics coordinator distributing hydration assessment drinks.
+      content: `You are an intelligent hydration coordinator with access to complete product and experience data.
       
       CRITICAL RULES:
       1. CHECK FOR DUPLICATES - Skip any product that already exists in bookings
-      2. Treat consecutive bookings (within 60min) as ONE continuous session
-      3. Maximum ${maxDrinksPerHour} drinks per hour (${maxDrinksTotal} total)
-      4. Sachets (Rite/Humantra) can be takeaway if excess
-      5. DO NOT create biochemistry explanations - just decide timing
+      2. Use product TAGS to determine optimal timing:
+         - "hydration/electrolytes/sweating" → during active experiences
+         - "energy/focus/mental" → pre-experience preparation  
+         - "recovery/gut/calming" → post-experience
+      3. Use experience TAGS to understand context:
+         - "standing/active" → needs more hydration during
+         - "lying/relaxing" → less during, more after
+         - "immersive/intense" → pre-preparation important
+      4. Maximum ${maxDrinksPerHour} drinks per hour (${maxDrinksTotal} total)
+      5. Sachets can be takeaway if excess
       
-      Read the pathway_explanation to understand existing drink strategy.
-      Your ONLY job is WHERE and WHEN to place new drinks.
+      Make intelligent decisions based on the rich product and experience context provided.
       
       Return JSON: {
         items: [
@@ -232,27 +274,46 @@ async function redistributeDrinks(
     }, {
       role: "user" as const,
       content: JSON.stringify({
+        // RICH DRINK CONTEXT
         assessment_drinks: cartItems.map(item => ({
           id: item.item_id,
           name: item.product_name,
+          description: item.description,
+          tags: item.tags || [],  // ["hydration", "energy", etc]
+          category: item.category,  // "electrolyte sachet"
           quantity: item.qty,
           type: item.product_name.includes('Rite') || 
                 item.product_name.includes('Humantra') ? 'sachet' : 'drink'
         })),
+        
+        // EXISTING PRODUCTS TO AVOID
         existing_products: Array.from(existingProducts),
+        
+        // RICH EXPERIENCE CONTEXT
         session_info: {
           total_hours: totalHours,
           max_drinks: maxDrinksTotal,
           bookings: bookings.map(b => ({
-            id: b.id,
+            booking_id: b.id,
             time: b.slot_time,
             duration_min: b.duration_minutes,
-            experience: b.experiences?.name,
+            
+            // Experience intelligence
+            experience: {
+              name: b.experiences?.name,
+              description: b.experiences?.description,
+              tags: b.experiences?.tags || [],  // ["standing", "immersive", etc]
+              duration: b.experiences?.duration_minutes,
+              suggested_drinks: b.experiences?.pairings?.drinks || []
+            },
+            
+            // Current state
             current_drinks: {
               pre: b.pre_drinks?.map(d => d.name) || [],
               during: b.during_drinks?.map(d => d.name) || [],
               after: b.after_drinks?.map(d => d.name) || []
             },
+            
             pathway_explanation: b.booking_explanation
           }))
         }
@@ -271,6 +332,5 @@ async function redistributeDrinks(
     product_id: item.product_id,
     name: cartItems.find(c => c.item_id === item.product_id)?.product_name || '',
     quantity: cartItems.find(c => c.item_id === item.product_id)?.qty || 1
-    // NO rationale - explanations go in booking_explanation only
   }))
 }
