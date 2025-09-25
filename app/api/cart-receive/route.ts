@@ -1,126 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import OpenAI from 'openai'
 
-// Function removed - no longer needed since we pass original cart items directly
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+})
 
-export async function POST(request: NextRequest) {
-  try {
-    const { cart_id, customer_email, items } = await request.json()
-    const supabase = await createClient()
-    
-    // Directly use the cart data passed in QR code
-    // No need for cart_transfers table
-    
-    if (!cart_id || !items || items.length === 0) {
-      return NextResponse.json({ error: 'Invalid cart data' }, { status: 400 })
-    }
-    
-    // Find customer's bookings at AOI venue
-    const { data: bookings, error: bookingError } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('customer_email', customer_email)
-      .eq('venue_id', '20c2f440-9133-42ec-a8d6-6336e649ec4b') // AOI venue ID
-      .in('booking_status', ['sessions_scheduled', 'in_session'])
-    
-    if (bookingError || !bookings || bookings.length === 0) {
-      return NextResponse.json({ error: 'No active bookings found for customer' }, { status: 404 })
-    }
-    
-    // Validate bookings exist
-    if (!bookings || bookings.length === 0) {
-      return NextResponse.json({ error: 'No active bookings provided' }, { status: 404 })
-    }
-    
-    // AI redistribution of drinks across all bookings
-    // Pass the ORIGINAL cart items with their AI explanations
-    const redistributedItems = await redistributeDrinks(
-      items,  // Keep original cart items with AI context
-      bookings
-    )
-    
-    // Update each booking with new items, checking existing drinks
-    const updates = []
-    for (const item of redistributedItems) {
-      const targetBooking = bookings.find(b => b.id === item.booking_id)
-      if (!targetBooking) continue
-      
-      // Check if item already exists in pre/during/after drinks
-      const existingPre = targetBooking.pre_drinks?.some((d: { product_id: string }) => d.product_id === item.product_id)
-      const existingDuring = targetBooking.during_drinks?.some((d: { product_id: string }) => d.product_id === item.product_id)
-      const existingAfter = targetBooking.after_drinks?.some((d: { product_id: string }) => d.product_id === item.product_id)
-      
-      if (!existingPre && !existingDuring && !existingAfter) {
-        // Add to appropriate drinks array based on timing
-        const drinkField = item.timing === 'before' ? 'pre_drinks' :
-                          item.timing === 'during' ? 'during_drinks' : 'after_drinks'
-        
-        const currentDrinks = targetBooking[drinkField] || []
-        const updatedDrinks = [...currentDrinks, {
-          product_id: item.product_id,
-          name: item.name,
-          quantity: item.quantity,
-          reason: item.rationale
-        }]
-        
-        updates.push({
-          booking_id: item.booking_id,
-          field: drinkField,
-          value: updatedDrinks
-        })
-      }
-    }
-    
-    // Update bookings with new drinks
-    if (updates.length > 0) {
-      for (const update of updates) {
-        const { error: updateError } = await supabase
-          .from('bookings')
-          .update({ [update.field]: update.value })
-          .eq('id', update.booking_id)
-        
-        if (updateError) throw updateError
-      }
-    }
-    
-    // Log the cart processing (optional - could track in cart_headers)
-    await supabase
-      .from('cart_headers')
-      .update({ 
-        venue_claimed_at: new Date().toISOString(),
-        venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b'
-      })
-      .eq('id', cart_id)
-    
-    return NextResponse.json({
-      success: true,
-      itemsAdded: updates.length,
-      message: `Added ${updates.length} items to booking`
-    })
-    
-  } catch (error) {
-    console.error('Error processing cart transfer:', error)
-    return NextResponse.json({ error: 'Failed to process transfer' }, { status: 500 })
-  }
+// ============= INTERFACES =============
+// Clean, purposeful data structures
+
+interface CartItem {
+  item_id: string
+  product_name?: string
+  qty: number
+  assessment_reason?: string  // From Water Bar: "15% Mg deficit"
 }
 
 interface RedistributedItem {
   booking_id: string
-  timing: string
-  rationale: string
+  timing: 'pre' | 'during' | 'after' | 'takeaway'
   product_id: string
   name: string
   quantity: number
-  rationale: string
-}
-
-interface ApiResponse {
-  items: Array<{
-    booking_id: string
-    timing: string
-    product_id: string
-    rationale: string
-  }>
+  // NO individual rationale - that goes in booking_explanation
 }
 
 interface Booking {
@@ -133,78 +35,210 @@ interface Booking {
   pre_drinks: Array<{product_id: string; name: string; quantity: number}>
   during_drinks: Array<{product_id: string; name: string; quantity: number}>
   after_drinks: Array<{product_id: string; name: string; quantity: number}>
-  booking_explanation?: string  // THIS is where the reasoning goes
+  booking_explanation?: string  // Contains pathway reasoning
 }
 
-import OpenAI from 'openai'
+// ============= MAIN HANDLER =============
+export async function POST(request: NextRequest) {
+  try {
+    // Expected from Water Bar QR scan
+    const { cart_id, customer_email, items, assessment_summary } = await request.json()
+    const supabase = await createClient()
+    
+    // Validate incoming data
+    if (!cart_id || !items || items.length === 0) {
+      return NextResponse.json({ error: 'Invalid cart data' }, { status: 400 })
+    }
+    
+    // Find customer's active bookings at AOI
+    const { data: bookings, error: bookingError } = await supabase
+      .from('bookings')
+      .select('*, experiences(name)')  // Get experience names too
+      .eq('customer_email', customer_email)
+      .eq('venue_id', '20c2f440-9133-42ec-a8d6-6336e649ec4b') // AOI venue
+      .in('booking_status', ['sessions_scheduled', 'in_session'])
+      .order('slot_time', { ascending: true })
+    
+    if (bookingError || !bookings || bookings.length === 0) {
+      return NextResponse.json({ 
+        error: 'No active bookings found for customer',
+        details: 'Customer needs an active AOI booking to receive assessment drinks'
+      }, { status: 404 })
+    }
+    
+    // AI decides WHERE to place assessment drinks
+    const redistributedItems = await redistributeDrinks(items, bookings)
+    
+    // Group updates by booking for efficiency
+    const bookingUpdates = new Map<string, {
+      pre: any[]
+      during: any[]
+      after: any[]
+      explanation_append: string
+    }>()
+    
+    // Process each redistributed item
+    let skippedCount = 0
+    for (const item of redistributedItems) {
+      if (item.timing === 'takeaway') continue // Handle separately later
+      
+      const targetBooking = bookings.find(b => b.id === item.booking_id)
+      if (!targetBooking) continue
+      
+      // CHECK FOR DUPLICATES - don't add if product already exists
+      const isDuplicate = 
+        targetBooking.pre_drinks?.some((d: any) => d.product_id === item.product_id) ||
+        targetBooking.during_drinks?.some((d: any) => d.product_id === item.product_id) ||
+        targetBooking.after_drinks?.some((d: any) => d.product_id === item.product_id)
+      
+      if (isDuplicate) {
+        skippedCount++
+        continue // Skip this item, already in booking
+      }
+      
+      // Initialize booking update if needed
+      if (!bookingUpdates.has(item.booking_id)) {
+        bookingUpdates.set(item.booking_id, {
+          pre: [...(targetBooking.pre_drinks || [])],
+          during: [...(targetBooking.during_drinks || [])],
+          after: [...(targetBooking.after_drinks || [])],
+          explanation_append: ''
+        })
+      }
+      
+      // Add drink to appropriate timing array (NO reason field!)
+      const bookingUpdate = bookingUpdates.get(item.booking_id)!
+      const drinkToAdd = {
+        product_id: item.product_id,
+        name: item.name,
+        quantity: item.quantity
+        // NO reason/rationale here - goes in booking_explanation
+      }
+      
+      if (item.timing === 'pre') bookingUpdate.pre.push(drinkToAdd)
+      else if (item.timing === 'during') bookingUpdate.during.push(drinkToAdd)
+      else if (item.timing === 'after') bookingUpdate.after.push(drinkToAdd)
+    }
+    
+    // Execute all booking updates
+    let successCount = 0
+    for (const [bookingId, updates] of bookingUpdates) {
+      const targetBooking = bookings.find(b => b.id === bookingId)
+      
+      // Build updated explanation
+      const updatedExplanation = assessment_summary 
+        ? `${targetBooking?.booking_explanation || ''}\n\n📊 Hydration Assessment Integration:\n${assessment_summary}`
+        : targetBooking?.booking_explanation
+      
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({
+          pre_drinks: updates.pre,
+          during_drinks: updates.during,
+          after_drinks: updates.after,
+          booking_explanation: updatedExplanation
+        })
+        .eq('id', bookingId)
+      
+      if (!updateError) successCount++
+    }
+    
+    // Log cart processing for tracking
+    await supabase
+      .from('cart_headers')
+      .update({ 
+        venue_claimed_at: new Date().toISOString(),
+        venue_id: '20c2f440-9133-42ec-a8d6-6336e649ec4b',
+        processing_notes: `Added ${successCount} items, skipped ${skippedCount} duplicates`
+      })
+      .eq('id', cart_id)
+    
+    return NextResponse.json({
+      success: true,
+      itemsAdded: successCount,
+      duplicatesSkipped: skippedCount,
+      bookingsUpdated: bookingUpdates.size,
+      message: `Successfully integrated assessment drinks`
+    })
+    
+  } catch (error) {
+    console.error('Error processing cart transfer:', error)
+    return NextResponse.json({ 
+      error: 'Failed to process transfer',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
+  }
+}
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
-
+// ============= AI REDISTRIBUTION LOGIC =============
 async function redistributeDrinks(
-  cartItems: Array<{
-    item_id: string
-    product_name?: string
-    qty: number
-    ai_recommendation?: { reason?: string }
-    reason?: string
-  }>,
+  cartItems: CartItem[],
   bookings: Booking[]
 ): Promise<RedistributedItem[]> {
-  // CRITICAL INSIGHTS:
-  // 1. Drinks come with AI explanations of WHY they were selected
-  // 2. Multiple bookings = ONE session (check same email, same day)
-  // 3. Look at booking pathway explanations for drink placement guidance
-  // 4. Trust the original AI's reasoning, just distribute timing
   
-  const totalHours = bookings.reduce((sum, b) => sum + (b.duration_minutes || 30) / 60, 0)
-  const maxDrinksToDistribute = Math.floor(totalHours * 2)
+  const totalHours = bookings.reduce((sum, b) => 
+    sum + (b.duration_minutes || 30) / 60, 0
+  )
+  const maxDrinksPerHour = 2
+  const maxDrinksTotal = Math.floor(totalHours * maxDrinksPerHour)
+  
+  // Build product overlap map for AI
+  const existingProducts = new Set<string>()
+  bookings.forEach(b => {
+    [...(b.pre_drinks || []), ...(b.during_drinks || []), ...(b.after_drinks || [])]
+      .forEach(d => existingProducts.add(d.product_id))
+  })
   
   const params: OpenAI.Chat.Completions.ChatCompletionCreateParams = {
     model: "gpt-4-turbo-preview",
     messages: [{
       role: "system" as const,
-      content: `You are distributing drinks that were ALREADY scientifically selected for this customer's deficits.
+      content: `You are a logistics coordinator distributing hydration assessment drinks.
       
-      CRITICAL: These are likely MULTIPLE bookings for ONE continuous session.
-      Look at the timeline - if bookings are consecutive (30-60min apart), treat as one session.
+      CRITICAL RULES:
+      1. CHECK FOR DUPLICATES - Skip any product that already exists in bookings
+      2. Treat consecutive bookings (within 60min) as ONE continuous session
+      3. Maximum ${maxDrinksPerHour} drinks per hour (${maxDrinksTotal} total)
+      4. Sachets (Rite/Humantra) can be takeaway if excess
+      5. DO NOT create biochemistry explanations - just decide timing
       
-      Each drink comes with its ORIGINAL AI explanation of why it was selected.
-      RESPECT that reasoning when placing drinks.
+      Read the pathway_explanation to understand existing drink strategy.
+      Your ONLY job is WHERE and WHEN to place new drinks.
       
-      RULES:
-      - Total session time: ${totalHours} hours (max ${maxDrinksToDistribute} drinks @ 2/hour)
-      - Sachets (Rite/Humantra) can be takeaway if excess
-      - If bookings already have drinks with explanations, READ those explanations
-      - Distribute to maintain steady hydration across the ENTIRE session
-      
-      DO NOT reassess nutritional needs - trust the original AI selection.
-      Just optimize WHEN each drink should be consumed.
-      
-      Return JSON: {items: [{booking_id, timing: "before|during|after|takeaway", product_id, rationale}]}`
+      Return JSON: {
+        items: [
+          {
+            booking_id: "uuid",
+            timing: "pre|during|after|takeaway",
+            product_id: "uuid"
+          }
+        ]
+      }`
     }, {
       role: "user" as const,
       content: JSON.stringify({
-        drinks_to_distribute: cartItems.filter(i => i.product_name).map(i => ({
-          id: i.item_id,
-          name: i.product_name,
-          original_ai_reason: i.ai_recommendation?.reason || i.reason,  // Keep original explanation!
-          type: i.product_name?.includes('Rite') || i.product_name?.includes('Humantra') ? 'sachet' : 'drink'
+        assessment_drinks: cartItems.map(item => ({
+          id: item.item_id,
+          name: item.product_name || 'Unknown',
+          quantity: item.qty,
+          type: item.product_name?.includes('Rite') || 
+                item.product_name?.includes('Humantra') ? 'sachet' : 'drink'
         })),
-        session_timeline: {
-          customer_email: bookings[0]?.customer_email,
-          total_duration_hours: totalHours,
-          bookings: bookings.sort((a,b) => new Date(a.slot_time).getTime() - new Date(b.slot_time).getTime()).map(b => ({
-            booking_id: b.id,
-            slot_time: b.slot_time,
+        existing_products: Array.from(existingProducts),
+        session_info: {
+          total_hours: totalHours,
+          max_drinks: maxDrinksTotal,
+          bookings: bookings.map(b => ({
+            id: b.id,
+            time: b.slot_time,
+            duration_min: b.duration_minutes,
             experience: b.experiences?.name,
-            duration_minutes: b.duration_minutes || 30,
-            existing_drinks_with_explanations: {
-              pre: b.pre_drinks || [],
-              during: b.during_drinks || [],
-              after: b.after_drinks || []
-            }
+            current_drinks: {
+              pre: b.pre_drinks?.map(d => d.name) || [],
+              during: b.during_drinks?.map(d => d.name) || [],
+              after: b.after_drinks?.map(d => d.name) || []
+            },
+            pathway_explanation: b.booking_explanation
           }))
         }
       })
@@ -213,15 +247,15 @@ async function redistributeDrinks(
   }
   
   const response = await openai.chat.completions.create(params)
-  const result: ApiResponse = JSON.parse(response.choices[0]?.message?.content || '{items:[]}')
+  const result = JSON.parse(response.choices[0]?.message?.content || '{"items":[]}')
   
-  // Map the AI response to our RedistributedItem format
-  return (result.items || []).map((item) => ({
+  // Map AI response to our clean format
+  return (result.items || []).map((item: any) => ({
     booking_id: item.booking_id,
     timing: item.timing,
-    product_id: item.product_id,  // This will be the product.id
-    name: cartItems.find(i => i.item_id === item.product_id)?.product_name || '',
-    quantity: cartItems.find(i => i.item_id === item.product_id)?.qty || 1,
-    rationale: item.rationale
+    product_id: item.product_id,
+    name: cartItems.find(c => c.item_id === item.product_id)?.product_name || '',
+    quantity: cartItems.find(c => c.item_id === item.product_id)?.qty || 1
+    // NO rationale - explanations go in booking_explanation only
   }))
 }
