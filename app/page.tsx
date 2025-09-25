@@ -17,56 +17,62 @@ export default function LandingPage() {
     {
       id: "aoi",
       name: "AOI",
-      description: "The core light & sound machine experience - immersive frequencies for cellular transformation",
+      description: "Stand in light and sound. Your fascia unwinds, shoulders drop, breath naturally lengthens.",
       icon: "✨",
       duration: "20 min",
-      benefits: ["Cellular activation", "Frequency healing", "Energy alignment"],
-      color: "from-purple-400 to-pink-400"
+      benefits: ["Jaw unhooks without trying", "Feet find the ground differently", "Movement feels easier"],
+      color: "from-purple-400 via-pink-400 to-orange-400",
+      image: "/experiences/aoi_(art_of_implosion).png"
     },
     {
       id: "aoi-earth",
       name: "AOI EARTH",
-      description: "Horizontal lying bed version - grounding light & sound therapy for deep relaxation",
+      description: "Lie down, load off. Light and sound create space for your system to reorganize itself.",
       icon: "🌍",
-      duration: "45 min",
-      benefits: ["Deep grounding", "Stress relief", "Restorative healing"],
-      color: "from-green-400 to-emerald-400"
+      duration: "30-45 min",
+      benefits: ["Spine lengthens", "Breathing deepens", "Thoughts settle"],
+      color: "from-teal-400 via-cyan-400 to-blue-400",
+      image: "/experiences/aoi_(art_of_implosion).png"
     },
     {
-      id: "aoi-air",
-      name: "AOI AIR",
-      description: "Standing light & sound experience for physical unwinding and movement-based release",
-      icon: "🌬️",
-      duration: "20 min",
-      benefits: ["Physical unwinding", "Movement therapy", "Postural alignment"],
-      color: "from-cyan-400 to-blue-400"
+      id: "float",
+      name: "FLOAT",
+      description: "Weightless in warm salt water. Maximum subtraction lets spontaneous reorganization happen.",
+      icon: "💫",
+      duration: "30 min",
+      benefits: ["Boundaries dissolve then reform", "Mental chatter quiets", "Deep reset"],
+      color: "from-blue-400 via-purple-400 to-pink-400",
+      image: "/experiences/float.png"
+    },
+    {
+      id: "sauna",
+      name: "INFRARED SAUNA",
+      description: "Gentle heat opens circulation, lengthens breath. Finish with our signature electrolyte drinks.",
+      icon: "🔥",
+      duration: "30 min",
+      benefits: ["Muscles soften", "Breath flows easier", "Ready for what&apos;s next"],
+      color: "from-orange-400 via-pink-400 to-purple-400",
+      image: "/experiences/sauna.png"
+    },
+    {
+      id: "ice-bath",
+      name: "ICE BATH",
+      description: "Brief cold creates focus then release. Your system learns to find calm in intensity.",
+      icon: "❄️",
+      duration: "3-6 min",
+      benefits: ["Mind sharpens", "Body rebounds", "Confidence builds"],
+      color: "from-cyan-400 via-teal-400 to-blue-400",
+      image: "/experiences/float.png"
     },
     {
       id: "aoi-air-pro",
       name: "AOI AIR PRO",
-      description: "Intense version of AOI AIR with advanced protocols for deeper transformation",
+      description: "Extended standing session with near-infrared warmth. More time to unwind deeply.",
       icon: "⭐",
-      duration: "30 min",
-      benefits: ["Advanced healing", "Peak performance", "Intensive unwinding"],
-      color: "from-purple-500 to-pink-500"
-    },
-    {
-      id: "ice-bath",
-      name: "Ice Bath",
-      description: "Cold immersion therapy for mental clarity, circulation boost and resilience training",
-      icon: "❄️",
-      duration: "6 min",
-      benefits: ["Mental clarity", "Circulation boost", "Resilience training"],
-      color: "from-blue-500 to-cyan-300"
-    },
-    {
-      id: "infrared-sauna",
-      name: "Infrared Sauna",
-      description: "Deep heat therapy for detoxification, cardiovascular stimulation and recovery",
-      icon: "🔥",
-      duration: "30 min",
-      benefits: ["Deep detox", "Cardiovascular boost", "Recovery"],
-      color: "from-red-400 to-orange-400"
+      duration: "30-50 min",
+      benefits: ["Complete unwinding", "Full-body integration", "Ready to move"],
+      color: "from-purple-500 via-pink-500 to-orange-500",
+      image: "/experiences/aoi_(art_of_implosion).png"
     }
   ]
 
@@ -489,67 +495,87 @@ export default function LandingPage() {
   </div>
 </section>
 
-      {/* Experiences Section */}
-      <section id="experiences" className="py-24 px-4 bg-gradient-to-b from-purple-950/20 to-black">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
-              Choose Your <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Experience</span>
-            </h2>
-            <p className="text-white/70 max-w-2xl mx-auto">
-              Each AOI session is designed to target specific wellness goals
-            </p>
-          </motion.div>
+{/* Experiences Section */}
+<section id="experiences" className="py-24 px-4 bg-gradient-to-b from-black via-purple-950/10 to-black">
+  <div className="max-w-7xl mx-auto">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+      className="text-center mb-16"
+    >
+      <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
+        Choose Your <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">Experience</span>
+      </h2>
+      <p className="text-white/70 max-w-2xl mx-auto">
+        Each journey creates the right conditions for your body to find its way
+      </p>
+    </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {experiences.map((exp, index) => (
-              <motion.div
-                key={exp.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-                viewport={{ once: true }}
-                onClick={() => {
-                  // Scroll to booking section when experience is clicked
-                  const bookingSection = document.getElementById('booking')
-                  if (bookingSection) {
-                    bookingSection.scrollIntoView({ behavior: 'smooth' })
-                  }
-                }}
-                data-experience={exp.id}
-                className="relative bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer group"
-              >
-                <div 
-                  className={`absolute inset-0 bg-gradient-to-br ${exp.color} opacity-0 group-hover:opacity-10 transition-opacity rounded-2xl`}
-                />
-                
-                <div className="relative z-10">
-                  <div className="text-4xl mb-4">{exp.icon}</div>
-                  <h3 className="text-xl font-medium text-white mb-2">{exp.name}</h3>
-                  <p className="text-white/60 text-sm mb-4">{exp.description}</p>
-                  
-                  <div className="flex items-center gap-2 mb-4">
-                    <Clock className="w-4 h-4 text-white/40" />
-                    <span className="text-white/40 text-sm">{exp.duration}</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {exp.benefits.map((benefit) => (
-                      <span key={benefit} className="px-3 py-1 bg-white/10 rounded-full text-xs text-white/70">{benefit}</span>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {experiences.map((exp, index) => (
+        <motion.div
+          key={exp.id}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: index * 0.05 }}
+          viewport={{ once: true }}
+          onClick={() => {
+            const bookingSection = document.getElementById('booking')
+            if (bookingSection) {
+              bookingSection.scrollIntoView({ behavior: 'smooth' })
+            }
+          }}
+          data-experience={exp.id}
+          className="relative overflow-hidden rounded-3xl cursor-pointer group"
+        >
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src={exp.image} 
+              alt={exp.name}
+              className="w-full h-full object-cover opacity-40 group-hover:opacity-60 group-hover:scale-110 transition-all duration-700"
+            />
+            <div className={`absolute inset-0 bg-gradient-to-br ${exp.color} opacity-60 mix-blend-multiply`} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
           </div>
-        </div>
-      </section>
+          
+          {/* Content */}
+          <div className="relative z-10 p-8 min-h-[400px] flex flex-col justify-end">
+            <div className="transform group-hover:translate-y-[-10px] transition-transform duration-300">
+              <div className="text-5xl mb-4 filter drop-shadow-lg">{exp.icon}</div>
+              <h3 className="text-2xl font-semibold text-white mb-3 drop-shadow-lg">{exp.name}</h3>
+              <p className="text-white/90 text-sm mb-4 leading-relaxed drop-shadow">{exp.description}</p>
+              
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="w-4 h-4 text-white/70" />
+                <span className="text-white/70 text-sm font-medium">{exp.duration}</span>
+              </div>
+              
+              {/* Benefits Pills */}
+              <div className="flex flex-wrap gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                {exp.benefits.map((benefit) => (
+                  <span 
+                    key={benefit} 
+                    className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs text-white/90 border border-white/10"
+                  >
+                    {benefit}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          {/* Hover Glow Effect */}
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+            <div className={`absolute inset-x-0 bottom-0 h-px bg-gradient-to-r ${exp.color}`} />
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  </div>
+</section>
 
       {/* Booking Section */}
       <section id="booking" className="py-24 px-4 bg-gradient-to-b from-black to-purple-950/30">
