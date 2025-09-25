@@ -330,7 +330,7 @@ export default function LandingPage() {
         >
           <div className="text-center mb-8">
             <h3 className="text-2xl font-light text-white mb-2">Where Dubai's Creative Community Gathers</h3>
-            <p className="text-white/60">Art gallery meets wellness lounge meets social club</p>
+            <p className="text-white/60">Art Gallery | Wellness Lounge | Social Hub </p>
           </div>
           
           {/* Gallery Grid */}
@@ -440,7 +440,7 @@ export default function LandingPage() {
             <h3 className="text-xl font-medium text-white mb-4">Implosion vs Explosion</h3>
             <p className="text-white/60 mb-3">
               Humans have become addicted to exploding - constantly reacting, consuming, and pushing outward. 
-              We've lost our connection to nature and how creation really takes its highest form: through implosion.
+              We&apos;ve lost our connection to nature and how creation really takes its highest form: through implosion.
             </p>
             <p className="text-white/60">
               AOI invites you to turn inward, to implode your true potential onto the world without needing 
@@ -451,9 +451,9 @@ export default function LandingPage() {
           <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all">
             <h3 className="text-xl font-medium text-white mb-4">Beyond Replicas</h3>
             <p className="text-white/60">
-              Most people are replicas - mimicking their ancestors or environment. It's hard to meet an original 
-              expression because we're all copies in the same traffic jam. AOI helps you break free from being 
-              just another copy and access your true originality.
+              It&apos;s easy to get caught in patterns - doing what we&apos;ve always done, thinking how we&apos;ve always thought. 
+              AOI creates space for something different to emerge. Your own rhythm, your own expression, 
+              without the noise telling you who to be.
             </p>
           </div>
         </motion.div>
@@ -554,7 +554,7 @@ export default function LandingPage() {
             {/* Bottom Content - Always Visible */}
             <div className="space-y-3">
               <div>
-                <h4 className="text-white font-medium text-xs uppercase tracking-wide mb-2 opacity-90">What You'll Feel:</h4>
+              <h4 className="text-white font-medium text-xs uppercase tracking-wide mb-2 opacity-90">You might feel:</h4>
                 <div className="flex flex-wrap gap-1.5">
                   {exp.benefits.map((benefit) => (
                     <span 
