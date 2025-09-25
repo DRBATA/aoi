@@ -12,36 +12,22 @@ import CartSearchByEmail from './CartSearchByEmail';
 import AddDrinkTab from './AddDrinkTab';
 
 interface Booking {
-  id: string;
-  venue_name: string;
-  experience_name: string;
-  slot_time: string;
-  duration_minutes: number;
-  customer_email: string;
-  customer_name: string;
-  booking_status: string;
-  venue_price: number;
-  cart_id: string | null;
-  pre_drinks?: Array<{
-    product_id: string;
-    name: string;
-    quantity: number;
-    reason?: string;
-  }>;
-  during_drinks?: Array<{
-    product_id: string;
-    name: string;
-    quantity: number;
-    reason?: string;
-  }>;
-  after_drinks?: Array<{
-    product_id: string;
-    name: string;
-    quantity: number;
-    reason?: string;
-  }>;
-  drinks_consumed?: boolean;
-  pathway_id?: string;
+  id: string
+  customer_name: string
+  customer_email: string
+  venue_name: string
+  experience_name: string
+  slot_time: string
+  duration_minutes: number
+  venue_price: number
+  booking_status: string
+  pathway_id?: string
+  cart_id?: string | null        // ← ADD THIS
+  drinks_consumed?: boolean      // ← ADD THIS
+  pre_drinks?: Array<{name: string; product_id: string; quantity: number}>
+  during_drinks?: Array<{name: string; product_id: string; quantity: number}>
+  after_drinks?: Array<{name: string; product_id: string; quantity: number}>
+  booking_explanation?: string
 }
 
 export default function StaffBookingsDashboard() {
@@ -670,6 +656,14 @@ export default function StaffBookingsDashboard() {
                             <div>⏰ {new Date(booking.slot_time).toLocaleTimeString()} ({booking.duration_minutes} min)</div>
                             <div>👤 {booking.customer_name} ({booking.customer_email})</div>
                             <div>💰 AED {booking.venue_price}</div>
+
+                            {/* ADD THIS BLOCK: */}
+                            {booking.booking_explanation && (
+                              <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
+                                <div className="font-medium text-blue-800 mb-1">💧 Hydration Strategy:</div>
+                                <div className="text-blue-700">{booking.booking_explanation}</div>
+                              </div>
+                            )}
                           </div>
 
                           {/* Pathway Drinks - Phase-based display */}

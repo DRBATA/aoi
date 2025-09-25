@@ -3,14 +3,15 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Menu, X, ChevronDown, Clock } from 'lucide-react'
+import { Menu, X, ChevronDown, Clock, Sparkles, Users, Brain, Zap } from 'lucide-react'
+
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import AOIBookingForm from '@/components/AOIBookingForm'
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
+  const [activeTab, setActiveTab] = useState('how-it-works')
   const experiences = [
     {
       id: "aoi",
@@ -246,9 +247,9 @@ export default function LandingPage() {
       </ShaderBackground>
       </section>
 
-{/* Experiences Section */}
-<section id="experiences" className="py-24 px-4 bg-gradient-to-b from-gray-900 via-pink-900/10 to-purple-900/15">
-  <div className="max-w-7xl mx-auto">
+{/* How It Works Section */}
+<section id="how-it-works" className="py-24 px-4 bg-gradient-to-b from-gray-900 via-emerald-900/10 to-cyan-900/10">  
+  <div className="max-w-6xl mx-auto">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -257,73 +258,245 @@ export default function LandingPage() {
       className="text-center mb-16"
     >
       <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
-        Choose Your <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">Experience</span>
+        Not forcing anything. <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-pink-400 bg-clip-text text-transparent">Just creating conditions.</span>
       </h2>
       <p className="text-white/70 max-w-2xl mx-auto">
-        Each journey creates the right conditions for your body to find its way
+        Light, sound, and temperature create space for your body to do what it already knows.
       </p>
     </motion.div>
 
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {experiences.map((exp, index) => (
-        <motion.div
-          key={exp.id}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: index * 0.05 }}
-          viewport={{ once: true }}
-          onClick={() => {
-            const bookingSection = document.getElementById('booking')
-            if (bookingSection) {
-              bookingSection.scrollIntoView({ behavior: 'smooth' })
-            }
-          }}
-          data-experience={exp.id}
-          className="relative overflow-hidden rounded-3xl cursor-pointer group"
+    {/* Tab Navigation */}
+    <div className="flex flex-wrap justify-center gap-2 mb-12">
+      {[
+        { id: 'how-it-works', label: 'How It Works', icon: <Sparkles className="w-4 h-4" /> },
+        { id: 'social', label: 'The Vibe', icon: <Users className="w-4 h-4" /> },
+        { id: 'philosophy', label: 'Philosophy', icon: <Brain className="w-4 h-4" /> },
+        { id: 'founder', label: 'Creator', icon: <Zap className="w-4 h-4" /> }
+      ].map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
+            activeTab === tab.id
+              ? 'bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white shadow-lg shadow-purple-500/25'
+              : 'bg-white/15 text-white/80 hover:bg-white/25 hover:shadow-md hover:shadow-white/10'
+          }`}
         >
-          {/* Background Image */}
-          <div className="absolute inset-0 z-0">
-            <img 
-              src={exp.image} 
-              alt={exp.name}
-              className="w-full h-full object-cover opacity-40 group-hover:opacity-60 group-hover:scale-110 transition-all duration-700"
-            />
-            <div className={`absolute inset-0 bg-gradient-to-br ${exp.color} opacity-60 mix-blend-multiply`} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+          {tab.icon}
+          {tab.label}
+        </button>
+      ))}
+    </div>
+
+    {/* Tab Content */}
+    <div className="max-w-4xl mx-auto">
+      {activeTab === 'how-it-works' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-8"
+        >
+          {/* Simple 3-Step Process */}
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">1</div>
+              <h4 className="text-xl font-medium text-white mb-3">Choose Experience</h4>
+              <p className="text-white/70">Pick what calls to you. Each experience creates different conditions for transformation.</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">2</div>
+              <h4 className="text-xl font-medium text-white mb-3">We Enhance</h4>
+              <p className="text-white/70">Perfect combinations suggested. Temperature, timing, and complementary experiences.</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto mb-4">3</div>
+              <h4 className="text-xl font-medium text-white mb-3">Auto-Hydrate</h4>
+              <p className="text-white/70">Optimal drinks added automatically. Electrolytes and nutrients to elevate your experience.</p>
+            </div>
+          </div>
+
+          {/* What Makes It Work */}
+          <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-8 border border-white/20 hover:bg-white/20 transition-all">
+            <h3 className="text-2xl font-medium text-white mb-6 text-center">What Makes It Work</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-white font-medium mb-2">🎨 Art-Built Containers</h4>
+                <p className="text-white/70 text-sm">Each experience is an artisanal state-changer. Light and sound create ritual containers where your nervous system finds its steadier set point.</p>
+              </div>
+              <div>
+                <h4 className="text-white font-medium mb-2">💧 Intelligent Hydration</h4>
+                <p className="text-white/70 text-sm">Your experience determines your drink. Ice bath gets warming spices. Sauna gets cooling electrolytes. Heat gets minerals.</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {activeTab === 'social' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-light text-white mb-2">Where Dubai's Creative Community Gathers</h3>
+            <p className="text-white/60">Art gallery meets wellness lounge meets social club</p>
           </div>
           
-          {/* Content */}
-          <div className="relative z-10 p-8 min-h-[400px] flex flex-col justify-end">
-            <div className="transform group-hover:translate-y-[-10px] transition-transform duration-300">
-              <div className="text-5xl mb-4 filter drop-shadow-lg">{exp.icon}</div>
-              <h3 className="text-2xl font-semibold text-white mb-3 drop-shadow-lg">{exp.name}</h3>
-              <p className="text-white/90 text-sm mb-4 leading-relaxed drop-shadow">{exp.description}</p>
-              
-              <div className="flex items-center gap-2 mb-4">
-                <Clock className="w-4 h-4 text-white/70" />
-                <span className="text-white/70 text-sm font-medium">{exp.duration}</span>
+          {/* Gallery Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/party.jpg" alt="Community celebrations" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Celebrations</p>
               </div>
-              
-              {/* Benefits Pills */}
-              <div className="flex flex-wrap gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                {exp.benefits.map((benefit) => (
-                  <span 
-                    key={benefit} 
-                    className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs text-white/90 border border-white/10"
-                  >
-                    {benefit}
-                  </span>
-                ))}
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/movement.jpg" alt="Dance & movement" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Movement</p>
+              </div>
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/connection.jpg" alt="Deep connections" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Connection</p>
+              </div>
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/community.jpg" alt="Water Bar gatherings" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Water Bar</p>
+              </div>
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/conversation.jpg" alt="Lounge vibes" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Lounge Vibes</p>
+              </div>
+            </div>
+            
+            <div className="relative group overflow-hidden rounded-xl">
+              <img src="/shop.jpg" alt="Fashion x Wellness" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Johny Dar Fashion</p>
               </div>
             </div>
           </div>
           
-          {/* Hover Glow Effect */}
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
-            <div className={`absolute inset-x-0 bottom-0 h-px bg-gradient-to-r ${exp.color}`} />
+          <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all mt-8">
+            <div className="text-center">
+              <h4 className="text-xl font-medium text-white mb-3">Book Together</h4>
+              <p className="text-white/60 mb-4">
+                AOI is best experienced with friends. Book 3-4 experiences back-to-back for your complete wellness journey. 
+                Dance between sessions, share signature drinks, create memories.
+              </p>
+              <div className="flex justify-center gap-8 text-center">
+                <div>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">500+</p>
+                  <p className="text-white/50 text-sm">Weekly Visitors</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">70%</p>
+                  <p className="text-white/50 text-sm">Come in Groups</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">3-4</p>
+                  <p className="text-white/50 text-sm">Avg Experiences</p>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
-      ))}
+      )}
+
+      {activeTab === 'philosophy' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {/* Move technical explanations here */}
+          <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">🌊</span>
+              <h3 className="text-xl font-medium text-white">How Position Changes Everything</h3>
+            </div>
+            <div className="space-y-3 text-white/60">
+              <p><strong className="text-white">Standing (AIR):</strong> Movement permission. Your fascia unwinds through micro-movements. Shoulders drop without trying.</p>
+              <p><strong className="text-white">Lying (EARTH):</strong> Load off. Subtraction lets your spine lengthen, breath deepen, thoughts settle.</p>
+              <p><strong className="text-white">Floating:</strong> Maximum subtraction. Boundaries dissolve then reform clearer. Spontaneous reorganization.</p>
+            </div>
+          </div>
+          
+          <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">🔥❄️</span>
+              <h3 className="text-xl font-medium text-white">Temperature as Teacher</h3>
+            </div>
+            <p className="text-white/60 mb-3">
+              <strong className="text-white">Ice:</strong> Brief cold creates focus then release. Your system learns to find calm in intensity. Mind sharpens, body rebounds.
+            </p>
+            <p className="text-white/60">
+              <strong className="text-white">Heat:</strong> Gentle warmth opens circulation, lengthens breath. Muscles soften, you're ready for what's next.
+            </p>
+          </div>
+
+          <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all">
+            <h3 className="text-xl font-medium text-white mb-4">Implosion vs Explosion</h3>
+            <p className="text-white/60 mb-3">
+              Humans have become addicted to exploding - constantly reacting, consuming, and pushing outward. 
+              We've lost our connection to nature and how creation really takes its highest form: through implosion.
+            </p>
+            <p className="text-white/60">
+              AOI invites you to turn inward, to implode your true potential onto the world without needing 
+              to destroy your surroundings to grow.
+            </p>
+          </div>
+          
+          <div className="bg-white/15 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all">
+            <h3 className="text-xl font-medium text-white mb-4">Beyond Replicas</h3>
+            <p className="text-white/60">
+              Most people are replicas - mimicking their ancestors or environment. It's hard to meet an original 
+              expression because we're all copies in the same traffic jam. AOI helps you break free from being 
+              just another copy and access your true originality.
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+      {activeTab === 'founder' && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/15 backdrop-blur-lg rounded-2xl p-8 border border-white/20 hover:bg-white/20 transition-all"
+        >
+          <div className="flex flex-col md:flex-row gap-6 items-center">
+            <div className="w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+              <Users className="w-16 h-16 text-white" />
+            </div>
+            <div className="flex-1 text-center md:text-left">
+              <h3 className="text-2xl font-medium text-white mb-2">Johny Dar</h3>
+              <p className="text-purple-400 mb-4">Founder & Creator of AOI</p>
+              <p className="text-white/60 mb-4">
+                Multi-talented artist, designer, musician, philanthropist, and inventor. 
+                Fashion designer since 1999, launched Johny Wonder label. 
+                Driven to chase dreams and passionate about realization.
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Artist</span>
+                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Designer</span>
+                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Inventor</span>
+                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Philanthropist</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   </div>
 </section>
