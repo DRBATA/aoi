@@ -17,20 +17,23 @@ interface DrinkRecommendation {
 
 export async function POST(request: NextRequest) {
   try {
-    const { transferId, bookingId, customerEmail, staffId } = await request.json()
+    const body = await request.json()
+    const { booking_id, assessment_data } = body
     const supabase = await createClient()
     
     // Fetch the transfer record
     const { data: transfer, error: transferError } = await supabase
       .from('cart_transfers')
       .select('*')
-      .eq('id', transferId)
+      .eq('id', booking_id)
       .eq('status', 'pending')
       .single()
     
     if (transferError || !transfer) {
       return NextResponse.json({ error: 'Invalid or expired transfer' }, { status: 400 })
     }
+    
+    const customerEmail = transfer.customer_email
     
     // Get ALL bookings for this customer for the day
     const today = new Date().toISOString().split('T')[0]
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
         *,
         experiences (
           name,
-          category
+          duration_minutes
         )
       `)
       .eq('customer_email', customerEmail)
@@ -160,10 +163,9 @@ export async function POST(request: NextRequest) {
       .from('cart_transfers')
       .update({ 
         status: 'completed',
-        processed_by: staffId,
         processed_at: new Date().toISOString()
       })
-      .eq('id', transferId)
+      .eq('id', booking_id)
     
     return NextResponse.json({ 
       success: true, 

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Award, Users, Clock } from 'lucide-react'
+import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Users, Clock } from 'lucide-react'
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import AOIBookingForm from '@/components/AOIBookingForm'
@@ -300,7 +300,7 @@ export default function LandingPage() {
               Each AOI experience is an artisanal state-changer. Immersive light and sound create a ritual container where your nervous system can find its own steadier set point.
             </p>
             <p className="text-white/60">
-              It's not about forcing anything — it's about giving your body the right conditions to do what it already knows.
+              It&apos;s not about forcing anything — it&apos;s about giving your body the right conditions to do what it already knows.
             </p>
           </div>
           
@@ -325,21 +325,21 @@ export default function LandingPage() {
               <strong className="text-white">Ice:</strong> Brief cold creates focus then release. Your system learns to find calm in intensity. Mind sharpens, body rebounds.
             </p>
             <p className="text-white/60">
-              <strong className="text-white">Heat:</strong> Gentle warmth opens circulation, lengthens breath. Muscles soften, you're ready for what's next.
+              <strong className="text-white">Heat:</strong> Gentle warmth opens circulation, lengthens breath. Muscles soften, you&apos;re ready for what&apos;s next.
             </p>
           </div>
           
           <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-2xl">✨</span>
-              <h3 className="text-xl font-medium text-white">What You'll Actually Feel</h3>
+              <h3 className="text-xl font-medium text-white">What You&apos;ll Actually Feel</h3>
             </div>
             <ul className="space-y-2 text-white/60">
-              <li>• "Jaw unhooks, breath lengthens, movements feel smoother"</li>
-              <li>• "Attention snaps clear, then softens into steady focus"</li>
-              <li>• "Feet find the ground differently"</li>
-              <li>• "Spine lengthens without effort"</li>
-              <li>• "Mental chatter goes quiet"</li>
+              <li>• &quot;Jaw unhooks, breath lengthens, movements feel smoother&quot;</li>
+              <li>• &quot;Attention snaps clear, then softens into steady focus&quot;</li>
+              <li>• &quot;Feet find the ground differently&quot;</li>
+              <li>• &quot;Spine lengthens without effort&quot;</li>
+              <li>• &quot;Mental chatter goes quiet&quot;</li>
             </ul>
           </div>
         </motion.div>
@@ -352,7 +352,7 @@ export default function LandingPage() {
           className="space-y-6"
         >
           <div className="text-center mb-8">
-            <h3 className="text-2xl font-light text-white mb-2">Where Dubai's Creative Community Gathers</h3>
+            <h3 className="text-2xl font-light text-white mb-2">Where Dubai&apos;s Creative Community Gathers</h3>
             <p className="text-white/60">Art gallery meets wellness lounge meets social club</p>
           </div>
           
@@ -438,7 +438,7 @@ export default function LandingPage() {
             <h3 className="text-xl font-medium text-white mb-4">Implosion vs Explosion</h3>
             <p className="text-white/60 mb-3">
               Humans have become addicted to exploding - constantly reacting, consuming, and pushing outward. 
-              We've lost our connection to nature and how creation really takes its highest form: through implosion.
+              We&apos;ve lost our connection to nature and how creation really takes its highest form: through implosion.
             </p>
             <p className="text-white/60">
               AOI invites you to turn inward, to implode your true potential onto the world without needing 
@@ -449,8 +449,8 @@ export default function LandingPage() {
           <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
             <h3 className="text-xl font-medium text-white mb-4">Beyond Replicas</h3>
             <p className="text-white/60">
-              Most people are replicas - mimicking their ancestors or environment. It's hard to meet an original 
-              expression because we're all copies in the same traffic jam. AOI helps you break free from being 
+              Most people are replicas - mimicking their ancestors or environment. It&apos;s hard to meet an original 
+              expression because we&apos;re all copies in the same traffic jam. AOI helps you break free from being 
               just another copy and access your true originality.
             </p>
           </div>

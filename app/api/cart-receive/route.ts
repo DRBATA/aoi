@@ -10,34 +10,7 @@ interface EnrichedProduct {
   water_content_ml?: number
 }
 
-async function convertCartItemsToProducts(cartItems: any[], supabase: any): Promise<EnrichedProduct[]> {
-  const productItems: EnrichedProduct[] = []
-  
-  for (const cartItem of cartItems) {
-    // Only process products (skip experiences)
-    if (!cartItem.product_name) continue
-    
-    // Fetch full product data including nutritional info
-    const { data: product } = await supabase
-      .from('products')
-      .select('*')
-      .eq('id', cartItem.item_id)
-      .single()
-    
-    if (product) {
-      productItems.push({
-        item_id: product.id,
-        product_name: product.name,
-        qty: cartItem.qty,
-        na_mg: product.sodium_mg,
-        protein_g: product.protein_g,
-        water_content_ml: product.water_content_ml
-      })
-    }
-  }
-  
-  return productItems
-}
+// Function removed - no longer needed since we pass original cart items directly
 
 export async function POST(request: NextRequest) {
   try {
@@ -147,18 +120,16 @@ interface RedistributedItem {
   product_id: string
   name: string
   quantity: number
+  rationale: string
 }
 
-interface CartItem {
-  item_id: string  // This is the product.id or experience.id
-  product_name?: string
-  experience_name?: string
-  qty: number
-  booking_id?: string
-  // Product nutritional data (when it's a product)
-  na_mg?: number
-  protein_g?: number
-  water_content_ml?: number
+interface ApiResponse {
+  items: Array<{
+    booking_id: string
+    timing: string
+    product_id: string
+    rationale: string
+  }>
 }
 
 interface Booking {
@@ -181,7 +152,13 @@ const openai = new OpenAI({
 })
 
 async function redistributeDrinks(
-  cartItems: any[], // Keep original cart items with their AI explanations
+  cartItems: Array<{
+    item_id: string
+    product_name?: string
+    qty: number
+    ai_recommendation?: { reason?: string }
+    reason?: string
+  }>,
   bookings: Booking[]
 ): Promise<RedistributedItem[]> {
   // CRITICAL INSIGHTS:
@@ -245,10 +222,10 @@ async function redistributeDrinks(
   }
   
   const response = await openai.chat.completions.create(params)
-  const result = JSON.parse(response.choices[0]?.message?.content || '{}')
+  const result: ApiResponse = JSON.parse(response.choices[0]?.message?.content || '{items:[]}')
   
   // Map the AI response to our RedistributedItem format
-  return (result.items || []).map((item: any) => ({
+  return (result.items || []).map((item) => ({
     booking_id: item.booking_id,
     timing: item.timing,
     product_id: item.product_id,  // This will be the product.id
