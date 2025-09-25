@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-interface EnrichedProduct {
-  item_id: string
-  product_name: string
-  qty: number
-  na_mg?: number
-  protein_g?: number
-  water_content_ml?: number
-}
-
 // Function removed - no longer needed since we pass original cart items directly
 
 export async function POST(request: NextRequest) {

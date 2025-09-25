@@ -18,7 +18,7 @@ interface DrinkRecommendation {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { booking_id, assessment_data } = body
+    const { booking_id } = body
     const supabase = await createClient()
     
     // Fetch the transfer record

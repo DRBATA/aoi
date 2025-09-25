@@ -3,15 +3,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Menu, X, ChevronDown, Sparkles, Zap, Brain, Users, Clock } from 'lucide-react'
+import { Menu, X, ChevronDown, Clock } from 'lucide-react'
 import ShaderBackground from '@/components/shader-background'
 import FloatingPaths from "@/components/kokonutui/floating-paths"
 import AOIBookingForm from '@/components/AOIBookingForm'
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('philosophy')
-
 
   const experiences = [
     {
@@ -430,8 +428,11 @@ export default function LandingPage() {
       viewport={{ once: true }}
       className="text-center mt-16"
     >
-      <p className="text-white/70 mb-6 text-sm md:text-base">
-        Most people book 2-3 experiences. We'll suggest the perfect combinations.
+      <p className="text-white/70 mb-4 text-sm md:text-base">
+        Select your core experience below, then choose which combination aligns with your goals. We&apos;ll automatically match hydration for when you arrive.
+      </p>
+      <p className="text-white/50 text-xs md:text-sm">
+        You&apos;ll see all options in your confirmation email. For complete daily hydration balance, visit thewater.bar on arrival for a personalized assessment.
       </p>
       <div className="flex flex-col gap-4 items-center">
         <button 
