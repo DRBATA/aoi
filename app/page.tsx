@@ -248,253 +248,6 @@ export default function LandingPage() {
       </ShaderBackground>
       </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 px-4 bg-gradient-to-b from-gray-900 via-emerald-900/10 to-cyan-900/10">  
-      <div className="max-w-6xl mx-auto">
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8 }}
-      viewport={{ once: true }}
-      className="text-center mb-16"
-    >
-      <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
-        Not forcing anything. <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-pink-400 bg-clip-text text-transparent">Just creating conditions.</span>
-      </h2>
-      <p className="text-white/70 max-w-2xl mx-auto">
-        Light, sound, and temperature create space for your body to do what it already knows.
-      </p>
-    </motion.div>
-
-    {/* Tab Navigation */}
-    <div className="flex flex-wrap justify-center gap-2 mb-12">
-      {[
-        { id: 'how-it-works', label: 'How It Works', icon: <Sparkles className="w-4 h-4" /> },
-        { id: 'social', label: 'The Vibe', icon: <Users className="w-4 h-4" /> },
-        { id: 'philosophy', label: 'Philosophy', icon: <Brain className="w-4 h-4" /> },
-        { id: 'founder', label: 'Creator', icon: <Zap className="w-4 h-4" /> }
-      ].map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => setActiveTab(tab.id)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
-            activeTab === tab.id
-              ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-              : 'bg-white/10 text-white/70 hover:bg-white/20'
-          }`}
-        >
-          {tab.icon}
-          {tab.label}
-        </button>
-      ))}
-    </div>
-
-    {/* Tab Content */}
-    <div className="max-w-4xl mx-auto">
-      {activeTab === 'how-it-works' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-2xl">🎨</span>
-              <h3 className="text-xl font-medium text-white">Art-Built Containers</h3>
-            </div>
-            <p className="text-white/60 mb-3">
-              Each AOI experience is an artisanal state-changer. Immersive light and sound create a ritual container where your nervous system can find its own steadier set point.
-            </p>
-            <p className="text-white/60">
-              It&apos;s not about forcing anything — it&apos;s about giving your body the right conditions to do what it already knows.
-            </p>
-          </div>
-          
-          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-2xl">🌊</span>
-              <h3 className="text-xl font-medium text-white">How Position Changes Everything</h3>
-            </div>
-            <div className="space-y-3 text-white/60">
-              <p><strong className="text-white">Standing (AIR):</strong> Movement permission. Your fascia unwinds through micro-movements. Shoulders drop without trying.</p>
-              <p><strong className="text-white">Lying (EARTH):</strong> Load off. Subtraction lets your spine lengthen, breath deepen, thoughts settle.</p>
-              <p><strong className="text-white">Floating:</strong> Maximum subtraction. Boundaries dissolve then reform clearer. Spontaneous reorganization.</p>
-            </div>
-          </div>
-          
-          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-2xl">🔥❄️</span>
-              <h3 className="text-xl font-medium text-white">Temperature as Teacher</h3>
-            </div>
-            <p className="text-white/60 mb-3">
-              <strong className="text-white">Ice:</strong> Brief cold creates focus then release. Your system learns to find calm in intensity. Mind sharpens, body rebounds.
-            </p>
-            <p className="text-white/60">
-              <strong className="text-white">Heat:</strong> Gentle warmth opens circulation, lengthens breath. Muscles soften, you&apos;re ready for what&apos;s next.
-            </p>
-          </div>
-          
-          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-2xl">✨</span>
-              <h3 className="text-xl font-medium text-white">What You&apos;ll Actually Feel</h3>
-            </div>
-            <ul className="space-y-2 text-white/60">
-              <li>• &quot;Jaw unhooks, breath lengthens, movements feel smoother&quot;</li>
-              <li>• &quot;Attention snaps clear, then softens into steady focus&quot;</li>
-              <li>• &quot;Feet find the ground differently&quot;</li>
-              <li>• &quot;Spine lengthens without effort&quot;</li>
-              <li>• &quot;Mental chatter goes quiet&quot;</li>
-            </ul>
-          </div>
-        </motion.div>
-      )}
-
-      {activeTab === 'social' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-light text-white mb-2">Where Dubai&apos;s Creative Community Gathers</h3>
-            <p className="text-white/60">Art gallery meets wellness lounge meets social club</p>
-          </div>
-          
-          {/* Gallery Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div className="relative group overflow-hidden rounded-xl">
-              <img src="/party.jpg" alt="Community celebrations" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Celebrations</p>
-              </div>
-            </div>
-            
-            <div className="relative group overflow-hidden rounded-xl">
-              <img src="/movement.jpg" alt="Dance & movement" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Movement</p>
-              </div>
-            </div>
-            
-            <div className="relative group overflow-hidden rounded-xl">
-              <img src="/connection.jpg" alt="Deep connections" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Connection</p>
-              </div>
-            </div>
-            
-            <div className="relative group overflow-hidden rounded-xl">
-              <img src="/community.jpg" alt="Water Bar gatherings" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Water Bar</p>
-              </div>
-            </div>
-            
-            <div className="relative group overflow-hidden rounded-xl">
-              <img src="/conversation.jpg" alt="Lounge vibes" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Lounge Vibes</p>
-              </div>
-            </div>
-            
-            <div className="relative group overflow-hidden rounded-xl">
-              <img src="/shop.jpg" alt="Fashion x Wellness" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Johny Dar Fashion</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10 mt-8">
-            <div className="text-center">
-              <h4 className="text-xl font-medium text-white mb-3">Book Together</h4>
-              <p className="text-white/60 mb-4">
-                AOI is best experienced with friends. Book 3-4 experiences back-to-back for your complete wellness journey. 
-                Dance between sessions, share signature drinks, create memories.
-              </p>
-              <div className="flex justify-center gap-8 text-center">
-                <div>
-                  <p className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">500+</p>
-                  <p className="text-white/50 text-sm">Weekly Visitors</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">70%</p>
-                  <p className="text-white/50 text-sm">Come in Groups</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">3-4</p>
-                  <p className="text-white/50 text-sm">Avg Experiences</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {activeTab === 'philosophy' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          {/* Keep existing philosophy content */}
-          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-            <h3 className="text-xl font-medium text-white mb-4">Implosion vs Explosion</h3>
-            <p className="text-white/60 mb-3">
-              Humans have become addicted to exploding - constantly reacting, consuming, and pushing outward. 
-              We&apos;ve lost our connection to nature and how creation really takes its highest form: through implosion.
-            </p>
-            <p className="text-white/60">
-              AOI invites you to turn inward, to implode your true potential onto the world without needing 
-              to destroy your surroundings to grow.
-            </p>
-          </div>
-          
-          <div className="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-            <h3 className="text-xl font-medium text-white mb-4">Beyond Replicas</h3>
-            <p className="text-white/60">
-              Most people are replicas - mimicking their ancestors or environment. It&apos;s hard to meet an original 
-              expression because we&apos;re all copies in the same traffic jam. AOI helps you break free from being 
-              just another copy and access your true originality.
-            </p>
-          </div>
-        </motion.div>
-      )}
-
-{activeTab === 'founder' && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/10"
-        >
-          <div className="flex flex-col md:flex-row gap-6 items-center">
-            <div className="w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-              <Users className="w-16 h-16 text-white" />
-            </div>
-            <div className="flex-1 text-center md:text-left">
-              <h3 className="text-2xl font-medium text-white mb-2">Johny Dar</h3>
-              <p className="text-purple-400 mb-4">Founder & Creator of AOI</p>
-              <p className="text-white/60 mb-4">
-                Multi-talented artist, designer, musician, philanthropist, and inventor. 
-                Fashion designer since 1999, launched Johny Wonder label. 
-                Driven to chase dreams and passionate about realization.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Artist</span>
-                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Designer</span>
-                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Inventor</span>
-                <span className="px-3 py-1 bg-purple-500/20 rounded-full text-xs text-purple-300">Philanthropist</span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </div>
-  </div>
-</section>
-
 {/* Experiences Section */}
 <section id="experiences" className="py-24 px-4 bg-gradient-to-b from-gray-900 via-pink-900/10 to-purple-900/15">
   <div className="max-w-7xl mx-auto">
@@ -577,6 +330,129 @@ export default function LandingPage() {
   </div>
 </section>
 
+{/* Experiences Section */}
+<section id="experiences" className="py-24 px-4 bg-gradient-to-b from-gray-900 via-pink-900/10 to-purple-900/15">
+  <div className="max-w-7xl mx-auto">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true }}
+      className="text-center mb-16"
+    >
+      <h2 className="text-4xl md:text-5xl font-light text-white mb-4">
+        Choose Your <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">Experience</span>
+      </h2>
+      <p className="text-white/70 max-w-2xl mx-auto">
+        Each journey creates the right conditions for your body to find its way
+      </p>
+    </motion.div>
+
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {experiences.map((exp, index) => (
+        <motion.div
+          key={exp.id}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: index * 0.05 }}
+          viewport={{ once: true }}
+          onClick={() => {
+            const bookingSection = document.getElementById('booking')
+            if (bookingSection) {
+              bookingSection.scrollIntoView({ behavior: 'smooth' })
+            }
+          }}
+          data-experience={exp.id}
+          className="relative overflow-hidden rounded-3xl cursor-pointer group active:scale-95 transition-transform"
+        >
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
+            <img 
+              src={exp.image} 
+              alt={exp.name}
+              className="w-full h-full object-cover opacity-50"
+            />
+            <div className={`absolute inset-0 bg-gradient-to-br ${exp.color} opacity-70 mix-blend-multiply`} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+          </div>
+          
+          {/* Content - Always Visible */}
+          <div className="relative z-10 p-6 min-h-[420px] flex flex-col justify-between">
+            {/* Top Content */}
+            <div>
+              <div className="text-4xl mb-3 filter drop-shadow-lg">{exp.icon}</div>
+              <h3 className="text-xl font-semibold text-white mb-2 drop-shadow-lg">{exp.name}</h3>
+              <p className="text-white/95 text-sm mb-3 leading-relaxed drop-shadow">{exp.description}</p>
+              
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="w-4 h-4 text-white/80" />
+                <span className="text-white/80 text-sm font-medium">{exp.duration}</span>
+              </div>
+            </div>
+
+            {/* Bottom Content - Always Visible */}
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-white font-medium text-xs uppercase tracking-wide mb-2 opacity-90">What You'll Feel:</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {exp.benefits.map((benefit) => (
+                    <span 
+                      key={benefit} 
+                      className="px-2.5 py-1 bg-white/25 backdrop-blur-md rounded-full text-xs text-white/95 border border-white/20 font-medium"
+                    >
+                      {benefit}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Selection Indicator - Always Visible */}
+          <div className="absolute top-4 right-4">
+            <div className="w-8 h-8 bg-white/25 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 shadow-lg">
+              <span className="text-white text-sm font-bold">→</span>
+            </div>
+          </div>
+
+          {/* Glow Effect - Always Visible */}
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r ${exp.color} opacity-80" />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r ${exp.color} opacity-40" />
+        </motion.div>
+      ))}
+    </div>
+
+    {/* Call to Action - Mobile Optimized */}
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 0.3 }}
+      viewport={{ once: true }}
+      className="text-center mt-16"
+    >
+      <p className="text-white/70 mb-6 text-sm md:text-base">
+        Most people book 2-3 experiences. We'll suggest the perfect combinations.
+      </p>
+      <div className="flex flex-col gap-4 items-center">
+        <button 
+          onClick={() => {
+            const bookingSection = document.getElementById('booking')
+            if (bookingSection) {
+              bookingSection.scrollIntoView({ behavior: 'smooth' })
+            }
+          }}
+          className="w-full max-w-sm px-8 py-4 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 rounded-full text-white font-medium active:scale-95 transition-transform shadow-2xl"
+        >
+          Start Your Journey
+        </button>
+        <p className="text-white/50 text-sm text-center max-w-xs">
+          Hydration drinks automatically added based on your selections
+        </p>
+      </div>
+    </motion.div>
+  </div>
+</section>
+
       {/* Booking Section */}
       <section id="booking" className="py-24 px-4 bg-gradient-to-b from-gray-900 via-yellow-900/8 to-orange-900/12">        
       <div className="max-w-4xl mx-auto">
@@ -601,21 +477,54 @@ export default function LandingPage() {
 
 
       {/* Footer */}
-      <footer id="contact" className="py-12 px-4 border-t border-white/10 bg-black">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
-            <div>
-              <div className="text-2xl font-light text-white mb-2">AOI</div>
-              <div className="text-white/40 text-sm">Art of Implosion &copy; 2024</div>
-            </div>
-            <div className="flex gap-8">
-              <Link href="/privacy" className="text-white/60 hover:text-white transition-colors">Privacy</Link>
-              <Link href="/terms" className="text-white/60 hover:text-white transition-colors">Terms</Link>
-              <Link href="/contact" className="text-white/60 hover:text-white transition-colors">Contact</Link>
-            </div>
-          </div>
+<footer id="contact" className="py-16 px-4 border-t border-white/20 bg-gradient-to-b from-gray-900 to-black">
+  <div className="max-w-7xl mx-auto">
+    {/* Main Footer Content */}
+    <div className="grid md:grid-cols-3 gap-8 mb-8">
+      {/* Brand */}
+      <div>
+        <div className="text-3xl font-light text-white mb-3 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">AOI</div>
+        <div className="text-white/60 text-sm mb-4">Art of Implosion</div>
+        <p className="text-white/50 text-sm leading-relaxed">
+          Creating conditions for transformation through light, sound, and honest mechanisms.
+        </p>
+      </div>
+      
+      {/* Quick Links */}
+      <div>
+        <h4 className="text-white font-medium mb-4">Experience</h4>
+        <div className="space-y-2">
+          <Link href="#experiences" className="block text-white/60 hover:text-white transition-colors text-sm">All Experiences</Link>
+          <Link href="#booking" className="block text-white/60 hover:text-white transition-colors text-sm">Book Session</Link>
+          <Link href="#how-it-works" className="block text-white/60 hover:text-white transition-colors text-sm">How It Works</Link>
         </div>
-      </footer>
+      </div>
+      
+      {/* Contact */}
+      <div>
+        <h4 className="text-white font-medium mb-4">Connect</h4>
+        <div className="space-y-2">
+          <Link href="/contact" className="block text-white/60 hover:text-white transition-colors text-sm">Contact Us</Link>
+          <Link href="/privacy" className="block text-white/60 hover:text-white transition-colors text-sm">Privacy Policy</Link>
+          <Link href="/terms" className="block text-white/60 hover:text-white transition-colors text-sm">Terms of Service</Link>
+        </div>
+      </div>
+    </div>
+    
+    {/* Bottom Bar */}
+    <div className="pt-8 border-t border-white/10">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="text-white/40 text-sm">
+          © 2024 Art of Implosion. All rights reserved.
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-pulse"></div>
+          <span className="text-white/50 text-sm">Dubai, UAE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
     </div>
   )
 }
