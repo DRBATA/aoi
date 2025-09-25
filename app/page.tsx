@@ -90,7 +90,7 @@ export default function LandingPage() {
   return (
     <div className="relative bg-black">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/50 backdrop-blur-xl border-b border-white/10">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/90 backdrop-blur-xl border-b border-cyan-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
@@ -249,8 +249,8 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works Section */}
-<section id="how-it-works" className="py-24 px-4 bg-gradient-to-b from-black to-purple-950/20">
-  <div className="max-w-6xl mx-auto">
+      <section id="how-it-works" className="py-24 px-4 bg-gradient-to-b from-gray-900 via-emerald-900/10 to-cyan-900/10">  
+      <div className="max-w-6xl mx-auto">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -496,7 +496,7 @@ export default function LandingPage() {
 </section>
 
 {/* Experiences Section */}
-<section id="experiences" className="py-24 px-4 bg-gradient-to-b from-black via-purple-950/10 to-black">
+<section id="experiences" className="py-24 px-4 bg-gradient-to-b from-gray-900 via-pink-900/10 to-purple-900/15">
   <div className="max-w-7xl mx-auto">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -578,8 +578,8 @@ export default function LandingPage() {
 </section>
 
       {/* Booking Section */}
-      <section id="booking" className="py-24 px-4 bg-gradient-to-b from-black to-purple-950/30">
-        <div className="max-w-4xl mx-auto">
+      <section id="booking" className="py-24 px-4 bg-gradient-to-b from-gray-900 via-yellow-900/8 to-orange-900/12">        
+      <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
