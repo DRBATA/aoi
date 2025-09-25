@@ -130,10 +130,10 @@ interface Booking {
   duration_minutes?: number
   experience_id?: string
   experiences?: { name: string }
-  pre_drinks?: any[]
-  during_drinks?: any[]
-  after_drinks?: any[]
-  booking_explanation?: string  // This could contain pathway context!
+  pre_drinks: Array<{product_id: string; name: string; quantity: number}>
+  during_drinks: Array<{product_id: string; name: string; quantity: number}>
+  after_drinks: Array<{product_id: string; name: string; quantity: number}>
+  booking_explanation?: string  // THIS is where the reasoning goes
 }
 
 import OpenAI from 'openai'

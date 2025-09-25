@@ -69,7 +69,7 @@ export default function AOIBookingForm() {
     }
 
     if (data) {
-      const formattedExperiences: Experience[] = data.map((item: {experiences: any, venue_price: number}) => ({
+      const formattedExperiences: Experience[] = data.map((item: {experiences: {id: string; name: string; duration_minutes: number}, venue_price: number}) => ({
         id: item.experiences.id,
         name: item.experiences.name,
         duration_minutes: item.experiences.duration_minutes || 0,
