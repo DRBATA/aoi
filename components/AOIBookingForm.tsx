@@ -141,6 +141,7 @@ export default function AOIBookingForm() {
     if (selectedExperience) {
       generateSuggestions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedExperience]);
   
   // Removed enrichment logic - pathway-chat API now returns fully enriched suggestions

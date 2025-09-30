@@ -35,7 +35,7 @@ interface Booking {
     description?: string
     tags?: string[]
     duration_minutes?: number
-    pairings?: any
+    pairings?: Record<string, unknown>
   }
   pre_drinks: Array<{product_id: string; name: string; quantity: number}>
   during_drinks: Array<{product_id: string; name: string; quantity: number}>

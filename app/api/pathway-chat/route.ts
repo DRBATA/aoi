@@ -202,7 +202,7 @@ Return JSON: {
           console.log('[pathway-chat] Recovered partial chips:', fixedJson.enriched_chips.length);
           return fixedJson.enriched_chips;
         }
-      } catch (innerError) {
+      } catch {
         console.log('[pathway-chat] Could not recover partial response');
       }
       

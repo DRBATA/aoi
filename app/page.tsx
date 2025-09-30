@@ -334,7 +334,7 @@ export default function LandingPage() {
           className="space-y-6"
         >
           <div className="text-center mb-8">
-            <h3 className="text-2xl font-light text-white mb-2">Where Dubai's Creative Community Gathers</h3>
+            <h3 className="text-2xl font-light text-white mb-2">Where Dubai&apos;s Creative Community Gathers</h3>
             <p className="text-white/60">Art Gallery | Wellness Lounge | Social Hub </p>
           </div>
           
@@ -437,7 +437,7 @@ export default function LandingPage() {
               <strong className="text-white">Ice:</strong> Brief cold creates focus then release. Your system learns to find calm in intensity. Mind sharpens, body rebounds.
             </p>
             <p className="text-white/60">
-              <strong className="text-white">Heat:</strong> Gentle warmth opens circulation, lengthens breath. Muscles soften, you're ready for what's next.
+              <strong className="text-white">Heat:</strong> Gentle warmth opens circulation, lengthens breath. Muscles soften, you&apos;re ready for what&apos;s next.
             </p>
           </div>
 
