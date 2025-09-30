@@ -21,7 +21,8 @@ export default function LandingPage() {
       duration: "20 min",
       benefits: ["Jaw unhooks without trying", "Feet find the ground differently", "Movement feels easier"],
       color: "from-purple-400 via-pink-400 to-orange-400",
-      image: "/experiences/aoi_(art_of_implosion).png"
+      image: "/experiences/air.png",
+      imagePosition: "object-center"  // Centered (default)
     },
     {
       id: "aoi-earth",
@@ -31,7 +32,8 @@ export default function LandingPage() {
       duration: "30-45 min",
       benefits: ["Spine lengthens", "Breathing deepens", "Thoughts settle"],
       color: "from-teal-400 via-cyan-400 to-blue-400",
-      image: "/experiences/aoi_(art_of_implosion).png"
+      image: "/experiences/earth(lying_down_implosion).png",
+      imagePosition: "object-top"  // ← ADJUST THIS: object-top moves image UP
     },
     {
       id: "float",
@@ -41,7 +43,8 @@ export default function LandingPage() {
       duration: "30 min",
       benefits: ["Boundaries dissolve then reform", "Mental chatter quiets", "Deep reset"],
       color: "from-blue-400 via-purple-400 to-pink-400",
-      image: "/experiences/float.png"
+      image: "/experiences/float.png",
+      imagePosition: "object-right"  // ← ADJUST THIS: object-right moves image RIGHT
     },
     {
       id: "sauna",
@@ -51,7 +54,8 @@ export default function LandingPage() {
       duration: "30 min",
       benefits: ["Muscles soften", "Breath flows easier", "Ready for what's next"],
       color: "from-orange-400 via-pink-400 to-purple-400",
-      image: "/experiences/sauna.png"
+      image: "/experiences/sauna.png",
+      imagePosition: "object-center"  // Centered (default)
     },
     {
       id: "ice-bath",
@@ -61,7 +65,8 @@ export default function LandingPage() {
       duration: "3-6 min",
       benefits: ["Mind sharpens", "Body rebounds", "Confidence builds"],
       color: "from-cyan-400 via-teal-400 to-blue-400",
-      image: "/experiences/ice-bath.png"
+      image: "/experiences/ice_bath.png",
+      imagePosition: "object-center"  // Centered (default)
     }
   ]
 
@@ -350,7 +355,7 @@ export default function LandingPage() {
             </div>
             
             <div className="relative group overflow-hidden rounded-xl">
-              <img src="/connection.jpg" alt="Deep connections" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
+              <img src="/conneciton.jpg" alt="Deep connections" className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                 <p className="absolute bottom-3 left-3 text-white text-sm font-medium">Connection</p>
               </div>
@@ -509,7 +514,7 @@ export default function LandingPage() {
       </p>
     </motion.div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+    <div className="flex overflow-x-auto md:grid md:grid-cols-5 gap-6 pb-4 md:pb-0 snap-x snap-mandatory md:snap-none -mx-4 px-4 md:mx-0 md:px-0">
       {experiences.map((exp, index) => (
         <motion.div
           key={exp.id}
@@ -524,17 +529,17 @@ export default function LandingPage() {
             }
           }}
           data-experience={exp.id}
-          className="relative overflow-hidden rounded-3xl cursor-pointer group active:scale-95 transition-transform"
+          className="relative overflow-hidden rounded-3xl cursor-pointer group active:scale-95 transition-transform flex-shrink-0 w-[85vw] md:w-auto snap-center"
         >
           {/* Background Image */}
           <div className="absolute inset-0 z-0">
             <img 
               src={exp.image} 
               alt={exp.name}
-              className="w-full h-full object-cover object-center opacity-50"
+              className={`w-full h-full object-cover ${exp.imagePosition || 'object-center'} opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500`}
             />
-            <div className={`absolute inset-0 bg-gradient-to-br ${exp.color} opacity-70 mix-blend-multiply`} />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+            <div className={`absolute inset-0 bg-gradient-to-br ${exp.color} opacity-40 mix-blend-multiply group-hover:opacity-30 transition-opacity duration-500`} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
           </div>
           
           {/* Content - Always Visible */}

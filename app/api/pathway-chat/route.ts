@@ -34,7 +34,7 @@ async function enrichSuggestionsWithAI(suggestions: Suggestion[], selectedExperi
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       response_format: { type: "json_object" },
-      max_completion_tokens: 1400,
+      max_completion_tokens: 2000,
       messages: [{
         role: "system",
         content: `You are creating clickable pathway chips for Art Of Implosion venue (seeking wellness inside the self through experiential rather than cognitive means).
@@ -62,7 +62,7 @@ All suggestions must use base experience types from the pathways table data prov
 
 Pathway Groups: ${JSON.stringify(pathwayGroups, null, 2)}
 
-Generate 3-4 diverse pathway combinations from the data provided.
+Generate 2 diverse pathway combinations from the data provided.
 
 EXACT EXAMPLES:
 
@@ -158,36 +158,61 @@ Return JSON: {
     const content = response.choices[0]?.message?.content;
     if (!content) return suggestions;
 
-    const aiResult = JSON.parse(content);
-    
-    // Transform new AI structure to chip format for UI
-    interface AIChip {
-      chip_id: string;
-      summary: string;
-      experiences: Array<{
-        position: string;
-        experience_type: string;
-        available_experiences?: Array<{
-          experience_id: string;
-          experience_name: string;
-          duration_minutes: number;
+    try {
+      const aiResult = JSON.parse(content);
+      
+      // Transform new AI structure to chip format for UI
+      interface AIChip {
+        chip_id: string;
+        summary: string;
+        experiences: Array<{
+          position: string;
+          experience_type: string;
+          available_experiences?: Array<{
+            experience_id: string;
+            experience_name: string;
+            duration_minutes: number;
+          }>;
+          explanation: string;
+          pre_drinks: Array<{ product_id: string; quantity: number }>;
+          during_drinks: Array<{ product_id: string; quantity: number }>;
+          after_drinks: Array<{ product_id: string; quantity: number }>;
         }>;
-        explanation: string;
-        pre_drinks: Array<{ product_id: string; quantity: number }>;
-        during_drinks: Array<{ product_id: string; quantity: number }>;
-        after_drinks: Array<{ product_id: string; quantity: number }>;
-      }>;
-      pathway_name?: string;
-      pathway_color?: string;
-    }
-    
-    const enrichedChips = aiResult.enriched_chips?.map((chip: AIChip) => ({
-      chip_id: chip.chip_id,
-      summary: chip.summary,
-      experiences: chip.experiences
-    })) || [];
+        pathway_name?: string;
+        pathway_color?: string;
+      }
+      
+      const enrichedChips = aiResult.enriched_chips?.map((chip: AIChip) => ({
+        chip_id: chip.chip_id,
+        summary: chip.summary,
+        experiences: chip.experiences
+      })) || [];
 
-    return enrichedChips;
+      return enrichedChips;
+    } catch (error) {
+      console.error('[pathway-chat] JSON parsing error:', error);
+      
+      // Try to salvage partial results
+      try {
+        // Look for valid chips in the partial response
+        const partialContent = content.replace(/\}\s*$/, '}]}'); // Try to close JSON
+        const fixedJson = JSON.parse(partialContent);
+        
+        if (fixedJson.enriched_chips && fixedJson.enriched_chips.length > 0) {
+          console.log('[pathway-chat] Recovered partial chips:', fixedJson.enriched_chips.length);
+          return fixedJson.enriched_chips;
+        }
+      } catch (innerError) {
+        console.log('[pathway-chat] Could not recover partial response');
+      }
+      
+      // Return basic chips as fallback
+      return suggestions.map(sug => ({
+        chip_id: `${sug.pathway_id}_basic`,
+        summary: sug.pathway_name || "Pathway recommendation",
+        experiences: sug.experiences || []
+      }));
+    }
   } catch (error) {
     console.error('[pathway-chat] AI enrichment error:', error);
     return suggestions; // Return original suggestions if AI fails

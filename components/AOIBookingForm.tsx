@@ -19,6 +19,7 @@ interface BookingRow {
   duration_minutes: number;
   selected_time: string;
   source: 'user' | 'ai';
+  position?: string;
   pathway_name?: string;
   pathway_color?: string;
   selected_pre_drink?: string;
@@ -140,7 +141,7 @@ export default function AOIBookingForm() {
     if (selectedExperience) {
       generateSuggestions();
     }
-  }, [selectedExperience, generateSuggestions]);
+  }, [selectedExperience]);
   
   // Removed enrichment logic - pathway-chat API now returns fully enriched suggestions
 
@@ -281,9 +282,13 @@ export default function AOIBookingForm() {
       experiences.forEach((exp) => {
         let experienceTime = selectedTime;
         
+        // Get default experience from available_experiences if present
+        const defaultOption = exp.available_experiences?.[0];
+
         // Calculate time based on position
         if (exp.position === '-1') {
-          experienceTime = calculateBeforeTime(selectedTime, 30);
+          const actualDuration = defaultOption?.duration_minutes || 30;
+          experienceTime = calculateBeforeTime(selectedTime, actualDuration);
         } else if (exp.position === '+1') {
           experienceTime = calculateAfterTime(selectedTime, selectedExperience);
         } else if (exp.position === '+2') {
@@ -303,9 +308,6 @@ export default function AOIBookingForm() {
           experienceTime = thirdAfter.toTimeString().slice(0, 5);
         }
         
-        // Get default experience from available_experiences if present
-        const defaultOption = exp.available_experiences?.[0];
-        
         newRows.push({
           id: `${chip.chip_id}-${exp.position}-${Date.now()}`,
           experience_id: defaultOption?.experience_id || '',
@@ -313,18 +315,27 @@ export default function AOIBookingForm() {
           duration_minutes: defaultOption?.duration_minutes || 30,
           selected_time: experienceTime,
           source: 'ai',
+          position: exp.position,
           pathway_name: chip.pathway_name as string,
           pathway_color: chip.pathway_color as string,
           selected_pre_drink: exp.pre_drinks?.[0]?.product_id || undefined,
           selected_during_drink: exp.during_drinks?.[0]?.product_id || undefined,
           selected_after_drink: exp.after_drinks?.[0]?.product_id || undefined,
           explanation: exp.explanation,
-          available_experiences: exp.available_experiences // Store for dropdown population
+          available_experiences: exp.available_experiences
         });
       });
     }
     
-    setBookingRows(prev => [...prev, ...newRows]);
+    setBookingRows(prev => {
+      const allRows = [...prev, ...newRows];
+      // Sort by position value: -2, -1, 0 (main), +1, +2, +3
+      return allRows.sort((a, b) => {
+        const posA = parseInt(a.position || '0');
+        const posB = parseInt(b.position || '0');
+        return posA - posB;
+      });
+    });
     // Clear suggestions after adding to prevent multiple clicks
     setSuggestions([]);
   };
@@ -664,6 +675,19 @@ export default function AOIBookingForm() {
                       onClick={() => {
                         console.log('🎯 Experience chip clicked:', exp.name);
                         setSelectedExperience(exp.id);
+                        
+                        // Scroll to date selector
+                        setTimeout(() => {
+                          const dateInput = document.querySelector('input[type="date"]');
+                          if (dateInput) {
+                            dateInput.scrollIntoView({ 
+                              behavior: 'smooth', 
+                              block: 'center' 
+                            });
+                            // Optional: Focus the date input for immediate interaction
+                            (dateInput as HTMLInputElement).focus();
+                          }
+                        }, 100); // Small delay to let state update
                       }}
                       className={`px-4 py-2 rounded-full text-sm transition-all ${
                         selectedExperience === exp.id
@@ -703,13 +727,13 @@ export default function AOIBookingForm() {
               <select
                 value={selectedTime}
                 onChange={(e) => setSelectedTime(e.target.value)}
-                className="w-full p-4 bg-white/20 border border-white/30 rounded-xl text-white focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
+                className="w-full p-4 bg-white/20 border border-white/30 rounded-xl text-white focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all [&>option]:text-gray-900 [&>option]:bg-white"
                 style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
                 required
-              >
-                <option value="">Select available time...</option>
+                >
+                <option value="" className="text-gray-900 bg-white">Select available time...</option>
                 {availableTimeSlots.map((slot) => (
-                  <option key={slot} value={slot}>
+                  <option key={slot} value={slot} className="text-gray-900 bg-white">
                     {slot}
                   </option>
                 ))}
@@ -834,11 +858,11 @@ export default function AOIBookingForm() {
                           r.id === row.id ? {...r, selected_time: e.target.value} : r
                         ));
                       }}
-                      className="w-full p-2 bg-white/20 border border-white/30 rounded text-white text-xs"
+                      className="w-full p-2 bg-white/20 border border-white/30 rounded text-white text-xs [&>option]:text-gray-900 [&>option]:bg-white"
                       style={{ WebkitAppearance: 'menulist', appearance: 'menulist' }}
                     >
                       {availableTimeSlots.map((slot) => (
-                        <option key={slot} value={slot}>
+                        <option key={slot} value={slot} className="text-gray-900 bg-white">
                           {slot}
                         </option>
                       ))}
