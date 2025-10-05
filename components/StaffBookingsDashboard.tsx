@@ -10,6 +10,7 @@ import MinChat from "./MinChat";
 import BookingForm from './BookingForm';
 import CartSearchByEmail from './CartSearchByEmail';
 import AddDrinkTab from './AddDrinkTab';
+import QRScanner from './QRScanner';
 
 interface Booking {
   id: string
@@ -316,25 +317,30 @@ export default function StaffBookingsDashboard() {
     setShowQRModal(true);
   };
 
-  const processQRAssessment = async () => {
-    if (!selectedBookingForQR || !qrCode) {
-      alert('Please select a booking and enter QR code');
+  const handleQRScan = (scannedData: string) => {
+    setQrCode(scannedData);
+    // Auto-process when QR is scanned
+    processQRAssessmentWithData(scannedData);
+  };
+
+  const processQRAssessmentWithData = async (data: string) => {
+    if (!selectedBookingForQR) {
+      alert('No booking selected');
       return;
     }
     
     setProcessingQR(true);
     
     try {
-      // Parse the QR data (should contain cart items)
-      const qrData = JSON.parse(qrCode);
+      // Parse the QR data (should contain cart_id)
+      const qrData = JSON.parse(data);
     
       const response = await fetch('/api/cart-receive', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          cart_id: qrData.cart_id || `qr_${Date.now()}`,
-          customer_email: selectedBookingForQR.customer_email,
-          items: qrData.items || []
+          cart_id: qrData.cart_id,
+          customer_email: selectedBookingForQR.customer_email
         })
       });
       
@@ -349,10 +355,17 @@ export default function StaffBookingsDashboard() {
       } else {
         alert(`❌ ${result.error}`);
       }
-    } catch {
-      alert('Failed to process assessment');
+    } catch (err) {
+      console.error('Assessment processing error:', err);
+      alert('Failed to process assessment. Please check QR code format.');
     } finally {
       setProcessingQR(false);
+    }
+  };
+
+  const processQRAssessment = () => {
+    if (qrCode) {
+      processQRAssessmentWithData(qrCode);
     }
   };
 
@@ -780,8 +793,8 @@ export default function StaffBookingsDashboard() {
 
         {/* QR Assessment Modal */}
         {showQRModal && selectedBookingForQR && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Scan QR Assessment</h3>
               <p className="text-sm text-gray-600 mb-2">
                 Customer: {selectedBookingForQR.customer_name}
@@ -790,20 +803,42 @@ export default function StaffBookingsDashboard() {
                 Experience: {selectedBookingForQR.experience_name}
               </p>
               
-              <input
-                type="text"
-                placeholder="Scan QR code or enter transfer code..."
-                value={qrCode}
-                onChange={(e) => setQrCode(e.target.value)}
-                className="w-full p-3 border rounded-md mb-4"
-                autoFocus
-              />
+              {/* Camera QR Scanner */}
+              {!processingQR && (
+                <div className="mb-4">
+                  <QRScanner 
+                    onScan={handleQRScan}
+                    onError={(err) => console.error('QR Scanner error:', err)}
+                  />
+                </div>
+              )}
+
+              {/* Manual Input Fallback */}
+              <div className="mb-4">
+                <p className="text-xs text-gray-500 mb-2">Or enter transfer code manually:</p>
+                <input
+                  type="text"
+                  placeholder="Enter transfer code..."
+                  value={qrCode}
+                  onChange={(e) => setQrCode(e.target.value)}
+                  className="w-full p-3 border rounded-md"
+                  disabled={processingQR}
+                />
+              </div>
+              
+              {/* Processing State */}
+              {processingQR && (
+                <div className="mb-4 p-4 bg-purple-50 rounded-md text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-purple-700">Processing assessment...</p>
+                </div>
+              )}
               
               <div className="flex gap-2">
                 <button
                   onClick={processQRAssessment}
                   disabled={processingQR || !qrCode}
-                  className="flex-1 bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 disabled:opacity-50"
+                  className="flex-1 bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   {processingQR ? '⏳ Processing...' : '✅ Apply Assessment'}
                 </button>
@@ -813,16 +848,19 @@ export default function StaffBookingsDashboard() {
                     setQrCode('');
                     setSelectedBookingForQR(null);
                   }}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300"
+                  disabled={processingQR}
+                  className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300 disabled:opacity-50 transition-all"
                 >
                   Cancel
                 </button>
               </div>
               
-              <div className="mt-4 text-xs text-gray-500">
-                <p>• AI will analyze all customer bookings for the day</p>
-                <p>• Drinks will be intelligently distributed across experiences</p>
-                <p>• Existing booking explanations will be considered</p>
+              <div className="mt-4 text-xs text-gray-500 bg-blue-50 p-3 rounded-md">
+                <p className="font-medium text-blue-800 mb-1">How it works:</p>
+                <p>• AI analyzes all customer bookings for the day</p>
+                <p>• Drinks intelligently distributed across experiences</p>
+                <p>• Existing booking explanations considered</p>
+                <p>• Duplicates automatically skipped</p>
               </div>
             </div>
           </div>

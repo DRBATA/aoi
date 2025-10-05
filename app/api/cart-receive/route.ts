@@ -123,11 +123,22 @@ export async function POST(request: NextRequest) {
       after: Array<{product_id: string; name: string; quantity: number}>
     }>()
     
+    // Map "takeaway" items to last booking's after_drinks
+    const lastBooking = bookings[bookings.length - 1]
+    const processedItems = redistributedItems.map(item => {
+      if (item.timing === 'takeaway') {
+        return {
+          ...item,
+          booking_id: lastBooking.id,
+          timing: 'after' as const
+        }
+      }
+      return item
+    })
+    
     // Process each redistributed item
     let skippedCount = 0
-    for (const item of redistributedItems) {
-      if (item.timing === 'takeaway') continue // Handle separately later
-      
+    for (const item of processedItems) {
       const targetBooking = bookings.find(b => b.id === item.booking_id)
       if (!targetBooking) continue
       
@@ -172,11 +183,11 @@ export async function POST(request: NextRequest) {
       
       // Build intelligent explanation based on what was added
       const addedDrinks = items.filter(item => 
-        redistributedItems.some(ri => ri.product_id === item.item_id && ri.booking_id === bookingId)
+        processedItems.some(ri => ri.product_id === item.item_id && ri.booking_id === bookingId)
       )
       
       const drinkSummary = addedDrinks.map(drink => {
-        const timing = redistributedItems.find(ri => ri.product_id === drink.item_id)?.timing
+        const timing = processedItems.find(ri => ri.product_id === drink.item_id)?.timing
         return `${drink.product_name} (${timing})`
       }).join(', ')
       
@@ -210,7 +221,8 @@ export async function POST(request: NextRequest) {
       itemsAdded: successCount,
       duplicatesSkipped: skippedCount,
       bookingsUpdated: bookingUpdates.size,
-      message: `Successfully integrated ${items.length} assessment drinks with intelligent placement`
+      totalDrinks: items.length,
+      message: `Successfully redistributed ${successCount} drinks across ${bookingUpdates.size} booking(s). ${skippedCount} duplicate(s) skipped.`
     })
     
   } catch (error) {
@@ -257,8 +269,9 @@ async function redistributeDrinks(
          - "standing/active" → needs more hydration during
          - "lying/relaxing" → less during, more after
          - "immersive/intense" → pre-preparation important
-      4. Maximum ${maxDrinksPerHour} drinks per hour (${maxDrinksTotal} total)
-      5. Sachets can be takeaway if excess
+      4. Maximum ${maxDrinksPerHour} drinks per hour DURING active experiences
+      5. ANYTHING that doesn't fit optimally in Pre/During → Place in LAST booking's After-drinks
+      6. ALL drinks MUST be placed somewhere - nothing is left out
       
       Make intelligent decisions based on the rich product and experience context provided.
       
@@ -270,7 +283,10 @@ async function redistributeDrinks(
             product_id: "uuid"
           }
         ]
-      }`
+      }
+      
+      Note: "takeaway" means place in the last booking's after_drinks slot.
+      All drinks from the assessment MUST appear in the output - nothing should be omitted.`
     }, {
       role: "user" as const,
       content: JSON.stringify({
